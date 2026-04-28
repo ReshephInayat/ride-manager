@@ -11,9 +11,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
 function LoginPage() {
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -25,11 +24,9 @@ function LoginPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } =
-      mode === "signin" ? await signIn(email, password) : await signUp(email, password);
+    const { error } = await signIn(email, password);
     setBusy(false);
     if (error) toast.error(error);
-    else if (mode === "signup") toast.success("Account created. You're signed in.");
   };
 
   return (
@@ -57,11 +54,9 @@ function LoginPage() {
 
       <div className="flex items-center justify-center p-6">
         <Card className="w-full max-w-md p-8">
-          <h2 className="text-2xl font-semibold">
-            {mode === "signin" ? "Welcome back" : "Create your account"}
-          </h2>
+          <h2 className="text-2xl font-semibold">Welcome back</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {mode === "signin" ? "Sign in to manage your rides." : "Start managing rides today."}
+            Sign in to manage your rides.
           </p>
           <form onSubmit={submit} className="mt-6 space-y-4">
             <div>
@@ -88,17 +83,9 @@ function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={busy}>
-              {busy ? "Please wait…" : mode === "signin" ? "Sign In" : "Create Account"}
+              {busy ? "Please wait…" : "Sign In"}
             </Button>
           </form>
-          <button
-            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-            className="mt-4 w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {mode === "signin"
-              ? "Don't have an account? Sign up"
-              : "Already have an account? Sign in"}
-          </button>
         </Card>
       </div>
     </div>
