@@ -1,0 +1,4 @@
+project_id = "ifzyyehyybvynjctrvlo"
+
+[functions.parse-rides-pdf]
+verify_jwt = true
