@@ -11,9 +11,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
 function LoginPage() {
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -25,11 +24,9 @@ function LoginPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } =
-      mode === "signin" ? await signIn(email, password) : await signUp(email, password);
+    const { error } = await signIn(email, password);
     setBusy(false);
     if (error) toast.error(error);
-    else if (mode === "signup") toast.success("Account created. You're signed in.");
   };
 
   return (
