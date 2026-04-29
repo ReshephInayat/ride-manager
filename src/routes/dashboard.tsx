@@ -566,6 +566,9 @@ function DashboardInner() {
             <Button variant="outline" onClick={createInvoiceFromSelected}>
               <FileText className="h-4 w-4 mr-1" /> Invoice selected
             </Button>
+            <Button variant="outline" onClick={createByRouteInvoice}>
+              <FileText className="h-4 w-4 mr-1" /> Invoice by route
+            </Button>
             <Button variant="outline" onClick={createWeeklyInvoice}>
               <FileText className="h-4 w-4 mr-1" /> Weekly invoice
             </Button>
