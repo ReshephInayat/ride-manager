@@ -65,6 +65,7 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
               const body = lines.join(" • ");
               await sb.from("notifications").insert({
                 user_id: r.user_id,
+                system: r.system ?? "api",
                 driver_id: r.driver_id,
                 ride_id: r.id,
                 kind: `auto_${w.kind}`,
