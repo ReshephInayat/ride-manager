@@ -127,15 +127,14 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
   const [view, setView] = useState<"list" | "calendar">("list");
   const [filter, setFilter] = useState<"upcoming" | "today" | "past" | "all">("upcoming");
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
     const { data, error } = await supabase.rpc("driver_rides", {
       _driver_id: session.driverId,
       _pin: session.pin,
     });
     if (error) {
       toast.error(error.message);
-      // PIN may have been changed/disabled
       onLogout();
       return;
     }
@@ -143,7 +142,46 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [session.driverId]);
+  useEffect(() => {
+    load();
+    // Realtime: refresh whenever a ride changes (admin reassign, status, etc.)
+    const ch = supabase
+      .channel(`driver-rides-${session.driverId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => load(true))
+      .subscribe();
+    // Lightweight poll as a safety net
+    const t = setInterval(() => load(true), 60_000);
+    return () => { supabase.removeChannel(ch); clearInterval(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.driverId]);
+
+  // 1-hour-before pickup reminder (in-app toast + sound).
+  // Persists fired-ride keys in localStorage so we don't repeat after a refresh.
+  useEffect(() => {
+    const KEY = "psl.driver.firedHourReminders";
+    const fired: Set<string> = new Set(
+      (() => { try { return JSON.parse(localStorage.getItem(KEY) ?? "[]") as string[]; } catch { return []; } })()
+    );
+    const tick = () => {
+      const now = Date.now();
+      for (const r of rides) {
+        if (!r.pickup_time || !r.ride_date) continue;
+        if (r.status === "cancelled" || r.status === "completed") continue;
+        const pickup = parsePickup(r.ride_date, r.pickup_time);
+        if (!pickup) continue;
+        const minsUntil = (pickup - now) / 60000;
+        if (minsUntil <= 60 && minsUntil > 55 && !fired.has(r.id)) {
+          fired.add(r.id);
+          try { localStorage.setItem(KEY, JSON.stringify(Array.from(fired))); } catch { /* noop */ }
+          playNotificationSound();
+          toast(`Pickup in ~1 hour: ${r.passenger_name ?? "Passenger"} • ${r.pickup_time}`, { duration: 8000, icon: "⏰" });
+        }
+      }
+    };
+    tick();
+    const t = setInterval(tick, 60_000);
+    return () => clearInterval(t);
+  }, [rides]);
 
   const setStatus = async (rideId: string, status: RideStatus) => {
     const { error } = await supabase.rpc("driver_update_ride_status", {
