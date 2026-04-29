@@ -160,7 +160,7 @@ function Inner() {
 
     doc.setTextColor(0);
     doc.setFontSize(12);
-    doc.text("Puget Sound Limos", 196, 20, { align: "right" });
+    doc.text("Puget Sound Limo", 196, 20, { align: "right" });
     doc.setFontSize(9);
     doc.setTextColor(100);
     doc.text("Ground Transportation", 196, 26, { align: "right" });
@@ -239,7 +239,7 @@ function Inner() {
             <div className="text-muted-foreground mt-1">{inv.invoice_number}</div>
           </div>
           <div className="text-right">
-            <div className="font-semibold">Puget Sound Limos</div>
+            <div className="font-semibold">Puget Sound Limo</div>
             <div className="text-sm text-muted-foreground">Ground Transportation</div>
           </div>
         </div>
