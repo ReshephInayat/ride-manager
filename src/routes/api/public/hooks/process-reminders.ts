@@ -21,7 +21,7 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
 
         const { data: rides } = await sb
           .from("rides")
-          .select("id, user_id, ride_date, pickup_time, pickup_location, dropoff_location, driver_id, status, drivers:driver_id(name, email)")
+          .select("id, user_id, ride_date, pickup_time, pickup_location, pickup_from, dropoff_location, dropoff_to, department, riders, passenger_name, flight_number, phone, notes, amount, driver_id, status, drivers:driver_id(name, email, phone), routes:route_id(name)")
           .in("ride_date", [todayStr, tomorrowStr])
           .neq("status", "cancelled");
 
@@ -38,7 +38,6 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
 
         for (const r of rides ?? []) {
           if (!r.pickup_time) continue;
-          // Build pickup datetime (local naive, treat as UTC for simplicity)
           const pickupDt = new Date(`${r.ride_date}T${normalizeTime(r.pickup_time)}:00`);
           if (isNaN(pickupDt.getTime())) continue;
           const minsUntil = (pickupDt.getTime() - now.getTime()) / 60000;
@@ -46,9 +45,24 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
             if (loggedSet.has(`${r.id}|${w.kind}`)) continue;
             if (Math.abs(minsUntil - w.minutes) <= w.slack) {
               const driver = Array.isArray(r.drivers) ? r.drivers[0] : r.drivers;
+              const route = Array.isArray(r.routes) ? r.routes[0] : r.routes;
               const driverName = driver?.name ?? "Driver";
-              const title = `Reminder — pickup ${w.label}`;
-              const body = `${driverName}: ${r.pickup_location ?? ""} → ${r.dropoff_location ?? ""} at ${r.pickup_time}`;
+              const title = `Ride pickup ${w.label} — ${r.pickup_time}`;
+              const lines = [
+                `Driver: ${driverName}`,
+                `Date/time: ${r.ride_date} at ${r.pickup_time}`,
+                r.passenger_name ? `Passenger: ${r.passenger_name}` : null,
+                r.riders ? `Riders: ${r.riders}` : null,
+                r.department ? `Dept: ${r.department}` : null,
+                r.flight_number ? `Flight: ${r.flight_number}` : null,
+                r.phone ? `Phone: ${r.phone}` : null,
+                `Pickup: ${r.pickup_location ?? ""}${r.pickup_from ? ` (${r.pickup_from})` : ""}`,
+                `Dropoff: ${r.dropoff_location ?? ""}${r.dropoff_to ? ` (${r.dropoff_to})` : ""}`,
+                route?.name ? `Route: ${route.name}` : null,
+                r.amount ? `Fare: $${Number(r.amount).toFixed(2)}` : null,
+                r.notes ? `Notes: ${r.notes}` : null,
+              ].filter(Boolean);
+              const body = lines.join(" • ");
               await sb.from("notifications").insert({
                 user_id: r.user_id,
                 driver_id: r.driver_id,
