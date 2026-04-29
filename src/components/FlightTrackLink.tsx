@@ -7,6 +7,47 @@ import { ExternalLink, Plane } from "lucide-react";
  *
  * Returns the cleaned, uppercased code (no spaces) or null if none found.
  */
+// Map common 2-letter IATA airline codes to their 3-letter ICAO equivalents.
+// FlightAware's live tracking URLs work most reliably with the ICAO code
+// (e.g. "ASA2270" rather than "AS2270").
+const IATA_TO_ICAO: Record<string, string> = {
+  AS: "ASA", // Alaska Airlines
+  AA: "AAL", // American
+  DL: "DAL", // Delta
+  UA: "UAL", // United
+  WN: "SWA", // Southwest
+  B6: "JBU", // JetBlue
+  AC: "ACA", // Air Canada
+  AF: "AFR", // Air France
+  BA: "BAW", // British Airways
+  LH: "DLH", // Lufthansa
+  KL: "KLM", // KLM
+  QF: "QFA", // Qantas
+  NH: "ANA", // ANA
+  JL: "JAL", // Japan Airlines
+  EK: "UAE", // Emirates
+  QR: "QTR", // Qatar
+  CX: "CPA", // Cathay Pacific
+  SQ: "SIA", // Singapore
+  AM: "AMX", // Aeromexico
+  WS: "WJA", // WestJet
+  F9: "FFT", // Frontier
+  NK: "NKS", // Spirit
+  HA: "HAL", // Hawaiian
+  AY: "FIN", // Finnair
+  IB: "IBE", // Iberia
+  TK: "THY", // Turkish
+  EY: "ETD", // Etihad
+  VS: "VIR", // Virgin Atlantic
+};
+
+/** Convert a raw airline code (IATA or already ICAO) to ICAO when known. */
+function toIcao(airline: string): string {
+  const up = airline.toUpperCase();
+  if (up.length === 3) return up;
+  return IATA_TO_ICAO[up] ?? up;
+}
+
 export function extractFlightCode(text: string | null | undefined): string | null {
   if (!text) return null;
   // Match airline code: 3-letter ICAO (e.g. ASA, DAL, UAL), 2-letter IATA
@@ -16,12 +57,18 @@ export function extractFlightCode(text: string | null | undefined): string | nul
   const re = /\b([A-Z]{3}|[A-Z]{2}|[A-Z]\d|\d[A-Z])[\s-]?(\d{1,4})\b/i;
   const m = text.match(re);
   if (!m) return null;
-  return `${m[1]}${m[2]}`.toUpperCase();
+  const airline = toIcao(m[1]);
+  return `${airline}${m[2]}`.toUpperCase();
 }
 
 /** Build the FlightAware live tracking URL for a flight code. */
 export function flightAwareUrl(code: string): string {
-  const cleaned = code.replace(/\s+/g, "").toUpperCase();
+  let cleaned = code.replace(/\s+/g, "").toUpperCase();
+  // If the code starts with a known 2-letter IATA prefix, upgrade to ICAO.
+  const m = cleaned.match(/^([A-Z0-9]{2})(\d{1,4})$/);
+  if (m) {
+    cleaned = `${toIcao(m[1])}${m[2]}`;
+  }
   return `https://flightaware.com/live/flight/${encodeURIComponent(cleaned)}`;
 }
 
