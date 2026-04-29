@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Ride, RideStatus, Driver } from "@/lib/rides";
 import { toast } from "sonner";
+import { useSystem } from "@/lib/system";
 
 export const Route = createFileRoute("/calendar")({ component: CalendarPage });
 
@@ -45,6 +46,7 @@ function startOfWeek(d: Date) {
 }
 
 function CalendarInner() {
+  const { system, label } = useSystem();
   const [rides, setRides] = useState<Ride[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [view, setView] = useState<"week" | "day">("week");
@@ -53,8 +55,8 @@ function CalendarInner() {
   useEffect(() => {
     (async () => {
       const [r, d] = await Promise.all([
-        supabase.from("rides").select("*").order("ride_date").order("pickup_time"),
-        supabase.from("drivers").select("*"),
+        supabase.from("rides").select("*").eq("system", system).order("ride_date").order("pickup_time"),
+        supabase.from("drivers").select("*").eq("system", system),
       ]);
       if (r.error) toast.error(r.error.message);
       if (d.error) toast.error(d.error.message);
