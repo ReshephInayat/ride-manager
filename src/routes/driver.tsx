@@ -14,6 +14,7 @@ import { LogOut, CalendarDays, Clock, MapPin, User, Phone, Plane, CheckCircle2, 
 import type { Ride, RideStatus } from "@/lib/rides";
 import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
 import driverHero from "@/assets/driver-hero.jpg";
+import { FlightTrackLink } from "@/components/FlightTrackLink";
 
 export const Route = createFileRoute("/driver")({ component: DriverPortal });
 
