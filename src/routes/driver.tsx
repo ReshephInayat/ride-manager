@@ -159,6 +159,9 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
           <p className="text-xs text-muted-foreground text-center">
             Don't have a PIN? Ask the dispatcher to set one for you.
           </p>
+          <p className="text-xs text-center">
+            <a href="/" className="text-primary hover:underline">← Back to home</a>
+          </p>
         </form>
       </Card>
     </div>
