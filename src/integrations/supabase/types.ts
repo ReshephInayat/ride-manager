@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      drivers: {
+        Row: {
+          active: boolean
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       invoice_items: {
         Row: {
           amount: number
@@ -95,6 +128,7 @@ export type Database = {
           created_at: string
           dedupe_key: string | null
           department: string | null
+          driver_id: string | null
           dropoff_location: string | null
           dropoff_to: string | null
           id: string
@@ -114,6 +148,7 @@ export type Database = {
           created_at?: string
           dedupe_key?: string | null
           department?: string | null
+          driver_id?: string | null
           dropoff_location?: string | null
           dropoff_to?: string | null
           id?: string
@@ -133,6 +168,7 @@ export type Database = {
           created_at?: string
           dedupe_key?: string | null
           department?: string | null
+          driver_id?: string | null
           dropoff_location?: string | null
           dropoff_to?: string | null
           id?: string
@@ -148,6 +184,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "rides_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rides_route_id_fkey"
             columns: ["route_id"]
