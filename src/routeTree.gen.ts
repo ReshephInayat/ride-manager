@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DriversRouteImport } from './routes/drivers'
+import { Route as DriverRouteImport } from './routes/driver'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
@@ -30,6 +31,11 @@ const LoginRoute = LoginRouteImport.update({
 const DriversRoute = DriversRouteImport.update({
   id: '/drivers',
   path: '/drivers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DriverRoute = DriverRouteImport.update({
+  id: '/driver',
+  path: '/driver',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/dashboard': typeof DashboardRoute
+  '/driver': typeof DriverRoute
   '/drivers': typeof DriversRoute
   '/login': typeof LoginRoute
   '/invoices/$id': typeof InvoicesIdRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/dashboard': typeof DashboardRoute
+  '/driver': typeof DriverRoute
   '/drivers': typeof DriversRoute
   '/login': typeof LoginRoute
   '/invoices/$id': typeof InvoicesIdRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/dashboard': typeof DashboardRoute
+  '/driver': typeof DriverRoute
   '/drivers': typeof DriversRoute
   '/login': typeof LoginRoute
   '/invoices/$id': typeof InvoicesIdRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calendar'
     | '/dashboard'
+    | '/driver'
     | '/drivers'
     | '/login'
     | '/invoices/$id'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calendar'
     | '/dashboard'
+    | '/driver'
     | '/drivers'
     | '/login'
     | '/invoices/$id'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calendar'
     | '/dashboard'
+    | '/driver'
     | '/drivers'
     | '/login'
     | '/invoices/$id'
@@ -176,6 +188,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalendarRoute: typeof CalendarRoute
   DashboardRoute: typeof DashboardRoute
+  DriverRoute: typeof DriverRoute
   DriversRoute: typeof DriversRoute
   LoginRoute: typeof LoginRoute
   InvoicesIdRoute: typeof InvoicesIdRoute
@@ -201,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: '/drivers'
       fullPath: '/drivers'
       preLoaderRoute: typeof DriversRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/driver': {
+      id: '/driver'
+      path: '/driver'
+      fullPath: '/driver'
+      preLoaderRoute: typeof DriverRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -280,6 +300,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalendarRoute: CalendarRoute,
   DashboardRoute: DashboardRoute,
+  DriverRoute: DriverRoute,
   DriversRoute: DriversRoute,
   LoginRoute: LoginRoute,
   InvoicesIdRoute: InvoicesIdRoute,
