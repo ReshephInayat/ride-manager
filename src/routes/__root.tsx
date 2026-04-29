@@ -1,4 +1,5 @@
 import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
 import { Toaster } from "@/components/ui/sonner";
@@ -65,11 +66,13 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   return (
     <ThemeProvider>
       <AuthProvider>
         <Outlet />
-        <Toaster richColors position="top-right" />
+        {mounted && <Toaster richColors position="top-right" />}
       </AuthProvider>
     </ThemeProvider>
   );
