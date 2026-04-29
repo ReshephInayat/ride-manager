@@ -422,8 +422,9 @@ function DashboardInner() {
       .from("invoices")
       .insert({
         user_id: u.user.id,
+        system,
         invoice_number,
-        bill_to: "Puget Sound Limo Horizon Air API",
+        bill_to: label,
         period_start: dates[0],
         period_end: dates[dates.length - 1],
         subtotal,
@@ -438,7 +439,6 @@ function DashboardInner() {
 
     let itemRows: Array<{ invoice_id: string; ride_id: string | null; description: string; amount: number }>;
     if (groupByRoute) {
-      // Group by route_id; one line per route with quantity & per-ride price
       const groups = new Map<string, { name: string; price: number; rides: Ride[] }>();
       for (const r of items) {
         const key = r.route_id ?? "__unassigned__";
@@ -470,10 +470,119 @@ function DashboardInner() {
     navigate({ to: "/invoices/$id", params: { id: inv!.id } });
   };
 
-  const createByRouteInvoice = async () => {
-    const items = filtered.filter((r) => r.status === "completed");
-    if (!items.length) return toast.error("No completed rides in current view.");
-    await createInvoice(items, `By-route invoice — ${dateFilter}`, true);
+  // ----- Invoice by route: open preview dialog with date range + editable lines -----
+  const openByRouteInvoice = () => {
+    const today = new Date();
+    const first = new Date(today.getFullYear(), today.getMonth(), 1);
+    const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const start = ymd(first);
+    const end = ymd(last);
+    setInvoicePreview({
+      start,
+      end,
+      billTo: label,
+      invoiceNumber: `INV-${Date.now()}`,
+      notes: `By-route invoice (${start} → ${end})`,
+      lines: buildRouteLines(start, end),
+    });
+  };
+
+  const buildRouteLines = (start: string, end: string): InvoiceLine[] => {
+    const items = rides.filter(
+      (r) => r.status === "completed" && r.ride_date >= start && r.ride_date <= end
+    );
+    const groups = new Map<string, { name: string; price: number; rides: Ride[] }>();
+    for (const r of items) {
+      const key = r.route_id ?? "__unassigned__";
+      const route = routes.find((rt) => rt.id === r.route_id);
+      const name = route?.name ?? "Unassigned route";
+      const price = route ? Number(route.price) : Number(r.amount);
+      if (!groups.has(key)) groups.set(key, { name, price, rides: [] });
+      groups.get(key)!.rides.push(r);
+    }
+    return Array.from(groups.values()).map((g, i) => ({
+      id: `line-${i}-${Date.now()}`,
+      description: `${g.name}`,
+      quantity: g.rides.length,
+      price: g.price,
+    }));
+  };
+
+  const recalcLinesForDates = (start: string, end: string) => {
+    setInvoicePreview((p) => p ? { ...p, start, end, lines: buildRouteLines(start, end) } : p);
+  };
+
+  const saveInvoiceFromPreview = async () => {
+    if (!invoicePreview) return;
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return;
+    const lines = invoicePreview.lines.filter((l) => l.description.trim());
+    if (!lines.length) return toast.error("Add at least one line item.");
+    const subtotal = lines.reduce((s, l) => s + Number(l.quantity) * Number(l.price), 0);
+    const sales_tax_rate = 9.9;
+    const sales_tax_amount = +(subtotal * sales_tax_rate / 100).toFixed(2);
+    const total = +(subtotal + sales_tax_amount).toFixed(2);
+    const { data: inv, error } = await supabase
+      .from("invoices")
+      .insert({
+        user_id: u.user.id,
+        system,
+        invoice_number: invoicePreview.invoiceNumber,
+        bill_to: invoicePreview.billTo,
+        period_start: invoicePreview.start,
+        period_end: invoicePreview.end,
+        subtotal,
+        sales_tax_rate,
+        sales_tax_amount,
+        total,
+        notes: invoicePreview.notes || null,
+      })
+      .select()
+      .single();
+    if (error) return toast.error(error.message);
+    const itemRows = lines.map((l) => ({
+      invoice_id: inv!.id,
+      ride_id: null,
+      description: `${l.description} — ${l.quantity} ride${l.quantity === 1 ? "" : "s"} × $${Number(l.price).toFixed(2)}`,
+      amount: +(Number(l.quantity) * Number(l.price)).toFixed(2),
+    }));
+    const { error: e2 } = await supabase.from("invoice_items").insert(itemRows);
+    if (e2) return toast.error(e2.message);
+    toast.success(`Invoice ${inv!.invoice_number} created`);
+    setInvoicePreview(null);
+    navigate({ to: "/invoices/$id", params: { id: inv!.id } });
+  };
+
+  // ----- Manual ride entry (used by both systems, primary for LLC) -----
+  const addManualRide = async (form: ManualRideForm) => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return;
+    const route = routes.find((r) => r.id === form.route_id);
+    const { error } = await supabase.from("rides").insert({
+      user_id: u.user.id,
+      system,
+      ride_date: form.ride_date,
+      department: form.department || null,
+      riders: form.riders,
+      pickup_location: route?.pickup_location ?? null,
+      pickup_from: null,
+      pickup_time: form.pickup_time || null,
+      dropoff_location: route?.dropoff_location ?? null,
+      dropoff_to: null,
+      status: "pending",
+      route_id: form.route_id || null,
+      driver_id: form.driver_id || null,
+      amount: form.price,
+      passenger_name: form.passenger_name || null,
+      passenger_email: form.passenger_email || null,
+      phone: form.phone || null,
+      flight_number: form.flight_number || null,
+      notes: form.notes || null,
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Ride added");
+    setManualOpen(false);
+    await load();
   };
 
   return (
