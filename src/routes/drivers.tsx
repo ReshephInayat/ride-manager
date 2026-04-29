@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
+import { PageLoader } from "@/components/Spinner";
 import type { Driver } from "@/lib/rides";
 
 export const Route = createFileRoute("/drivers")({ component: DriversPage });
@@ -91,7 +92,7 @@ function DriversInner() {
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <PageLoader label="Loading drivers…" />
       ) : (
         <div className="space-y-3">
           {rows.map((d) => (
