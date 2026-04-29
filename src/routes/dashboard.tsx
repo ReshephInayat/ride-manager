@@ -128,7 +128,21 @@ interface InvoiceLine {
   price: number;
 }
 
-interface InvoicePreviewState {
+interface ManualRideForm {
+  ride_date: string;
+  pickup_time: string;
+  route_id: string;
+  driver_id: string;
+  riders: number;
+  price: number;
+  passenger_name: string;
+  passenger_email: string;
+  phone: string;
+  flight_number: string;
+  department: string;
+  notes: string;
+}
+
   start: string;
   end: string;
   billTo: string;
