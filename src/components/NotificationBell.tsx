@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Bell, Check } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -8,10 +8,13 @@ import {
 import { Button } from "@/components/ui/button";
 import type { AppNotification } from "@/lib/rides";
 import { useSystem } from "@/lib/system";
+import { playNotificationSound } from "@/lib/sound";
 
 export function NotificationBell() {
   const { system } = useSystem();
   const [items, setItems] = useState<AppNotification[]>([]);
+  const knownIdsRef = useRef<Set<string>>(new Set());
+  const primedRef = useRef(false);
 
   const load = async () => {
     const { data } = await supabase
@@ -20,11 +23,21 @@ export function NotificationBell() {
       .eq("system", system)
       .order("created_at", { ascending: false })
       .limit(20);
-    setItems((data as AppNotification[]) ?? []);
+    const list = (data as AppNotification[]) ?? [];
+
+    if (primedRef.current) {
+      const newOnes = list.filter((n) => !knownIdsRef.current.has(n.id));
+      if (newOnes.length > 0) playNotificationSound();
+    }
+    knownIdsRef.current = new Set(list.map((n) => n.id));
+    primedRef.current = true;
+    setItems(list);
   };
 
   useEffect(() => {
     setItems([]);
+    knownIdsRef.current = new Set();
+    primedRef.current = false;
     load();
     const ch = supabase
       .channel(`notif-bell-${system}`)
@@ -32,6 +45,7 @@ export function NotificationBell() {
       .subscribe();
     const t = setInterval(load, 60_000);
     return () => { supabase.removeChannel(ch); clearInterval(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [system]);
 
   const unread = items.filter((i) => !i.read).length;
