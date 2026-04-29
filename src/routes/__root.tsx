@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
 import { SystemProvider } from "@/lib/system";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "react-hot-toast";
 
 import appCss from "../styles.css?url";
 
