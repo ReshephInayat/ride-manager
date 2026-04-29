@@ -454,6 +454,31 @@ export type Database = {
               user_id: string
             }[]
           }
+      driver_mark_notifications_read: {
+        Args: { _driver_id: string; _pin: string }
+        Returns: undefined
+      }
+      driver_notifications: {
+        Args: { _driver_id: string; _pin: string }
+        Returns: {
+          body: string | null
+          created_at: string
+          driver_id: string | null
+          id: string
+          kind: string
+          read: boolean
+          ride_id: string | null
+          system: Database["public"]["Enums"]["workspace_system"]
+          title: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notifications"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       driver_rides: {
         Args: { _driver_id: string; _pin: string }
         Returns: {
