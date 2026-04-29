@@ -214,13 +214,13 @@ function DashboardInner() {
   }, [rides, filterStatus, filterDriver, range, search]);
 
   const completedSum = useMemo(
-    () => filtered.filter((r) => r.status === "completed").reduce((s, r) => s + Number(r.amount), 0),
+    () => filtered.filter((r) => r.status === "completed" || r.status === "no_show").reduce((s, r) => s + Number(r.amount), 0),
     [filtered]
   );
   const selectedSum = useMemo(
     () =>
       filtered
-        .filter((r) => selected.has(r.id) && r.status === "completed")
+        .filter((r) => selected.has(r.id) && (r.status === "completed" || r.status === "no_show"))
         .reduce((s, r) => s + Number(r.amount), 0),
     [filtered, selected]
   );
