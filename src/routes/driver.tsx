@@ -329,6 +329,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
       }
     }
     prevRidesRef.current = next;
+  }, [rides]);
 
   const setStatus = async (rideId: string, status: RideStatus) => {
     const { error } = await supabase.rpc("driver_update_ride_status", {
