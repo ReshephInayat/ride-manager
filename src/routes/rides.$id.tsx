@@ -271,7 +271,7 @@ function Inner() {
               <Row label="Phone" icon={<Phone className="h-3.5 w-3.5" />}>
                 {ride.phone ? <a className="text-primary underline" href={`tel:${ride.phone}`}>{ride.phone}</a> : "—"}
               </Row>
-              <Row label="Flight #" icon={<Plane className="h-3.5 w-3.5" />}>{ride.flight_number ?? "—"}</Row>
+              <Row label="Flight #" icon={<Plane className="h-3.5 w-3.5" />}><FlightTrackLink flightNumber={ride.flight_number} /></Row>
               <Row label="Driver">
                 {driver ? (
                   <span className="font-medium">{driver.name}{driver.phone && <span className="text-muted-foreground"> • {driver.phone}</span>}</span>
