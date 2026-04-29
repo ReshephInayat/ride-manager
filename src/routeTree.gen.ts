@@ -16,7 +16,10 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvoicesIndexRouteImport } from './routes/invoices.index'
+import { Route as RidesIdRouteImport } from './routes/rides.$id'
 import { Route as InvoicesIdRouteImport } from './routes/invoices.$id'
+import { Route as InvoicePublicTokenRouteImport } from './routes/invoice.public.$token'
+import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
 
 const RoutesRoute = RoutesRouteImport.update({
   id: '/routes',
@@ -53,11 +56,27 @@ const InvoicesIndexRoute = InvoicesIndexRouteImport.update({
   path: '/invoices/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RidesIdRoute = RidesIdRouteImport.update({
+  id: '/rides/$id',
+  path: '/rides/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InvoicesIdRoute = InvoicesIdRouteImport.update({
   id: '/invoices/$id',
   path: '/invoices/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InvoicePublicTokenRoute = InvoicePublicTokenRouteImport.update({
+  id: '/invoice/public/$token',
+  path: '/invoice/public/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksProcessRemindersRoute =
+  ApiPublicHooksProcessRemindersRouteImport.update({
+    id: '/api/public/hooks/process-reminders',
+    path: '/api/public/hooks/process-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -67,7 +86,10 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/routes': typeof RoutesRoute
   '/invoices/$id': typeof InvoicesIdRoute
+  '/rides/$id': typeof RidesIdRoute
   '/invoices/': typeof InvoicesIndexRoute
+  '/invoice/public/$token': typeof InvoicePublicTokenRoute
+  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -77,7 +99,10 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/routes': typeof RoutesRoute
   '/invoices/$id': typeof InvoicesIdRoute
+  '/rides/$id': typeof RidesIdRoute
   '/invoices': typeof InvoicesIndexRoute
+  '/invoice/public/$token': typeof InvoicePublicTokenRoute
+  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -88,7 +113,10 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/routes': typeof RoutesRoute
   '/invoices/$id': typeof InvoicesIdRoute
+  '/rides/$id': typeof RidesIdRoute
   '/invoices/': typeof InvoicesIndexRoute
+  '/invoice/public/$token': typeof InvoicePublicTokenRoute
+  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -100,7 +128,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/routes'
     | '/invoices/$id'
+    | '/rides/$id'
     | '/invoices/'
+    | '/invoice/public/$token'
+    | '/api/public/hooks/process-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -110,7 +141,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/routes'
     | '/invoices/$id'
+    | '/rides/$id'
     | '/invoices'
+    | '/invoice/public/$token'
+    | '/api/public/hooks/process-reminders'
   id:
     | '__root__'
     | '/'
@@ -120,7 +154,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/routes'
     | '/invoices/$id'
+    | '/rides/$id'
     | '/invoices/'
+    | '/invoice/public/$token'
+    | '/api/public/hooks/process-reminders'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -131,7 +168,10 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RoutesRoute: typeof RoutesRoute
   InvoicesIdRoute: typeof InvoicesIdRoute
+  RidesIdRoute: typeof RidesIdRoute
   InvoicesIndexRoute: typeof InvoicesIndexRoute
+  InvoicePublicTokenRoute: typeof InvoicePublicTokenRoute
+  ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -185,11 +225,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvoicesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rides/$id': {
+      id: '/rides/$id'
+      path: '/rides/$id'
+      fullPath: '/rides/$id'
+      preLoaderRoute: typeof RidesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/invoices/$id': {
       id: '/invoices/$id'
       path: '/invoices/$id'
       fullPath: '/invoices/$id'
       preLoaderRoute: typeof InvoicesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invoice/public/$token': {
+      id: '/invoice/public/$token'
+      path: '/invoice/public/$token'
+      fullPath: '/invoice/public/$token'
+      preLoaderRoute: typeof InvoicePublicTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/process-reminders': {
+      id: '/api/public/hooks/process-reminders'
+      path: '/api/public/hooks/process-reminders'
+      fullPath: '/api/public/hooks/process-reminders'
+      preLoaderRoute: typeof ApiPublicHooksProcessRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -203,17 +264,11 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RoutesRoute: RoutesRoute,
   InvoicesIdRoute: InvoicesIdRoute,
+  RidesIdRoute: RidesIdRoute,
   InvoicesIndexRoute: InvoicesIndexRoute,
+  InvoicePublicTokenRoute: InvoicePublicTokenRoute,
+  ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

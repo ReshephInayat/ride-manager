@@ -319,6 +319,28 @@ function DashboardInner() {
     toast.success("Deleted");
   };
 
+  const deleteAllFiltered = async () => {
+    if (!filtered.length) return toast.error("Nothing to delete.");
+    if (!confirm(`Delete ALL ${filtered.length} rides in current view? This cannot be undone.`)) return;
+    const ids = filtered.map((r) => r.id);
+    const { error } = await supabase.from("rides").delete().in("id", ids);
+    if (error) return toast.error(error.message);
+    setRides((rs) => rs.filter((r) => !ids.includes(r.id)));
+    setSelected(new Set());
+    toast.success(`Deleted ${ids.length} rides`);
+  };
+
+  const completeAllFiltered = async () => {
+    const targets = filtered.filter((r) => r.status !== "completed");
+    if (!targets.length) return toast.info("All filtered rides are already completed.");
+    if (!confirm(`Mark ${targets.length} ride${targets.length === 1 ? "" : "s"} as completed?`)) return;
+    const ids = targets.map((r) => r.id);
+    const { error } = await supabase.from("rides").update({ status: "completed" }).in("id", ids);
+    if (error) return toast.error(error.message);
+    setRides((rs) => rs.map((r) => (ids.includes(r.id) ? { ...r, status: "completed" } : r)));
+    toast.success(`Completed ${ids.length} rides`);
+  };
+
   const toggleSelect = (id: string) => {
     setSelected((s) => {
       const n = new Set(s);
@@ -342,10 +364,33 @@ function DashboardInner() {
     if (!items.length) return toast.error("No completed rides in current view.");
     await createInvoice(items, `Invoice — ${dateFilter}`);
   };
+  const createWeeklyInvoice = async () => {
+    const today = new Date();
+    const day = today.getDay();
+    const monDiff = (day + 6) % 7;
+    const mon = new Date(today); mon.setDate(today.getDate() - monDiff);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    const start = ymd(mon); const end = ymd(sun);
+    const items = rides.filter((r) => r.status === "completed" && r.ride_date >= start && r.ride_date <= end);
+    if (!items.length) return toast.error("No completed rides this week.");
+    await createInvoice(items, `Weekly invoice (${start} → ${end})`);
+  };
+  const createMonthlyInvoice = async () => {
+    const today = new Date();
+    const first = new Date(today.getFullYear(), today.getMonth(), 1);
+    const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const start = ymd(first); const end = ymd(last);
+    const items = rides.filter((r) => r.status === "completed" && r.ride_date >= start && r.ride_date <= end);
+    if (!items.length) return toast.error("No completed rides this month.");
+    await createInvoice(items, `Monthly invoice (${start} → ${end})`);
+  };
   const createInvoice = async (items: Ride[], notes: string) => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    const total = items.reduce((s, r) => s + Number(r.amount), 0);
+    const subtotal = items.reduce((s, r) => s + Number(r.amount), 0);
+    const sales_tax_rate = 9.9;
+    const sales_tax_amount = +(subtotal * sales_tax_rate / 100).toFixed(2);
+    const total = +(subtotal + sales_tax_amount).toFixed(2);
     const dates = items.map((r) => r.ride_date).sort();
     const invoice_number = `INV-${Date.now()}`;
     const { data: inv, error } = await supabase
@@ -356,6 +401,9 @@ function DashboardInner() {
         bill_to: "Horizon Air",
         period_start: dates[0],
         period_end: dates[dates.length - 1],
+        subtotal,
+        sales_tax_rate,
+        sales_tax_amount,
         total,
         notes,
       })
@@ -405,10 +453,10 @@ function DashboardInner() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Total rides (filtered)" value={filtered.length.toString()} />
-        <StatCard label="Completed" value={filtered.filter((r) => r.status === "completed").length.toString()} />
-        <StatCard label="Completed total" value={`$${completedSum.toFixed(2)}`} accent />
-        <StatCard label="Selected total" value={`$${selectedSum.toFixed(2)}`} />
+        <StatCard tone="blue" label="Total rides (filtered)" value={filtered.length.toString()} />
+        <StatCard tone="violet" label="Completed" value={filtered.filter((r) => r.status === "completed").length.toString()} />
+        <StatCard tone="emerald" label="Completed total" value={`$${completedSum.toFixed(2)}`} />
+        <StatCard tone="amber" label="Selected total" value={`$${selectedSum.toFixed(2)}`} />
       </div>
 
       <Card className="p-4 mb-4">
@@ -483,11 +531,20 @@ function DashboardInner() {
                 <Trash2 className="h-4 w-4 mr-1" /> Delete ({selected.size})
               </Button>
             )}
+            <Button variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40" onClick={completeAllFiltered}>
+              <CheckCircle2 className="h-4 w-4 mr-1" /> Complete all
+            </Button>
+            <Button variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40" onClick={deleteAllFiltered}>
+              <Trash2 className="h-4 w-4 mr-1" /> Delete all
+            </Button>
             <Button variant="outline" onClick={createInvoiceFromSelected}>
               <FileText className="h-4 w-4 mr-1" /> Invoice selected
             </Button>
-            <Button onClick={createFilteredInvoice}>
-              <FileText className="h-4 w-4 mr-1" /> Invoice filtered
+            <Button variant="outline" onClick={createWeeklyInvoice}>
+              <FileText className="h-4 w-4 mr-1" /> Weekly invoice
+            </Button>
+            <Button onClick={createMonthlyInvoice}>
+              <FileText className="h-4 w-4 mr-1" /> Monthly invoice
             </Button>
           </div>
         </div>
@@ -534,7 +591,15 @@ function DashboardInner() {
                           onCheckedChange={() => toggleSelect(r.id)}
                         />
                       </TableCell>
-                      <TableCell className="font-medium whitespace-nowrap">{r.ride_date}</TableCell>
+                      <TableCell className="font-medium whitespace-nowrap">
+                        <button
+                          onClick={() => navigate({ to: "/rides/$id", params: { id: r.id } })}
+                          className="text-primary hover:underline"
+                          title="Open ride details"
+                        >
+                          {r.ride_date}
+                        </button>
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">{r.department}</TableCell>
                       <TableCell>{r.riders}</TableCell>
                       <TableCell className="text-xs">
@@ -668,10 +733,17 @@ function DashboardInner() {
   );
 }
 
-function StatCard({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function StatCard({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "blue" | "emerald" | "amber" | "violet" }) {
+  const toneMap = {
+    default: "bg-card",
+    blue: "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 text-blue-900 dark:from-blue-950/40 dark:to-blue-900/30 dark:border-blue-800 dark:text-blue-100",
+    emerald: "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-900 dark:from-emerald-950/40 dark:to-emerald-900/30 dark:border-emerald-800 dark:text-emerald-100",
+    amber: "bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 text-amber-900 dark:from-amber-950/40 dark:to-amber-900/30 dark:border-amber-800 dark:text-amber-100",
+    violet: "bg-gradient-to-br from-violet-50 to-violet-100 border-violet-200 text-violet-900 dark:from-violet-950/40 dark:to-violet-900/30 dark:border-violet-800 dark:text-violet-100",
+  };
   return (
-    <Card className={`p-4 ${accent ? "border-accent/60 bg-accent/5" : ""}`}>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+    <Card className={`p-4 border ${toneMap[tone]}`}>
+      <div className="text-xs uppercase tracking-wide opacity-80">{label}</div>
       <div className="text-2xl font-bold mt-1">{value}</div>
     </Card>
   );

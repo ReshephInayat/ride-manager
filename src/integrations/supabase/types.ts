@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      driver_notification_log: {
+        Row: {
+          id: string
+          kind: string
+          ride_id: string
+          sent_at: string
+        }
+        Insert: {
+          id?: string
+          kind: string
+          ride_id: string
+          sent_at?: string
+        }
+        Update: {
+          id?: string
+          kind?: string
+          ride_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_notification_log_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           active: boolean
@@ -95,6 +124,10 @@ export type Database = {
           notes: string | null
           period_end: string | null
           period_start: string | null
+          public_token: string | null
+          sales_tax_amount: number
+          sales_tax_rate: number
+          subtotal: number
           total: number
           user_id: string
         }
@@ -106,6 +139,10 @@ export type Database = {
           notes?: string | null
           period_end?: string | null
           period_start?: string | null
+          public_token?: string | null
+          sales_tax_amount?: number
+          sales_tax_rate?: number
+          subtotal?: number
           total?: number
           user_id: string
         }
@@ -117,10 +154,103 @@ export type Database = {
           notes?: string | null
           period_end?: string | null
           period_start?: string | null
+          public_token?: string | null
+          sales_tax_amount?: number
+          sales_tax_rate?: number
+          subtotal?: number
           total?: number
           user_id?: string
         }
         Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          driver_id: string | null
+          id: string
+          kind: string
+          read: boolean
+          ride_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          kind: string
+          read?: boolean
+          ride_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          kind?: string
+          read?: boolean
+          ride_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ride_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          notified: boolean
+          remind_at: string
+          ride_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          notified?: boolean
+          remind_at: string
+          ride_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          notified?: boolean
+          remind_at?: string
+          ride_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_reminders_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rides: {
         Row: {
@@ -131,7 +261,11 @@ export type Database = {
           driver_id: string | null
           dropoff_location: string | null
           dropoff_to: string | null
+          flight_number: string | null
           id: string
+          notes: string | null
+          passenger_name: string | null
+          phone: string | null
           pickup_from: string | null
           pickup_location: string | null
           pickup_time: string | null
@@ -151,7 +285,11 @@ export type Database = {
           driver_id?: string | null
           dropoff_location?: string | null
           dropoff_to?: string | null
+          flight_number?: string | null
           id?: string
+          notes?: string | null
+          passenger_name?: string | null
+          phone?: string | null
           pickup_from?: string | null
           pickup_location?: string | null
           pickup_time?: string | null
@@ -171,7 +309,11 @@ export type Database = {
           driver_id?: string | null
           dropoff_location?: string | null
           dropoff_to?: string | null
+          flight_number?: string | null
           id?: string
+          notes?: string | null
+          passenger_name?: string | null
+          phone?: string | null
           pickup_from?: string | null
           pickup_location?: string | null
           pickup_time?: string | null
