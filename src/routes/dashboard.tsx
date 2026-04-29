@@ -999,12 +999,14 @@ function StatusBtn({
 }
 
 function ManualRideDialog({
-  open, onOpenChange, routes, drivers, onSave,
+  open, onOpenChange, routes, drivers, system, onRoutesChanged, onSave,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   routes: RouteRow[];
   drivers: Driver[];
+  system: "api" | "llc";
+  onRoutesChanged: () => Promise<unknown> | unknown;
   onSave: (form: ManualRideForm) => Promise<unknown> | unknown;
 }) {
   const today = new Date().toISOString().slice(0, 10);
@@ -1014,6 +1016,9 @@ function ManualRideDialog({
     phone: "", flight_number: "", department: "", notes: "",
   });
   const [saving, setSaving] = useState(false);
+  const [showNewRoute, setShowNewRoute] = useState(false);
+  const [newRoute, setNewRoute] = useState({ name: "", pickup_location: "", dropoff_location: "", price: 0 });
+  const [creatingRoute, setCreatingRoute] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -1023,14 +1028,54 @@ function ManualRideDialog({
         riders: 1, price: 0, passenger_name: "", passenger_email: "",
         phone: "", flight_number: "", department: "", notes: "",
       });
+      setShowNewRoute(false);
+      setNewRoute({ name: "", pickup_location: "", dropoff_location: "", price: 0 });
     }
   }, [open]);
 
   const set = (patch: Partial<ManualRideForm>) => setForm((f) => ({ ...f, ...patch }));
 
   const onRouteChange = (id: string) => {
+    if (id === "__new__") {
+      setShowNewRoute(true);
+      return;
+    }
     const r = routes.find((rt) => rt.id === id);
     set({ route_id: id, price: r ? Number(r.price) : 0 });
+  };
+
+  const createRoute = async () => {
+    if (!newRoute.name.trim()) return toast.error("Route name is required");
+    if (!newRoute.pickup_location.trim() || !newRoute.dropoff_location.trim())
+      return toast.error("Pickup and dropoff are required");
+    setCreatingRoute(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      const { data, error } = await supabase
+        .from("routes")
+        .insert({
+          user_id: u.user.id,
+          system,
+          name: newRoute.name.trim(),
+          pickup_location: newRoute.pickup_location.trim(),
+          dropoff_location: newRoute.dropoff_location.trim(),
+          price: Number(newRoute.price) || 0,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      toast.success("Route created");
+      await onRoutesChanged();
+      // Auto-select the newly created route
+      set({ route_id: data!.id, price: Number(data!.price) || 0 });
+      setShowNewRoute(false);
+      setNewRoute({ name: "", pickup_location: "", dropoff_location: "", price: 0 });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setCreatingRoute(false);
+    }
   };
 
   const submit = async () => {
@@ -1056,13 +1101,44 @@ function ManualRideDialog({
           <div className="col-span-2">
             <Label className="text-xs">Route *</Label>
             <Select value={form.route_id} onValueChange={onRouteChange}>
-              <SelectTrigger><SelectValue placeholder={routes.length ? "Pick a route" : "Add routes first"} /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={routes.length ? "Pick a route" : "Add a route"} /></SelectTrigger>
               <SelectContent>
                 {routes.map((r) => (
                   <SelectItem key={r.id} value={r.id}>{r.name} — ${Number(r.price).toFixed(2)}</SelectItem>
                 ))}
+                <SelectItem value="__new__">+ New route…</SelectItem>
               </SelectContent>
             </Select>
+            {showNewRoute && (
+              <div className="mt-3 rounded-md border bg-muted/30 p-3 space-y-2">
+                <div className="text-xs font-semibold">New route</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="col-span-2">
+                    <Label className="text-xs">Name</Label>
+                    <Input value={newRoute.name} onChange={(e) => setNewRoute((s) => ({ ...s, name: e.target.value }))} placeholder="e.g. Hotel ↔ SEA" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Pickup</Label>
+                    <Input value={newRoute.pickup_location} onChange={(e) => setNewRoute((s) => ({ ...s, pickup_location: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Dropoff</Label>
+                    <Input value={newRoute.dropoff_location} onChange={(e) => setNewRoute((s) => ({ ...s, dropoff_location: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Price ($)</Label>
+                    <Input type="number" step="0.01" value={newRoute.price} onChange={(e) => setNewRoute((s) => ({ ...s, price: parseFloat(e.target.value) || 0 }))} />
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button size="sm" variant="ghost" onClick={() => setShowNewRoute(false)} disabled={creatingRoute}>Cancel</Button>
+                  <Button size="sm" onClick={createRoute} disabled={creatingRoute}>
+                    {creatingRoute ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Plus className="h-3 w-3 mr-1" />}
+                    Create route
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <Label className="text-xs">Riders</Label>
