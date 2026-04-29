@@ -983,7 +983,7 @@ function ManualRideDialog({
   onOpenChange: (v: boolean) => void;
   routes: RouteRow[];
   drivers: Driver[];
-  onSave: (form: ManualRideForm) => Promise<void> | void;
+  onSave: (form: ManualRideForm) => Promise<unknown> | unknown;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState<ManualRideForm>({
@@ -1103,7 +1103,7 @@ function InvoicePreviewDialog({
   state: InvoicePreviewState | null;
   onChange: (v: InvoicePreviewState | null) => void;
   onRecalcDates: (start: string, end: string) => void;
-  onSave: () => Promise<void> | void;
+  onSave: () => Promise<unknown> | unknown;
 }) {
   const [saving, setSaving] = useState(false);
   if (!state) return null;
