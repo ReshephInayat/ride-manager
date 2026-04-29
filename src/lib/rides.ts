@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export type RideStatus = "pending" | "completed" | "cancelled" | "no_show";
+export type WorkspaceSystem = "api" | "llc";
 
 export interface Ride {
   id: string;
@@ -19,9 +20,11 @@ export interface Ride {
   amount: number;
   source_file: string | null;
   passenger_name?: string | null;
+  passenger_email?: string | null;
   flight_number?: string | null;
   phone?: string | null;
   notes?: string | null;
+  system?: WorkspaceSystem;
 }
 
 export interface RideReminder {
