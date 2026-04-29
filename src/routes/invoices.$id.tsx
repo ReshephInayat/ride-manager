@@ -314,7 +314,9 @@ function Inner() {
       <Card className="p-10 max-w-3xl mx-auto bg-white text-slate-900 dark:bg-white dark:text-slate-900">
         <header className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-3">
-            <img src={logoImg} alt="Puget Sound Limo" className="h-12 w-12 rounded object-cover" />
+            <div className="bg-slate-900 rounded-md px-3 py-2">
+              <img src={logoImg} alt="Puget Sound Limo" className="h-10 w-auto object-contain" />
+            </div>
             <div>
               <div className="font-bold">Puget Sound Limo</div>
               <div className="text-xs text-slate-500">(888) 977-2757</div>
