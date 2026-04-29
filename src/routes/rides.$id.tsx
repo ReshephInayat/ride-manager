@@ -19,7 +19,7 @@ import {
 import { toast } from "react-hot-toast";
 import { PageLoader } from "@/components/Spinner";
 import type { Ride, RideStatus, RouteRow, Driver, RideReminder } from "@/lib/rides";
-import { FlightTrackLink } from "@/components/FlightTrackLink";
+import { FlightTrackLink, FlightSearchButton } from "@/components/FlightTrackLink";
 
 export const Route = createFileRoute("/rides/$id")({ component: RideDetailPage });
 
