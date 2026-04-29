@@ -19,6 +19,7 @@ import { Route as InvoicesIndexRouteImport } from './routes/invoices.index'
 import { Route as RidesIdRouteImport } from './routes/rides.$id'
 import { Route as InvoicesIdRouteImport } from './routes/invoices.$id'
 import { Route as InvoicePublicTokenRouteImport } from './routes/invoice.public.$token'
+import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
 
 const RoutesRoute = RoutesRouteImport.update({
   id: '/routes',
@@ -70,6 +71,12 @@ const InvoicePublicTokenRoute = InvoicePublicTokenRouteImport.update({
   path: '/invoice/public/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksProcessRemindersRoute =
+  ApiPublicHooksProcessRemindersRouteImport.update({
+    id: '/api/public/hooks/process-reminders',
+    path: '/api/public/hooks/process-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/rides/$id': typeof RidesIdRoute
   '/invoices/': typeof InvoicesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
+  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +102,7 @@ export interface FileRoutesByTo {
   '/rides/$id': typeof RidesIdRoute
   '/invoices': typeof InvoicesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
+  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +116,7 @@ export interface FileRoutesById {
   '/rides/$id': typeof RidesIdRoute
   '/invoices/': typeof InvoicesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
+  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/rides/$id'
     | '/invoices/'
     | '/invoice/public/$token'
+    | '/api/public/hooks/process-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/rides/$id'
     | '/invoices'
     | '/invoice/public/$token'
+    | '/api/public/hooks/process-reminders'
   id:
     | '__root__'
     | '/'
@@ -145,6 +157,7 @@ export interface FileRouteTypes {
     | '/rides/$id'
     | '/invoices/'
     | '/invoice/public/$token'
+    | '/api/public/hooks/process-reminders'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -158,6 +171,7 @@ export interface RootRouteChildren {
   RidesIdRoute: typeof RidesIdRoute
   InvoicesIndexRoute: typeof InvoicesIndexRoute
   InvoicePublicTokenRoute: typeof InvoicePublicTokenRoute
+  ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -232,6 +246,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvoicePublicTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/process-reminders': {
+      id: '/api/public/hooks/process-reminders'
+      path: '/api/public/hooks/process-reminders'
+      fullPath: '/api/public/hooks/process-reminders'
+      preLoaderRoute: typeof ApiPublicHooksProcessRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -246,6 +267,7 @@ const rootRouteChildren: RootRouteChildren = {
   RidesIdRoute: RidesIdRoute,
   InvoicesIndexRoute: InvoicesIndexRoute,
   InvoicePublicTokenRoute: InvoicePublicTokenRoute,
+  ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
