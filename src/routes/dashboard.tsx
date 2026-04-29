@@ -495,17 +495,18 @@ function DashboardInner() {
   };
 
   // ----- Invoice by route: open preview dialog with date range + editable lines -----
-  const openByRouteInvoice = () => {
+  const openByRouteInvoice = async () => {
     const today = new Date();
     const first = new Date(today.getFullYear(), today.getMonth(), 1);
     const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     const start = ymd(first);
     const end = ymd(last);
+    const num = await nextInvoiceNumber();
     setInvoicePreview({
       start,
       end,
       billTo: label,
-      invoiceNumber: `INV-${Date.now()}`,
+      invoiceNumber: num,
       notes: `By-route invoice (${start} → ${end})`,
       lines: buildRouteLines(start, end),
     });
@@ -513,7 +514,7 @@ function DashboardInner() {
 
   const buildRouteLines = (start: string, end: string): InvoiceLine[] => {
     const items = rides.filter(
-      (r) => r.status === "completed" && r.ride_date >= start && r.ride_date <= end
+      (r) => (r.status === "completed" || r.status === "no_show") && r.ride_date >= start && r.ride_date <= end
     );
     const groups = new Map<string, { name: string; price: number; rides: Ride[] }>();
     for (const r of items) {
