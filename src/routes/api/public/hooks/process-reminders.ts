@@ -73,6 +73,16 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
               });
               await sb.from("driver_notification_log").insert({ ride_id: r.id, kind: w.kind });
               summary.driver_auto += 1;
+
+              // SMS to driver — currently we only send for the 1-hour window
+              if (w.kind === "hour" && driver?.phone) {
+                try {
+                  const smsBody = `${title}\n${body}`.slice(0, 600);
+                  await sendSms(driver.phone, smsBody);
+                } catch (e) {
+                  console.error("Twilio SMS failed", e);
+                }
+              }
             }
           }
         }
@@ -119,4 +129,30 @@ function normalizeTime(t: string): string {
   const hm = s.match(/^(\d{1,2}):(\d{2})/);
   if (hm) return `${hm[1].padStart(2, "0")}:${hm[2]}`;
   return "00:00";
+}
+
+// Sends SMS via the Lovable Twilio connector gateway. Silently skips when
+// Twilio is not yet linked (no env vars). Configure TWILIO_FROM_NUMBER in
+// project secrets for the sender phone number.
+async function sendSms(to: string, body: string): Promise<void> {
+  const lovableKey = process.env.LOVABLE_API_KEY;
+  const twilioKey = process.env.TWILIO_API_KEY;
+  const from = process.env.TWILIO_FROM_NUMBER;
+  if (!lovableKey || !twilioKey || !from) {
+    console.log("Twilio not configured — skipping SMS to", to);
+    return;
+  }
+  const res = await fetch("https://connector-gateway.lovable.dev/twilio/Messages.json", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${lovableKey}`,
+      "X-Connection-Api-Key": twilioKey,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ To: to, From: from, Body: body }),
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Twilio ${res.status}: ${txt}`);
+  }
 }

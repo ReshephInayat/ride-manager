@@ -637,10 +637,16 @@ function DashboardInner() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className={`grid grid-cols-2 ${system === "api" ? "md:grid-cols-6" : "md:grid-cols-4"} gap-4 mb-6`}>
         <StatCard tone="blue" label="Total rides (filtered)" value={filtered.length.toString()} />
         <StatCard tone="violet" label="Completed" value={filtered.filter((r) => r.status === "completed").length.toString()} />
         <StatCard tone="emerald" label="Completed total" value={`$${completedSum.toFixed(2)}`} />
+        {system === "api" && (
+          <>
+            <StatCard tone="rose" label="Commission (10%)" value={`$${(completedSum * 0.1).toFixed(2)}`} />
+            <StatCard tone="teal" label="Net after commission" value={`$${(completedSum * 0.9).toFixed(2)}`} />
+          </>
+        )}
         <StatCard tone="amber" label="Selected total" value={`$${selectedSum.toFixed(2)}`} />
       </div>
 
@@ -937,13 +943,15 @@ function DashboardInner() {
   );
 }
 
-function StatCard({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "blue" | "emerald" | "amber" | "violet" }) {
+function StatCard({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "blue" | "emerald" | "amber" | "violet" | "rose" | "teal" }) {
   const toneMap = {
     default: "bg-card",
     blue: "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 text-blue-900 dark:from-blue-950/40 dark:to-blue-900/30 dark:border-blue-800 dark:text-blue-100",
     emerald: "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-900 dark:from-emerald-950/40 dark:to-emerald-900/30 dark:border-emerald-800 dark:text-emerald-100",
     amber: "bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 text-amber-900 dark:from-amber-950/40 dark:to-amber-900/30 dark:border-amber-800 dark:text-amber-100",
     violet: "bg-gradient-to-br from-violet-50 to-violet-100 border-violet-200 text-violet-900 dark:from-violet-950/40 dark:to-violet-900/30 dark:border-violet-800 dark:text-violet-100",
+    rose: "bg-gradient-to-br from-rose-50 to-rose-100 border-rose-200 text-rose-900 dark:from-rose-950/40 dark:to-rose-900/30 dark:border-rose-800 dark:text-rose-100",
+    teal: "bg-gradient-to-br from-teal-50 to-teal-100 border-teal-200 text-teal-900 dark:from-teal-950/40 dark:to-teal-900/30 dark:border-teal-800 dark:text-teal-100",
   };
   return (
     <Card className={`p-4 border ${toneMap[tone]}`}>
