@@ -939,6 +939,8 @@ function DashboardInner() {
         onOpenChange={setManualOpen}
         routes={routes}
         drivers={drivers}
+        system={system}
+        onRoutesChanged={load}
         onSave={addManualRide}
       />
 
