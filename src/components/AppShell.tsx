@@ -3,8 +3,8 @@ import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
+import { Logo } from "@/components/Logo";
 import {
-  Car,
   FileText,
   LayoutDashboard,
   Settings,
@@ -35,10 +35,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="border-b bg-card">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-2 font-semibold text-lg">
-            <span className="h-8 w-8 rounded-md bg-primary text-primary-foreground grid place-items-center">
-              <Car className="h-4 w-4" />
-            </span>
-            <span>Puget Sound Limo</span>
+            <Logo />
+            <span className="hidden sm:inline">Puget Sound Limo</span>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
             {nav.map((n) => {

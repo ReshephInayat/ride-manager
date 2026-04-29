@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Download, Save, Plus, Trash2, Pencil, X, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
+import { PageLoader } from "@/components/Spinner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import QRCode from "qrcode";
-import logoImg from "@/assets/login-hero.jpg";
+import logoImg from "@/assets/logo.png";
 
 export const Route = createFileRoute("/invoices/$id")({ component: InvoiceDetail });
 
@@ -167,7 +168,7 @@ function Inner() {
 
     // Header logo (text fallback if image fails)
     try {
-      doc.addImage(logoImg, "JPEG", margin, 36, 50, 50);
+      doc.addImage(logoImg, "PNG", margin, 36, 110, 50);
     } catch { /* noop */ }
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
@@ -284,7 +285,7 @@ function Inner() {
     toast.success("Public link copied");
   };
 
-  if (loading) return <p className="text-muted-foreground">Loading…</p>;
+  if (loading) return <PageLoader label="Loading invoice…" />;
   if (!inv) return <p>Invoice not found.</p>;
 
   const issueDate = new Date(inv.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
@@ -313,7 +314,9 @@ function Inner() {
       <Card className="p-10 max-w-3xl mx-auto bg-white text-slate-900 dark:bg-white dark:text-slate-900">
         <header className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-3">
-            <img src={logoImg} alt="Puget Sound Limo" className="h-12 w-12 rounded object-cover" />
+            <div className="bg-slate-900 rounded-md px-3 py-2">
+              <img src={logoImg} alt="Puget Sound Limo" className="h-10 w-auto object-contain" />
+            </div>
             <div>
               <div className="font-bold">Puget Sound Limo</div>
               <div className="text-xs text-slate-500">(888) 977-2757</div>

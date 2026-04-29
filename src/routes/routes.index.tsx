@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
@@ -7,10 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Save } from "lucide-react";
+import { PageLoader } from "@/components/Spinner";
+import { Plus, Trash2, Save, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/routes")({ component: RoutesPage });
+export const Route = createFileRoute("/routes/")({ component: RoutesPage });
 
 interface RouteRow {
   id: string;
@@ -106,11 +107,20 @@ function RoutesInner() {
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <PageLoader label="Loading routes…" />
       ) : (
         <div className="space-y-3">
           {rows.map((r) => (
             <Card key={r.id} className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <Link
+                  to="/routes/$id"
+                  params={{ id: r.id }}
+                  className="text-sm font-semibold text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  Open route details <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                 <div className="md:col-span-3">
                   <Label className="text-xs">Route name</Label>
