@@ -66,11 +66,13 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   return (
     <ThemeProvider>
       <AuthProvider>
         <Outlet />
-        <Toaster richColors position="top-right" />
+        {mounted && <Toaster richColors position="top-right" />}
       </AuthProvider>
     </ThemeProvider>
   );
