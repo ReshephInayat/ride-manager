@@ -591,7 +591,15 @@ function DashboardInner() {
                           onCheckedChange={() => toggleSelect(r.id)}
                         />
                       </TableCell>
-                      <TableCell className="font-medium whitespace-nowrap">{r.ride_date}</TableCell>
+                      <TableCell className="font-medium whitespace-nowrap">
+                        <button
+                          onClick={() => navigate({ to: "/rides/$id", params: { id: r.id } })}
+                          className="text-primary hover:underline"
+                          title="Open ride details"
+                        >
+                          {r.ride_date}
+                        </button>
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">{r.department}</TableCell>
                       <TableCell>{r.riders}</TableCell>
                       <TableCell className="text-xs">
