@@ -10,9 +10,10 @@ import {
 } from "@/components/ui/select";
 import { toast } from "react-hot-toast";
 import { playNotificationSound } from "@/lib/sound";
-import { LogOut, CalendarDays, Clock, MapPin, User, Phone, Plane, CheckCircle2, XCircle, Hourglass, ListChecks } from "lucide-react";
+import { LogOut, CalendarDays, Clock, MapPin, User, Phone, Plane, CheckCircle2, XCircle, Hourglass, ListChecks, ShieldCheck, Sparkles, ArrowRight } from "lucide-react";
 import type { Ride, RideStatus } from "@/lib/rides";
 import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
+import driverHero from "@/assets/driver-hero.jpg";
 
 export const Route = createFileRoute("/driver")({ component: DriverPortal });
 
@@ -124,46 +125,101 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
   };
 
   return (
-    <div className="min-h-screen grid place-items-center bg-gradient-to-br from-background via-background to-muted/40 px-4">
-      <Card className="w-full max-w-md p-8 shadow-xl border-border/60">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">Driver Portal</h1>
-          <p className="text-sm text-muted-foreground">Sign in with your PIN</p>
+    <div className="min-h-screen grid lg:grid-cols-2 bg-white text-slate-900">
+      {/* Left visual panel */}
+      <div className="relative hidden lg:block overflow-hidden">
+        <img
+          src={driverHero}
+          alt="Professional chauffeur next to luxury SUV at night"
+          className="absolute inset-0 h-full w-full object-cover"
+          width={1920}
+          height={1080}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/85 via-slate-950/55 to-slate-950/30" />
+        {/* glow accents */}
+        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-amber-400/15 blur-3xl animate-pulse" />
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-sky-400/15 blur-3xl animate-pulse" style={{ animationDelay: "1.5s" }} />
+
+        <div className="relative z-10 flex flex-col justify-between h-full p-12 text-white animate-fade-in">
+          <div>
+            <div className="text-lg font-bold tracking-tight">Puget Sound Limo</div>
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/60">Driver portal</div>
+          </div>
+          <div>
+            <span className="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-white/10 ring-1 ring-white/15 mb-4">
+              <Sparkles className="h-3.5 w-3.5 text-amber-300" /> Your schedule, simplified
+            </span>
+            <h1 className="text-5xl font-bold leading-[1.05]">
+              Drive with
+              <br />
+              <span className="bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">confidence.</span>
+            </h1>
+            <p className="mt-4 text-white/85 max-w-md">
+              See today's pickups, get SMS alerts an hour before each ride, and update status with one tap.
+            </p>
+          </div>
+          <div className="text-xs text-white/50">© {new Date().getFullYear()} Puget Sound Limo</div>
         </div>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Workspace</Label>
-            <Select value={system} onValueChange={(v) => setSystem(v as WorkspaceSystem)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="api">{SYSTEM_LABELS.api}</SelectItem>
-                <SelectItem value="llc">{SYSTEM_LABELS.llc}</SelectItem>
-              </SelectContent>
-            </Select>
+      </div>
+
+      {/* Right form panel */}
+      <div className="flex items-center justify-center p-6 bg-gradient-to-br from-white via-slate-50 to-amber-50/40 relative">
+        {/* Mobile mini hero */}
+        <div className="lg:hidden absolute top-0 left-0 right-0 h-44 overflow-hidden">
+          <img src={driverHero} alt="" className="w-full h-full object-cover" width={1600} height={600} />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 to-slate-950/90" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+            <span className="text-lg font-bold tracking-tight">Puget Sound Limo</span>
+            <span className="text-[10px] uppercase tracking-[0.18em] text-white/60 mt-0.5">Driver portal</span>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="pin">PIN</Label>
-            <Input
-              id="pin"
-              inputMode="numeric"
-              autoFocus
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
-              placeholder="Enter your PIN"
-              className="h-12 text-lg tracking-widest text-center"
-            />
+        </div>
+
+        <Card className="w-full max-w-md p-7 sm:p-8 shadow-2xl border-slate-200 mt-48 lg:mt-0 animate-fade-in">
+          <div className="mb-6 flex items-center gap-3">
+            <span className="h-11 w-11 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 grid place-items-center text-white shadow-lg shadow-orange-500/20">
+              <ShieldCheck className="h-5 w-5" />
+            </span>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Driver sign in</h1>
+              <p className="text-sm text-slate-500">Enter your PIN to view your rides</p>
+            </div>
           </div>
-          <Button type="submit" className="w-full h-11" disabled={busy || !pin}>
-            {busy ? "Signing in…" : "Sign In"}
-          </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            Don't have a PIN? Ask the dispatcher to set one for you.
-          </p>
-          <p className="text-xs text-center">
-            <a href="/" className="text-primary hover:underline">← Back to home</a>
-          </p>
-        </form>
-      </Card>
+          <form onSubmit={submit} className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-slate-700 font-medium">Workspace</Label>
+              <Select value={system} onValueChange={(v) => setSystem(v as WorkspaceSystem)}>
+                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="api">{SYSTEM_LABELS.api}</SelectItem>
+                  <SelectItem value="llc">{SYSTEM_LABELS.llc}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pin" className="text-slate-700 font-medium">PIN</Label>
+              <Input
+                id="pin"
+                inputMode="numeric"
+                autoFocus
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                placeholder="••••"
+                className="h-14 text-2xl tracking-[0.5em] text-center font-semibold"
+              />
+            </div>
+            <Button type="submit" className="w-full h-12 text-base font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-orange-500/20" disabled={busy || !pin}>
+              {busy ? "Signing in…" : (<>Sign in <ArrowRight className="h-4 w-4 ml-1.5" /></>)}
+            </Button>
+            <p className="text-xs text-slate-500 text-center pt-1">
+              Don't have a PIN? Ask the dispatcher to set one for you.
+            </p>
+            <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+              <a href="/" className="text-amber-600 hover:underline font-medium">← Back to home</a>
+              <a href="/login" className="text-slate-500 hover:text-slate-700">Admin sign in →</a>
+            </div>
+          </form>
+        </Card>
+      </div>
     </div>
   );
 }
