@@ -16,6 +16,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvoicesIndexRouteImport } from './routes/invoices.index'
+import { Route as RoutesIdRouteImport } from './routes/routes.$id'
 import { Route as RidesIdRouteImport } from './routes/rides.$id'
 import { Route as InvoicesIdRouteImport } from './routes/invoices.$id'
 import { Route as InvoicePublicTokenRouteImport } from './routes/invoice.public.$token'
@@ -56,6 +57,11 @@ const InvoicesIndexRoute = InvoicesIndexRouteImport.update({
   path: '/invoices/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoutesIdRoute = RoutesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => RoutesRoute,
+} as any)
 const RidesIdRoute = RidesIdRouteImport.update({
   id: '/rides/$id',
   path: '/rides/$id',
@@ -84,9 +90,10 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/drivers': typeof DriversRoute
   '/login': typeof LoginRoute
-  '/routes': typeof RoutesRoute
+  '/routes': typeof RoutesRouteWithChildren
   '/invoices/$id': typeof InvoicesIdRoute
   '/rides/$id': typeof RidesIdRoute
+  '/routes/$id': typeof RoutesIdRoute
   '/invoices/': typeof InvoicesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
@@ -97,9 +104,10 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/drivers': typeof DriversRoute
   '/login': typeof LoginRoute
-  '/routes': typeof RoutesRoute
+  '/routes': typeof RoutesRouteWithChildren
   '/invoices/$id': typeof InvoicesIdRoute
   '/rides/$id': typeof RidesIdRoute
+  '/routes/$id': typeof RoutesIdRoute
   '/invoices': typeof InvoicesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
@@ -111,9 +119,10 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/drivers': typeof DriversRoute
   '/login': typeof LoginRoute
-  '/routes': typeof RoutesRoute
+  '/routes': typeof RoutesRouteWithChildren
   '/invoices/$id': typeof InvoicesIdRoute
   '/rides/$id': typeof RidesIdRoute
+  '/routes/$id': typeof RoutesIdRoute
   '/invoices/': typeof InvoicesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/routes'
     | '/invoices/$id'
     | '/rides/$id'
+    | '/routes/$id'
     | '/invoices/'
     | '/invoice/public/$token'
     | '/api/public/hooks/process-reminders'
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/routes'
     | '/invoices/$id'
     | '/rides/$id'
+    | '/routes/$id'
     | '/invoices'
     | '/invoice/public/$token'
     | '/api/public/hooks/process-reminders'
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/routes'
     | '/invoices/$id'
     | '/rides/$id'
+    | '/routes/$id'
     | '/invoices/'
     | '/invoice/public/$token'
     | '/api/public/hooks/process-reminders'
@@ -166,7 +178,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   DriversRoute: typeof DriversRoute
   LoginRoute: typeof LoginRoute
-  RoutesRoute: typeof RoutesRoute
+  RoutesRoute: typeof RoutesRouteWithChildren
   InvoicesIdRoute: typeof InvoicesIdRoute
   RidesIdRoute: typeof RidesIdRoute
   InvoicesIndexRoute: typeof InvoicesIndexRoute
@@ -225,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvoicesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/routes/$id': {
+      id: '/routes/$id'
+      path: '/$id'
+      fullPath: '/routes/$id'
+      preLoaderRoute: typeof RoutesIdRouteImport
+      parentRoute: typeof RoutesRoute
+    }
     '/rides/$id': {
       id: '/rides/$id'
       path: '/rides/$id'
@@ -256,13 +275,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface RoutesRouteChildren {
+  RoutesIdRoute: typeof RoutesIdRoute
+}
+
+const RoutesRouteChildren: RoutesRouteChildren = {
+  RoutesIdRoute: RoutesIdRoute,
+}
+
+const RoutesRouteWithChildren =
+  RoutesRoute._addFileChildren(RoutesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalendarRoute: CalendarRoute,
   DashboardRoute: DashboardRoute,
   DriversRoute: DriversRoute,
   LoginRoute: LoginRoute,
-  RoutesRoute: RoutesRoute,
+  RoutesRoute: RoutesRouteWithChildren,
   InvoicesIdRoute: InvoicesIdRoute,
   RidesIdRoute: RidesIdRoute,
   InvoicesIndexRoute: InvoicesIndexRoute,
