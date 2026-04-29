@@ -335,9 +335,20 @@ function DashboardInner() {
 
   const setDriver = async (ride: Ride, driverIdRaw: string) => {
     const driver_id = driverIdRaw === "__none__" ? null : driverIdRaw;
+    const previous = ride.driver_id ?? null;
     setRides((rs) => rs.map((r) => (r.id === ride.id ? { ...r, driver_id } : r)));
     const { error } = await supabase.from("rides").update({ driver_id }).eq("id", ride.id);
-    if (error) { toast.error(error.message); load(); }
+    if (error) { toast.error(error.message); load(); return; }
+    if (driver_id && driver_id !== previous) {
+      // Fire-and-forget SMS + admin notification for the assignment.
+      fetch("/api/public/hooks/notify-assignment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ride_id: ride.id }),
+      }).then((r) => r.json()).then((j) => {
+        if (j?.sms?.sent) toast.success("Driver notified by SMS");
+      }).catch(() => { /* silent */ });
+    }
   };
 
   const deleteRide = async (id: string) => {

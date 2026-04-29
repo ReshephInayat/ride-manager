@@ -84,6 +84,8 @@ function Inner() {
   const save = async () => {
     if (!ride) return;
     setSaving(true);
+    const previousDriver = ride.driver_id ?? null;
+    const newDriver = draft.driver_id ?? null;
     const patch = {
       ride_date: draft.ride_date,
       pickup_time: draft.pickup_time,
@@ -97,7 +99,7 @@ function Inner() {
       flight_number: draft.flight_number ?? null,
       phone: draft.phone ?? null,
       notes: draft.notes ?? null,
-      driver_id: draft.driver_id ?? null,
+      driver_id: newDriver,
       route_id: draft.route_id ?? null,
       amount: draft.amount ?? 0,
       status: draft.status ?? "pending",
@@ -107,6 +109,15 @@ function Inner() {
     if (error) return toast.error(error.message);
     toast.success("Ride updated");
     setEditing(false);
+    if (newDriver && newDriver !== previousDriver) {
+      fetch("/api/public/hooks/notify-assignment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ride_id: ride.id }),
+      }).then((r) => r.json()).then((j) => {
+        if (j?.sms?.sent) toast.success("Driver notified by SMS");
+      }).catch(() => { /* silent */ });
+    }
     load();
   };
 
