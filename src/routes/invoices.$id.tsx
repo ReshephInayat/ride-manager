@@ -36,6 +36,17 @@ interface Item { id: string; description: string; amount: number; }
 
 const TAX_RATE = 9.9;
 
+// If a line description was generated as "... — Total rides: N × $P", pull
+// out the ride count so we can show it as the line Quantity. Falls back to 1.
+function extractQuantity(desc: string): number {
+  const m = desc.match(/Total rides:\s*(\d+)/i);
+  if (m) {
+    const n = parseInt(m[1], 10);
+    if (!isNaN(n) && n > 0) return n;
+  }
+  return 1;
+}
+
 function InvoiceDetail() {
   return (
     <RequireAuth>
