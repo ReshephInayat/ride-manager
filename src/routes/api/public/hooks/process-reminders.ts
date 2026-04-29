@@ -21,7 +21,7 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
 
         const { data: rides } = await sb
           .from("rides")
-          .select("id, user_id, ride_date, pickup_time, pickup_location, pickup_from, dropoff_location, dropoff_to, department, riders, passenger_name, flight_number, phone, notes, amount, driver_id, status, drivers:driver_id(name, email, phone), routes:route_id(name)")
+          .select("id, user_id, system, ride_date, pickup_time, pickup_location, pickup_from, dropoff_location, dropoff_to, department, riders, passenger_name, flight_number, phone, notes, amount, driver_id, status, drivers:driver_id(name, email, phone), routes:route_id(name)")
           .in("ride_date", [todayStr, tomorrowStr])
           .neq("status", "cancelled");
 
@@ -65,6 +65,7 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
               const body = lines.join(" • ");
               await sb.from("notifications").insert({
                 user_id: r.user_id,
+                system: r.system ?? "api",
                 driver_id: r.driver_id,
                 ride_id: r.id,
                 kind: `auto_${w.kind}`,
@@ -97,6 +98,7 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
         for (const m of due ?? []) {
           await sb.from("notifications").insert({
             user_id: m.user_id,
+            system: m.system ?? "api",
             ride_id: m.ride_id,
             kind: "manual",
             title: m.message ?? "Ride reminder",

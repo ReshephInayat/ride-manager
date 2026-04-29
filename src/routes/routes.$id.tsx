@@ -64,7 +64,7 @@ function Inner() {
   const stats = useMemo(() => {
     const counts: Record<RideStatus | "all", number> = {
       all: rides.length,
-      pending: 0, completed: 0, cancelled: 0, no_show: 0,
+      pending: 0, arrived: 0, completed: 0, cancelled: 0, no_show: 0,
     };
     let earned = 0;
     for (const r of rides) {

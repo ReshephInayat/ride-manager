@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type RideStatus = "pending" | "completed" | "cancelled" | "no_show";
+export type RideStatus = "pending" | "arrived" | "completed" | "cancelled" | "no_show";
 export type WorkspaceSystem = "api" | "llc";
 
 export interface Ride {
@@ -65,6 +65,8 @@ export interface Driver {
   email: string | null;
   notes: string | null;
   active: boolean;
+  login_pin?: string | null;
+  system?: WorkspaceSystem;
 }
 
 // Find best matching route by checking if pickup/dropoff text contains the

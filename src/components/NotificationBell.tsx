@@ -7,28 +7,32 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import type { AppNotification } from "@/lib/rides";
+import { useSystem } from "@/lib/system";
 
 export function NotificationBell() {
+  const { system } = useSystem();
   const [items, setItems] = useState<AppNotification[]>([]);
 
   const load = async () => {
     const { data } = await supabase
       .from("notifications")
       .select("*")
+      .eq("system", system)
       .order("created_at", { ascending: false })
       .limit(20);
     setItems((data as AppNotification[]) ?? []);
   };
 
   useEffect(() => {
+    setItems([]);
     load();
     const ch = supabase
-      .channel("notif-bell")
+      .channel(`notif-bell-${system}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, () => load())
       .subscribe();
     const t = setInterval(load, 60_000);
     return () => { supabase.removeChannel(ch); clearInterval(t); };
-  }, []);
+  }, [system]);
 
   const unread = items.filter((i) => !i.read).length;
 

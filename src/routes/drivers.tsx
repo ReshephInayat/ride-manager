@@ -57,6 +57,7 @@ function DriversInner() {
         email: d.email,
         notes: d.notes,
         active: d.active,
+        login_pin: d.login_pin?.trim() ? d.login_pin.trim() : null,
       })
       .eq("id", d.id);
     if (error) toast.error(error.message);
@@ -84,11 +85,14 @@ function DriversInner() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold">Drivers</h1>
           <p className="text-muted-foreground mt-1">
             <span className="font-medium text-foreground">{label}</span> — manage drivers for this workspace.
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Drivers sign in at <code className="bg-muted px-1 py-0.5 rounded">/driver</code> using the Login PIN you set below.
           </p>
         </div>
         <Button onClick={add}><Plus className="h-4 w-4 mr-1" /> Add driver</Button>
@@ -109,11 +113,19 @@ function DriversInner() {
                   <Label className="text-xs">Phone</Label>
                   <Input value={d.phone ?? ""} onChange={(e) => update(d.id, { phone: e.target.value })} />
                 </div>
-                <div className="md:col-span-3">
+                <div className="md:col-span-2">
                   <Label className="text-xs">Email</Label>
                   <Input value={d.email ?? ""} onChange={(e) => update(d.id, { email: e.target.value })} />
                 </div>
                 <div className="md:col-span-2">
+                  <Label className="text-xs">Login PIN</Label>
+                  <Input
+                    placeholder="e.g. 1234"
+                    value={d.login_pin ?? ""}
+                    onChange={(e) => update(d.id, { login_pin: e.target.value.replace(/\D/g, "").slice(0, 8) })}
+                  />
+                </div>
+                <div className="md:col-span-1">
                   <Label className="text-xs">Notes</Label>
                   <Input value={d.notes ?? ""} onChange={(e) => update(d.id, { notes: e.target.value })} />
                 </div>
