@@ -9,12 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RoutesRouteImport } from './routes/routes'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DriversRouteImport } from './routes/drivers'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RoutesIndexRouteImport } from './routes/routes.index'
 import { Route as InvoicesIndexRouteImport } from './routes/invoices.index'
 import { Route as RoutesIdRouteImport } from './routes/routes.$id'
 import { Route as RidesIdRouteImport } from './routes/rides.$id'
@@ -22,11 +22,6 @@ import { Route as InvoicesIdRouteImport } from './routes/invoices.$id'
 import { Route as InvoicePublicTokenRouteImport } from './routes/invoice.public.$token'
 import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
 
-const RoutesRoute = RoutesRouteImport.update({
-  id: '/routes',
-  path: '/routes',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -50,6 +45,11 @@ const CalendarRoute = CalendarRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoutesIndexRoute = RoutesIndexRouteImport.update({
+  id: '/routes/',
+  path: '/routes/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InvoicesIndexRoute = InvoicesIndexRouteImport.update({
@@ -90,11 +90,11 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/drivers': typeof DriversRoute
   '/login': typeof LoginRoute
-  '/routes': typeof RoutesRouteWithChildren
   '/invoices/$id': typeof InvoicesIdRoute
   '/rides/$id': typeof RidesIdRoute
   '/routes/$id': typeof RoutesIdRoute
   '/invoices/': typeof InvoicesIndexRoute
+  '/routes/': typeof RoutesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
 }
@@ -104,11 +104,11 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/drivers': typeof DriversRoute
   '/login': typeof LoginRoute
-  '/routes': typeof RoutesRouteWithChildren
   '/invoices/$id': typeof InvoicesIdRoute
   '/rides/$id': typeof RidesIdRoute
   '/routes/$id': typeof RoutesIdRoute
   '/invoices': typeof InvoicesIndexRoute
+  '/routes': typeof RoutesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
 }
@@ -119,11 +119,11 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/drivers': typeof DriversRoute
   '/login': typeof LoginRoute
-  '/routes': typeof RoutesRouteWithChildren
   '/invoices/$id': typeof InvoicesIdRoute
   '/rides/$id': typeof RidesIdRoute
   '/routes/$id': typeof RoutesIdRoute
   '/invoices/': typeof InvoicesIndexRoute
+  '/routes/': typeof RoutesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
 }
@@ -135,11 +135,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/drivers'
     | '/login'
-    | '/routes'
     | '/invoices/$id'
     | '/rides/$id'
     | '/routes/$id'
     | '/invoices/'
+    | '/routes/'
     | '/invoice/public/$token'
     | '/api/public/hooks/process-reminders'
   fileRoutesByTo: FileRoutesByTo
@@ -149,11 +149,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/drivers'
     | '/login'
-    | '/routes'
     | '/invoices/$id'
     | '/rides/$id'
     | '/routes/$id'
     | '/invoices'
+    | '/routes'
     | '/invoice/public/$token'
     | '/api/public/hooks/process-reminders'
   id:
@@ -163,11 +163,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/drivers'
     | '/login'
-    | '/routes'
     | '/invoices/$id'
     | '/rides/$id'
     | '/routes/$id'
     | '/invoices/'
+    | '/routes/'
     | '/invoice/public/$token'
     | '/api/public/hooks/process-reminders'
   fileRoutesById: FileRoutesById
@@ -178,23 +178,16 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   DriversRoute: typeof DriversRoute
   LoginRoute: typeof LoginRoute
-  RoutesRoute: typeof RoutesRouteWithChildren
   InvoicesIdRoute: typeof InvoicesIdRoute
   RidesIdRoute: typeof RidesIdRoute
   InvoicesIndexRoute: typeof InvoicesIndexRoute
+  RoutesIndexRoute: typeof RoutesIndexRoute
   InvoicePublicTokenRoute: typeof InvoicePublicTokenRoute
   ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/routes': {
-      id: '/routes'
-      path: '/routes'
-      fullPath: '/routes'
-      preLoaderRoute: typeof RoutesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -228,6 +221,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/routes/': {
+      id: '/routes/'
+      path: '/routes'
+      fullPath: '/routes/'
+      preLoaderRoute: typeof RoutesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/invoices/': {
@@ -275,27 +275,16 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface RoutesRouteChildren {
-  RoutesIdRoute: typeof RoutesIdRoute
-}
-
-const RoutesRouteChildren: RoutesRouteChildren = {
-  RoutesIdRoute: RoutesIdRoute,
-}
-
-const RoutesRouteWithChildren =
-  RoutesRoute._addFileChildren(RoutesRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalendarRoute: CalendarRoute,
   DashboardRoute: DashboardRoute,
   DriversRoute: DriversRoute,
   LoginRoute: LoginRoute,
-  RoutesRoute: RoutesRouteWithChildren,
   InvoicesIdRoute: InvoicesIdRoute,
   RidesIdRoute: RidesIdRoute,
   InvoicesIndexRoute: InvoicesIndexRoute,
+  RoutesIndexRoute: RoutesIndexRoute,
   InvoicePublicTokenRoute: InvoicePublicTokenRoute,
   ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
 }

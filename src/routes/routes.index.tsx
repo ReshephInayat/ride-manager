@@ -11,7 +11,7 @@ import { PageLoader } from "@/components/Spinner";
 import { Plus, Trash2, Save, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/routes")({ component: RoutesPage });
+export const Route = createFileRoute("/routes/")({ component: RoutesPage });
 
 interface RouteRow {
   id: string;
