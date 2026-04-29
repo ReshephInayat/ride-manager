@@ -143,6 +143,7 @@ interface ManualRideForm {
   notes: string;
 }
 
+interface InvoicePreviewState {
   start: string;
   end: string;
   billTo: string;
