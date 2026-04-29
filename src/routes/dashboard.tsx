@@ -976,5 +976,242 @@ function StatusBtn({
   );
 }
 
+function ManualRideDialog({
+  open, onOpenChange, routes, drivers, onSave,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  routes: RouteRow[];
+  drivers: Driver[];
+  onSave: (form: ManualRideForm) => Promise<void> | void;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [form, setForm] = useState<ManualRideForm>({
+    ride_date: today, pickup_time: "", route_id: "", driver_id: "",
+    riders: 1, price: 0, passenger_name: "", passenger_email: "",
+    phone: "", flight_number: "", department: "", notes: "",
+  });
+  const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (open) {
+      setForm({
+        ride_date: new Date().toISOString().slice(0, 10),
+        pickup_time: "", route_id: "", driver_id: "",
+        riders: 1, price: 0, passenger_name: "", passenger_email: "",
+        phone: "", flight_number: "", department: "", notes: "",
+      });
+    }
+  }, [open]);
+
+  const set = (patch: Partial<ManualRideForm>) => setForm((f) => ({ ...f, ...patch }));
+
+  const onRouteChange = (id: string) => {
+    const r = routes.find((rt) => rt.id === id);
+    set({ route_id: id, price: r ? Number(r.price) : 0 });
+  };
+
+  const submit = async () => {
+    if (!form.ride_date) return toast.error("Date is required");
+    if (!form.route_id) return toast.error("Route is required");
+    setSaving(true);
+    try { await onSave(form); } finally { setSaving(false); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Add ride</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs">Date *</Label>
+            <Input type="date" value={form.ride_date} onChange={(e) => set({ ride_date: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-xs">Pickup time</Label>
+            <Input type="time" value={form.pickup_time} onChange={(e) => set({ pickup_time: e.target.value })} />
+          </div>
+          <div className="col-span-2">
+            <Label className="text-xs">Route *</Label>
+            <Select value={form.route_id} onValueChange={onRouteChange}>
+              <SelectTrigger><SelectValue placeholder={routes.length ? "Pick a route" : "Add routes first"} /></SelectTrigger>
+              <SelectContent>
+                {routes.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>{r.name} — ${Number(r.price).toFixed(2)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Riders</Label>
+            <Input type="number" min={1} value={form.riders} onChange={(e) => set({ riders: parseInt(e.target.value) || 1 })} />
+          </div>
+          <div>
+            <Label className="text-xs">Price ($)</Label>
+            <Input type="number" step="0.01" value={form.price} onChange={(e) => set({ price: parseFloat(e.target.value) || 0 })} />
+          </div>
+          <div>
+            <Label className="text-xs">Driver</Label>
+            <Select value={form.driver_id || "__none__"} onValueChange={(v) => set({ driver_id: v === "__none__" ? "" : v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">— Unassigned —</SelectItem>
+                {drivers.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Department</Label>
+            <Input value={form.department} onChange={(e) => set({ department: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-xs">Passenger name</Label>
+            <Input value={form.passenger_name} onChange={(e) => set({ passenger_name: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-xs">Passenger email</Label>
+            <Input type="email" value={form.passenger_email} onChange={(e) => set({ passenger_email: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-xs">Phone</Label>
+            <Input value={form.phone} onChange={(e) => set({ phone: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-xs">Flight #</Label>
+            <Input value={form.flight_number} onChange={(e) => set({ flight_number: e.target.value })} />
+          </div>
+          <div className="col-span-2">
+            <Label className="text-xs">Notes</Label>
+            <Textarea rows={2} value={form.notes} onChange={(e) => set({ notes: e.target.value })} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
+          <Button onClick={submit} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+            Add ride
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function InvoicePreviewDialog({
+  state, onChange, onRecalcDates, onSave,
+}: {
+  state: InvoicePreviewState | null;
+  onChange: (v: InvoicePreviewState | null) => void;
+  onRecalcDates: (start: string, end: string) => void;
+  onSave: () => Promise<void> | void;
+}) {
+  const [saving, setSaving] = useState(false);
+  if (!state) return null;
+  const subtotal = state.lines.reduce((s, l) => s + Number(l.quantity || 0) * Number(l.price || 0), 0);
+  const tax = +(subtotal * 9.9 / 100).toFixed(2);
+  const total = +(subtotal + tax).toFixed(2);
+
+  const updateLine = (id: string, patch: Partial<InvoiceLine>) =>
+    onChange({ ...state, lines: state.lines.map((l) => l.id === id ? { ...l, ...patch } : l) });
+  const removeLine = (id: string) =>
+    onChange({ ...state, lines: state.lines.filter((l) => l.id !== id) });
+  const addLine = () =>
+    onChange({ ...state, lines: [...state.lines, { id: `new-${Date.now()}-${Math.random()}`, description: "", quantity: 1, price: 0 }] });
+
+  const submit = async () => {
+    setSaving(true);
+    try { await onSave(); } finally { setSaving(false); }
+  };
+
+  return (
+    <Dialog open={!!state} onOpenChange={(o) => !o && onChange(null)}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Invoice preview — by route</DialogTitle></DialogHeader>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <Label className="text-xs">From</Label>
+            <Input type="date" value={state.start} onChange={(e) => onRecalcDates(e.target.value, state.end)} />
+          </div>
+          <div>
+            <Label className="text-xs">To</Label>
+            <Input type="date" value={state.end} onChange={(e) => onRecalcDates(state.start, e.target.value)} />
+          </div>
+          <div>
+            <Label className="text-xs">Invoice #</Label>
+            <Input value={state.invoiceNumber} onChange={(e) => onChange({ ...state, invoiceNumber: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-xs">Bill to</Label>
+            <Input value={state.billTo} onChange={(e) => onChange({ ...state, billTo: e.target.value })} />
+          </div>
+        </div>
+
+        <div className="border rounded-md mt-2">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Description</TableHead>
+                <TableHead className="w-24 text-right">Quantity</TableHead>
+                <TableHead className="w-28 text-right">Price</TableHead>
+                <TableHead className="w-28 text-right">Amount</TableHead>
+                <TableHead className="w-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {state.lines.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No completed rides in this date range. Add a manual line below.</TableCell></TableRow>
+              ) : state.lines.map((l) => (
+                <TableRow key={l.id}>
+                  <TableCell>
+                    <Input value={l.description} onChange={(e) => updateLine(l.id, { description: e.target.value })} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Input type="number" min={1} value={l.quantity} onChange={(e) => updateLine(l.id, { quantity: parseInt(e.target.value) || 0 })} className="text-right" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Input type="number" step="0.01" value={l.price} onChange={(e) => updateLine(l.id, { price: parseFloat(e.target.value) || 0 })} className="text-right" />
+                  </TableCell>
+                  <TableCell className="text-right font-semibold">
+                    ${(Number(l.quantity || 0) * Number(l.price || 0)).toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    <button onClick={() => removeLine(l.id)} className="h-7 w-7 grid place-items-center rounded text-rose-600 hover:bg-rose-50">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <Button variant="outline" size="sm" onClick={addLine} className="w-fit">
+          <Plus className="h-4 w-4 mr-1" /> Add line item
+        </Button>
+
+        <div>
+          <Label className="text-xs">Notes</Label>
+          <Textarea rows={2} value={state.notes} onChange={(e) => onChange({ ...state, notes: e.target.value })} />
+        </div>
+
+        <div className="flex justify-end">
+          <div className="w-64 text-sm space-y-1">
+            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Sales tax (9.9%)</span><span>${tax.toFixed(2)}</span></div>
+            <div className="flex justify-between text-base font-bold border-t pt-1"><span>Total</span><span>${total.toFixed(2)}</span></div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onChange(null)} disabled={saving}>Cancel</Button>
+          <Button onClick={submit} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+            Create invoice
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
