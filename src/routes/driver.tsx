@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "react-hot-toast";
-import { Logo } from "@/components/Logo";
+import { playNotificationSound } from "@/lib/sound";
 import { LogOut, CalendarDays, Clock, MapPin, User, Phone, Plane, CheckCircle2, XCircle, Hourglass, ListChecks } from "lucide-react";
 import type { Ride, RideStatus } from "@/lib/rides";
 import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
@@ -74,12 +74,9 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
   return (
     <div className="min-h-screen grid place-items-center bg-gradient-to-br from-background via-background to-muted/40 px-4">
       <Card className="w-full max-w-md p-8 shadow-xl border-border/60">
-        <div className="flex items-center gap-3 mb-6">
-          <Logo />
-          <div>
-            <h1 className="text-2xl font-bold">Driver Portal</h1>
-            <p className="text-sm text-muted-foreground">Sign in with your PIN</p>
-          </div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Driver Portal</h1>
+          <p className="text-sm text-muted-foreground">Sign in with your PIN</p>
         </div>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-2">
@@ -178,12 +175,9 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <Logo />
-            <div className="min-w-0">
-              <div className="font-semibold truncate">{session.name}</div>
-              <div className="text-xs text-muted-foreground truncate">{SYSTEM_LABELS[session.system]}</div>
-            </div>
+          <div className="min-w-0">
+            <div className="font-semibold truncate">{session.name}</div>
+            <div className="text-xs text-muted-foreground truncate">{SYSTEM_LABELS[session.system]}</div>
           </div>
           <Button variant="ghost" size="sm" onClick={onLogout}>
             <LogOut className="h-4 w-4 mr-1" /> Sign out
