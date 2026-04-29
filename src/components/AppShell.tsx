@@ -97,6 +97,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Button>
           </div>
         </div>
+        {/* Mobile/tablet workspace switcher */}
+        <div className="lg:hidden border-t px-6 py-2 flex items-center gap-2 bg-secondary/30">
+          <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+          <Select value={system} onValueChange={(v) => setSystem(v as WorkspaceSystem)}>
+            <SelectTrigger className="h-8 flex-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="api">{SYSTEM_LABELS.api}</SelectItem>
+              <SelectItem value="llc">{SYSTEM_LABELS.llc}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <nav className="md:hidden flex border-t overflow-x-auto">
           {nav.map((n) => {
             const active = loc.pathname.startsWith(n.to);
