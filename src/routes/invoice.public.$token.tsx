@@ -92,14 +92,19 @@ function PublicInvoice() {
               <th className="text-right py-2 font-semibold w-24">Amount</th>
             </tr></thead>
             <tbody>
-              {items.map((i) => (
-                <tr key={i.id} className="border-b border-slate-200">
-                  <td className="py-3">{i.description}</td>
-                  <td className="text-right">1</td>
-                  <td className="text-right">${Number(i.amount).toFixed(2)}</td>
-                  <td className="text-right">${Number(i.amount).toFixed(2)}</td>
-                </tr>
-              ))}
+              {items.map((i) => {
+                const m = i.description.match(/Total rides:\s*(\d+)/i);
+                const qty = m ? Math.max(1, parseInt(m[1], 10)) : 1;
+                const unit = qty > 0 ? Number(i.amount) / qty : Number(i.amount);
+                return (
+                  <tr key={i.id} className="border-b border-slate-200">
+                    <td className="py-3">{i.description}</td>
+                    <td className="text-right">{qty}</td>
+                    <td className="text-right">${unit.toFixed(2)}</td>
+                    <td className="text-right">${Number(i.amount).toFixed(2)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
