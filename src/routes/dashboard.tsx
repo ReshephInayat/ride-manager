@@ -122,13 +122,14 @@ interface PreviewRow {
 }
 
 function DashboardInner() {
+  const { system, label } = useSystem();
   const [rides, setRides] = useState<Ride[]>([]);
   const [routes, setRoutes] = useState<RouteRow[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | RideStatus>("all");
-  const [filterDriver, setFilterDriver] = useState<string>("all"); // "all" | driverId | "unassigned"
+  const [filterDriver, setFilterDriver] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [customMonth, setCustomMonth] = useState<string>("");
   const [search, setSearch] = useState("");
@@ -136,15 +137,17 @@ function DashboardInner() {
   const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
   const [previewFile, setPreviewFile] = useState<string>("");
   const [importing, setImporting] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [invoicePreview, setInvoicePreview] = useState<InvoicePreviewState | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   const load = async () => {
     setLoading(true);
     const [rRes, routeRes, dRes] = await Promise.all([
-      supabase.from("rides").select("*").order("ride_date", { ascending: true }).order("pickup_time", { ascending: true }),
-      supabase.from("routes").select("*").order("created_at"),
-      supabase.from("drivers").select("*").order("created_at"),
+      supabase.from("rides").select("*").eq("system", system).order("ride_date", { ascending: true }).order("pickup_time", { ascending: true }),
+      supabase.from("routes").select("*").eq("system", system).order("created_at"),
+      supabase.from("drivers").select("*").eq("system", system).order("created_at"),
     ]);
     if (rRes.error) toast.error(rRes.error.message);
     if (routeRes.error) toast.error(routeRes.error.message);
@@ -152,10 +155,11 @@ function DashboardInner() {
     setRides((rRes.data as Ride[]) ?? []);
     setRoutes((routeRes.data as RouteRow[]) ?? []);
     setDrivers((dRes.data as Driver[]) ?? []);
+    setSelected(new Set());
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [system]);
 
   const range = useMemo(() => getDateRange(dateFilter, customMonth), [dateFilter, customMonth]);
 
