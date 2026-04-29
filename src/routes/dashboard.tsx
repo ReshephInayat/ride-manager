@@ -165,8 +165,8 @@ function DashboardInner() {
       if (range.end && r.ride_date > range.end) return false;
       if (q) {
         const hay = [
-          r.department, r.pickup_from, r.pickup_to_safe(),
-          r.pickup_location, r.dropoff_location, r.dropoff_to, r.pickup_time,
+          r.department, r.pickup_from, r.dropoff_to,
+          r.pickup_location, r.dropoff_location, r.pickup_time,
         ].filter(Boolean).join(" ").toLowerCase();
         if (!hay.includes(q)) return false;
       }
