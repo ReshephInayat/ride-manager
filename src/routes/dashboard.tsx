@@ -568,7 +568,7 @@ function DashboardInner() {
     const itemRows = lines.map((l) => ({
       invoice_id: inv!.id,
       ride_id: null,
-      description: `${l.description} — ${l.quantity} ride${l.quantity === 1 ? "" : "s"} × $${Number(l.price).toFixed(2)}`,
+      description: `${l.description} — Total rides: ${l.quantity} × $${Number(l.price).toFixed(2)}`,
       amount: +(Number(l.quantity) * Number(l.price)).toFixed(2),
     }));
     const { error: e2 } = await supabase.from("invoice_items").insert(itemRows);
