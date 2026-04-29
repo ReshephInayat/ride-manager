@@ -107,11 +107,20 @@ function RoutesInner() {
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <PageLoader label="Loading routes…" />
       ) : (
         <div className="space-y-3">
           {rows.map((r) => (
             <Card key={r.id} className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <Link
+                  to="/routes/$id"
+                  params={{ id: r.id }}
+                  className="text-sm font-semibold text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  Open route details <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                 <div className="md:col-span-3">
                   <Label className="text-xs">Route name</Label>
