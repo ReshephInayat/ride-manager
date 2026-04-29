@@ -531,11 +531,20 @@ function DashboardInner() {
                 <Trash2 className="h-4 w-4 mr-1" /> Delete ({selected.size})
               </Button>
             )}
+            <Button variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40" onClick={completeAllFiltered}>
+              <CheckCircle2 className="h-4 w-4 mr-1" /> Complete all
+            </Button>
+            <Button variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40" onClick={deleteAllFiltered}>
+              <Trash2 className="h-4 w-4 mr-1" /> Delete all
+            </Button>
             <Button variant="outline" onClick={createInvoiceFromSelected}>
               <FileText className="h-4 w-4 mr-1" /> Invoice selected
             </Button>
-            <Button onClick={createFilteredInvoice}>
-              <FileText className="h-4 w-4 mr-1" /> Invoice filtered
+            <Button variant="outline" onClick={createWeeklyInvoice}>
+              <FileText className="h-4 w-4 mr-1" /> Weekly invoice
+            </Button>
+            <Button onClick={createMonthlyInvoice}>
+              <FileText className="h-4 w-4 mr-1" /> Monthly invoice
             </Button>
           </div>
         </div>
