@@ -57,6 +57,7 @@ function DriversInner() {
         email: d.email,
         notes: d.notes,
         active: d.active,
+        login_pin: d.login_pin?.trim() ? d.login_pin.trim() : null,
       })
       .eq("id", d.id);
     if (error) toast.error(error.message);
