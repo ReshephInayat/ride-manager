@@ -364,10 +364,33 @@ function DashboardInner() {
     if (!items.length) return toast.error("No completed rides in current view.");
     await createInvoice(items, `Invoice — ${dateFilter}`);
   };
+  const createWeeklyInvoice = async () => {
+    const today = new Date();
+    const day = today.getDay();
+    const monDiff = (day + 6) % 7;
+    const mon = new Date(today); mon.setDate(today.getDate() - monDiff);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    const start = ymd(mon); const end = ymd(sun);
+    const items = rides.filter((r) => r.status === "completed" && r.ride_date >= start && r.ride_date <= end);
+    if (!items.length) return toast.error("No completed rides this week.");
+    await createInvoice(items, `Weekly invoice (${start} → ${end})`);
+  };
+  const createMonthlyInvoice = async () => {
+    const today = new Date();
+    const first = new Date(today.getFullYear(), today.getMonth(), 1);
+    const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const start = ymd(first); const end = ymd(last);
+    const items = rides.filter((r) => r.status === "completed" && r.ride_date >= start && r.ride_date <= end);
+    if (!items.length) return toast.error("No completed rides this month.");
+    await createInvoice(items, `Monthly invoice (${start} → ${end})`);
+  };
   const createInvoice = async (items: Ride[], notes: string) => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    const total = items.reduce((s, r) => s + Number(r.amount), 0);
+    const subtotal = items.reduce((s, r) => s + Number(r.amount), 0);
+    const sales_tax_rate = 9.9;
+    const sales_tax_amount = +(subtotal * sales_tax_rate / 100).toFixed(2);
+    const total = +(subtotal + sales_tax_amount).toFixed(2);
     const dates = items.map((r) => r.ride_date).sort();
     const invoice_number = `INV-${Date.now()}`;
     const { data: inv, error } = await supabase
@@ -378,6 +401,9 @@ function DashboardInner() {
         bill_to: "Horizon Air",
         period_start: dates[0],
         period_end: dates[dates.length - 1],
+        subtotal,
+        sales_tax_rate,
+        sales_tax_amount,
         total,
         notes,
       })
