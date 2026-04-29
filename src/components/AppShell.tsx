@@ -5,6 +5,7 @@ import { useSystem, SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Logo } from "@/components/Logo";
+import { ChatAssistant } from "@/components/ChatAssistant";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -127,6 +128,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
       </header>
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">{children}</main>
+      <ChatAssistant />
     </div>
   );
 }
