@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, Loader2, FileText, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
+import { Upload, Loader2, FileText, CheckCircle2, XCircle, MinusCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { autoMatchRoute, callParser, type Ride, type RideStatus, type RouteRow } from "@/lib/rides";
 import { useNavigate } from "@tanstack/react-router";
@@ -47,13 +47,56 @@ const statusMeta: Record<RideStatus, { label: string; className: string; icon: t
   no_show: { label: "No Show", className: "bg-amber-100 text-amber-800 border-amber-200", icon: MinusCircle },
 };
 
+type DateFilter = "all" | "today" | "tomorrow" | "yesterday" | "this_week" | "this_month" | "custom_month";
+
+function ymd(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function getDateRange(filter: DateFilter, customMonth: string): { start?: string; end?: string } {
+  const now = new Date();
+  const today = ymd(now);
+  if (filter === "today") return { start: today, end: today };
+  if (filter === "tomorrow") {
+    const t = new Date(now); t.setDate(t.getDate() + 1);
+    return { start: ymd(t), end: ymd(t) };
+  }
+  if (filter === "yesterday") {
+    const t = new Date(now); t.setDate(t.getDate() - 1);
+    return { start: ymd(t), end: ymd(t) };
+  }
+  if (filter === "this_week") {
+    const day = now.getDay(); // 0=Sun
+    const diffToMon = (day + 6) % 7;
+    const mon = new Date(now); mon.setDate(now.getDate() - diffToMon);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    return { start: ymd(mon), end: ymd(sun) };
+  }
+  if (filter === "this_month") {
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { start: ymd(first), end: ymd(last) };
+  }
+  if (filter === "custom_month" && customMonth) {
+    const [y, m] = customMonth.split("-").map(Number);
+    const first = new Date(y, m - 1, 1);
+    const last = new Date(y, m, 0);
+    return { start: ymd(first), end: ymd(last) };
+  }
+  return {};
+}
+
 function DashboardInner() {
   const [rides, setRides] = useState<Ride[]>([]);
   const [routes, setRoutes] = useState<RouteRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | RideStatus>("all");
-  const [filterMonth, setFilterMonth] = useState<string>(""); // YYYY-MM
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [customMonth, setCustomMonth] = useState<string>("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -75,13 +118,16 @@ function DashboardInner() {
     load();
   }, []);
 
+  const range = useMemo(() => getDateRange(dateFilter, customMonth), [dateFilter, customMonth]);
+
   const filtered = useMemo(() => {
     return rides.filter((r) => {
       if (filterStatus !== "all" && r.status !== filterStatus) return false;
-      if (filterMonth && !r.ride_date.startsWith(filterMonth)) return false;
+      if (range.start && r.ride_date < range.start) return false;
+      if (range.end && r.ride_date > range.end) return false;
       return true;
     });
-  }, [rides, filterStatus, filterMonth]);
+  }, [rides, filterStatus, range]);
 
   const completedSum = useMemo(
     () => filtered.filter((r) => r.status === "completed").reduce((s, r) => s + Number(r.amount), 0),
@@ -133,9 +179,17 @@ function DashboardInner() {
         };
       });
 
-      const { error } = await supabase.from("rides").insert(rows);
+      // Upsert with onConflict on (user_id, dedupe_key) — duplicates are skipped.
+      const { data: inserted, error } = await supabase
+        .from("rides")
+        .upsert(rows, { onConflict: "user_id,dedupe_key", ignoreDuplicates: true })
+        .select("id");
       if (error) throw error;
-      toast.success(`Imported ${rows.length} rides.`);
+      const added = inserted?.length ?? 0;
+      const skipped = rows.length - added;
+      toast.success(
+        `Imported ${added} rides${skipped > 0 ? ` • Skipped ${skipped} duplicate${skipped === 1 ? "" : "s"}` : ""}.`
+      );
       await load();
     } catch (e) {
       toast.error((e as Error).message);
@@ -170,6 +224,26 @@ function DashboardInner() {
     }
   };
 
+  const deleteRide = async (id: string) => {
+    if (!confirm("Delete this ride? This cannot be undone.")) return;
+    const { error } = await supabase.from("rides").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    setRides((rs) => rs.filter((r) => r.id !== id));
+    setSelected((s) => { const n = new Set(s); n.delete(id); return n; });
+    toast.success("Ride deleted");
+  };
+
+  const deleteSelected = async () => {
+    const ids = Array.from(selected);
+    if (!ids.length) return toast.error("Select rides to delete.");
+    if (!confirm(`Delete ${ids.length} ride${ids.length === 1 ? "" : "s"}?`)) return;
+    const { error } = await supabase.from("rides").delete().in("id", ids);
+    if (error) return toast.error(error.message);
+    setRides((rs) => rs.filter((r) => !selected.has(r.id)));
+    setSelected(new Set());
+    toast.success("Deleted");
+  };
+
   const toggleSelect = (id: string) => {
     setSelected((s) => {
       const n = new Set(s);
@@ -179,6 +253,11 @@ function DashboardInner() {
     });
   };
 
+  const toggleSelectAll = () => {
+    if (selected.size === filtered.length) setSelected(new Set());
+    else setSelected(new Set(filtered.map((r) => r.id)));
+  };
+
   const createInvoiceFromSelected = async () => {
     const ids = Array.from(selected);
     const items = filtered.filter((r) => ids.includes(r.id) && r.status === "completed");
@@ -186,13 +265,10 @@ function DashboardInner() {
     await createInvoice(items, "Selected rides invoice");
   };
 
-  const createMonthlyInvoice = async () => {
-    if (!filterMonth) return toast.error("Pick a month filter first.");
-    const items = rides.filter(
-      (r) => r.status === "completed" && r.ride_date.startsWith(filterMonth)
-    );
-    if (!items.length) return toast.error("No completed rides in that month.");
-    await createInvoice(items, `Monthly invoice — ${filterMonth}`);
+  const createFilteredInvoice = async () => {
+    const items = filtered.filter((r) => r.status === "completed");
+    if (!items.length) return toast.error("No completed rides in current view.");
+    await createInvoice(items, `Invoice — ${dateFilter}`);
   };
 
   const createInvoice = async (items: Ride[], notes: string) => {
@@ -268,6 +344,32 @@ function DashboardInner() {
       <Card className="p-4 mb-4">
         <div className="flex flex-wrap items-end gap-3">
           <div>
+            <label className="text-xs text-muted-foreground block mb-1">Date</label>
+            <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>
+              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All time</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="tomorrow">Tomorrow</SelectItem>
+                <SelectItem value="yesterday">Yesterday</SelectItem>
+                <SelectItem value="this_week">This week</SelectItem>
+                <SelectItem value="this_month">This month</SelectItem>
+                <SelectItem value="custom_month">Pick month…</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {dateFilter === "custom_month" && (
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Month</label>
+              <Input
+                type="month"
+                value={customMonth}
+                onChange={(e) => setCustomMonth(e.target.value)}
+                className="w-44"
+              />
+            </div>
+          )}
+          <div>
             <label className="text-xs text-muted-foreground block mb-1">Status</label>
             <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as never)}>
               <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
@@ -280,21 +382,17 @@ function DashboardInner() {
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Month</label>
-            <Input
-              type="month"
-              value={filterMonth}
-              onChange={(e) => setFilterMonth(e.target.value)}
-              className="w-44"
-            />
-          </div>
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex gap-2 flex-wrap">
+            {selected.size > 0 && (
+              <Button variant="destructive" onClick={deleteSelected}>
+                <Trash2 className="h-4 w-4 mr-1" /> Delete ({selected.size})
+              </Button>
+            )}
             <Button variant="outline" onClick={createInvoiceFromSelected}>
               <FileText className="h-4 w-4 mr-1" /> Invoice selected
             </Button>
-            <Button onClick={createMonthlyInvoice}>
-              <FileText className="h-4 w-4 mr-1" /> Invoice this month
+            <Button onClick={createFilteredInvoice}>
+              <FileText className="h-4 w-4 mr-1" /> Invoice filtered
             </Button>
           </div>
         </div>
@@ -305,7 +403,12 @@ function DashboardInner() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-10"></TableHead>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={filtered.length > 0 && selected.size === filtered.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Riders</TableHead>
@@ -314,13 +417,14 @@ function DashboardInner() {
                 <TableHead>Route / Price</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                   No rides yet. Upload a PDF to get started.
                 </TableCell></TableRow>
               ) : (
@@ -373,6 +477,15 @@ function DashboardInner() {
                         <Badge className={`mt-1 ${meta.className} border`} variant="outline">{meta.label}</Badge>
                       </TableCell>
                       <TableCell className="text-right font-semibold">${Number(r.amount).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => deleteRide(r.id)}
+                          title="Delete ride"
+                          className="h-7 w-7 grid place-items-center rounded border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </TableCell>
                     </TableRow>
                   );
                 })

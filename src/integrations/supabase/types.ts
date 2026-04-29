@@ -93,6 +93,7 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          dedupe_key: string | null
           department: string | null
           dropoff_location: string | null
           dropoff_to: string | null
@@ -111,6 +112,7 @@ export type Database = {
         Insert: {
           amount?: number
           created_at?: string
+          dedupe_key?: string | null
           department?: string | null
           dropoff_location?: string | null
           dropoff_to?: string | null
@@ -129,6 +131,7 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
+          dedupe_key?: string | null
           department?: string | null
           dropoff_location?: string | null
           dropoff_to?: string | null
