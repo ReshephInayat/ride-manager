@@ -12,7 +12,7 @@ import { PageLoader } from "@/components/Spinner";
 import {
   ArrowLeft, Save, Trash2, MapPin, DollarSign, Car as CarIcon, FileText, CheckCircle2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import type { Ride, RouteRow, RideStatus } from "@/lib/rides";
 
 export const Route = createFileRoute("/routes/$id")({ component: RouteDetailPage });

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/Spinner";
 import { Plus, Trash2, Save, ExternalLink } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import { useSystem } from "@/lib/system";
 
 export const Route = createFileRoute("/routes/")({ component: RoutesPage });

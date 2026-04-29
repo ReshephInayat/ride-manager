@@ -16,7 +16,7 @@ import {
   ArrowLeft, Pencil, Save, X, Trash2, BellPlus, Clock, MapPin,
   User as UserIcon, Plane, Phone, FileText as FileTextIcon, Bell, CheckCircle2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import { PageLoader } from "@/components/Spinner";
 import type { Ride, RideStatus, RouteRow, Driver, RideReminder } from "@/lib/rides";
 

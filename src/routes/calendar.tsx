@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Ride, RideStatus, Driver } from "@/lib/rides";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import { useSystem } from "@/lib/system";
 
 export const Route = createFileRoute("/calendar")({ component: CalendarPage });

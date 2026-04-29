@@ -43,7 +43,7 @@ import {
   Search,
   Plus,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import {
   autoMatchRoute,
   callParser,
@@ -236,7 +236,7 @@ function DashboardInner() {
     try {
       const parsed = await callParser(file);
       if (!parsed?.length) {
-        toast.warning("No rides found in the PDF.");
+        toast("No rides found in the PDF.");
         return;
       }
       setPreviewFile(file.name);
@@ -372,7 +372,7 @@ function DashboardInner() {
 
   const completeAllFiltered = async () => {
     const targets = filtered.filter((r) => r.status !== "completed");
-    if (!targets.length) return toast.info("All filtered rides are already completed.");
+    if (!targets.length) return toast("All filtered rides are already completed.");
     if (!confirm(`Mark ${targets.length} ride${targets.length === 1 ? "" : "s"} as completed?`)) return;
     const ids = targets.map((r) => r.id);
     const { error } = await supabase.from("rides").update({ status: "completed" }).in("id", ids);

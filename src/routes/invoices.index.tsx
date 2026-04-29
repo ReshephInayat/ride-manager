@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trash2, FileText } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import { PageLoader } from "@/components/Spinner";
 import { useSystem } from "@/lib/system";
 
