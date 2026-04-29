@@ -106,7 +106,7 @@ function CalendarInner() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold">Calendar</h1>
-          <p className="text-muted-foreground mt-1">Upcoming rides at a glance, color-coded by status.</p>
+          <p className="text-muted-foreground mt-1"><span className="font-medium text-foreground">{systemLabel}</span> — color-coded by status.</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex rounded-md border overflow-hidden">
