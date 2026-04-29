@@ -1,9 +1,13 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
+import { useSystem, SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Logo } from "@/components/Logo";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import {
   FileText,
   LayoutDashboard,
@@ -13,6 +17,7 @@ import {
   CalendarDays,
   Sun,
   Moon,
+  Building2,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -27,17 +32,30 @@ const nav = [
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
   const { theme, toggle } = useTheme();
+  const { system, setSystem, label } = useSystem();
   const loc = useLocation();
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b bg-card">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-2 font-semibold text-lg">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-3">
+          <Link to="/dashboard" className="flex items-center gap-2 font-semibold text-lg min-w-0">
             <Logo />
-            <span className="hidden sm:inline">Puget Sound Limo</span>
+            <span className="hidden sm:inline truncate">{label}</span>
           </Link>
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-md bg-secondary/60 border">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <Select value={system} onValueChange={(v) => setSystem(v as WorkspaceSystem)}>
+              <SelectTrigger className="h-8 w-56 border-0 bg-transparent focus:ring-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="api">{SYSTEM_LABELS.api}</SelectItem>
+                <SelectItem value="llc">{SYSTEM_LABELS.llc}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <nav className="hidden md:flex items-center gap-1">
             {nav.map((n) => {
               const active = loc.pathname.startsWith(n.to);
