@@ -393,15 +393,17 @@ function DashboardInner() {
     else setSelected(new Set(filtered.map((r) => r.id)));
   };
 
+  const isBillable = (s: RideStatus) => s === "completed" || s === "no_show";
+
   const createInvoiceFromSelected = async () => {
     const ids = Array.from(selected);
-    const items = filtered.filter((r) => ids.includes(r.id) && r.status === "completed");
-    if (!items.length) return toast.error("Select at least one completed ride.");
+    const items = filtered.filter((r) => ids.includes(r.id) && isBillable(r.status));
+    if (!items.length) return toast.error("Select at least one completed or no-show ride.");
     await createInvoice(items, "Selected rides invoice");
   };
   const createFilteredInvoice = async () => {
-    const items = filtered.filter((r) => r.status === "completed");
-    if (!items.length) return toast.error("No completed rides in current view.");
+    const items = filtered.filter((r) => isBillable(r.status));
+    if (!items.length) return toast.error("No billable rides in current view.");
     await createInvoice(items, `Invoice — ${dateFilter}`);
   };
   const createWeeklyInvoice = async () => {
@@ -411,17 +413,17 @@ function DashboardInner() {
     const mon = new Date(today); mon.setDate(today.getDate() - monDiff);
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
     const start = ymd(mon); const end = ymd(sun);
-    const items = rides.filter((r) => r.status === "completed" && r.ride_date >= start && r.ride_date <= end);
-    if (!items.length) return toast.error("No completed rides this week.");
-    await createInvoice(items, `Weekly invoice (${start} → ${end})`);
+    const items = rides.filter((r) => isBillable(r.status) && r.ride_date >= start && r.ride_date <= end);
+    if (!items.length) return toast.error("No billable rides this week.");
+    await createInvoice(items, `Weekly invoice (${start} → ${end})`, true);
   };
   const createMonthlyInvoice = async () => {
     const today = new Date();
     const first = new Date(today.getFullYear(), today.getMonth(), 1);
     const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     const start = ymd(first); const end = ymd(last);
-    const items = rides.filter((r) => r.status === "completed" && r.ride_date >= start && r.ride_date <= end);
-    if (!items.length) return toast.error("No completed rides this month.");
+    const items = rides.filter((r) => isBillable(r.status) && r.ride_date >= start && r.ride_date <= end);
+    if (!items.length) return toast.error("No billable rides this month.");
     await createInvoice(items, `Monthly invoice (${start} → ${end})`);
   };
   const nextInvoiceNumber = async (): Promise<string> => {
