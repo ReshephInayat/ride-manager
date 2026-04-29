@@ -14,7 +14,7 @@ import { PageLoader } from "@/components/Spinner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import QRCode from "qrcode";
-import logoImg from "@/assets/login-hero.jpg";
+import logoImg from "@/assets/logo.png";
 
 export const Route = createFileRoute("/invoices/$id")({ component: InvoiceDetail });
 
