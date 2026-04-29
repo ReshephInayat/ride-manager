@@ -14,7 +14,7 @@ import { PageLoader } from "@/components/Spinner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import QRCode from "qrcode";
-import logoImg from "@/assets/logo.png";
+
 
 export const Route = createFileRoute("/invoices/$id")({ component: InvoiceDetail });
 
@@ -166,17 +166,14 @@ function Inner() {
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 48;
 
-    // Header logo (text fallback if image fails)
-    try {
-      doc.addImage(logoImg, "PNG", margin, 36, 110, 50);
-    } catch { /* noop */ }
-    doc.setFontSize(11);
+    // Header brand (text only — logo intentionally removed)
+    doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
-    doc.text("Puget Sound Limo", margin + 60, 56);
+    doc.text("Puget Sound Limo", margin, 56);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(120);
-    doc.text("(888) 977-2757", margin + 60, 70);
+    doc.text("(888) 977-2757", margin, 70);
 
     doc.setTextColor(0);
     doc.setFontSize(11);
@@ -313,14 +310,9 @@ function Inner() {
       {/* On-screen rendition matching the reference invoice */}
       <Card className="p-10 max-w-3xl mx-auto bg-white text-slate-900 dark:bg-white dark:text-slate-900">
         <header className="flex items-start justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-slate-900 rounded-md px-3 py-2">
-              <img src={logoImg} alt="Puget Sound Limo" className="h-10 w-auto object-contain" />
-            </div>
-            <div>
-              <div className="font-bold">Puget Sound Limo</div>
-              <div className="text-xs text-slate-500">(888) 977-2757</div>
-            </div>
+          <div>
+            <div className="font-bold text-lg">Puget Sound Limo</div>
+            <div className="text-xs text-slate-500">(888) 977-2757</div>
           </div>
           <div className="text-right text-sm">
             <div className="font-bold">Invoice #{inv.invoice_number}</div>
