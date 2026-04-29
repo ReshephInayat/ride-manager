@@ -22,6 +22,12 @@ export function ChatAssistant() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, open]);
 
+  // Clear chat when workspace system switches so contexts don't mix
+  useEffect(() => {
+    setMessages([]);
+    setInput("");
+  }, [system]);
+
   if (!user) return null;
 
   const send = async () => {
