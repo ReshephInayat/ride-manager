@@ -46,7 +46,7 @@ function startOfWeek(d: Date) {
 }
 
 function CalendarInner() {
-  const { system, label } = useSystem();
+  const { system, label: systemLabel } = useSystem();
   const [rides, setRides] = useState<Ride[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [view, setView] = useState<"week" | "day">("week");
@@ -63,7 +63,7 @@ function CalendarInner() {
       setRides((r.data as Ride[]) ?? []);
       setDrivers((d.data as Driver[]) ?? []);
     })();
-  }, []);
+  }, [system]);
 
   const driverMap = useMemo(
     () => Object.fromEntries(drivers.map((d) => [d.id, d.name])),
