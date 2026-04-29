@@ -110,11 +110,19 @@ function DriversInner() {
                   <Label className="text-xs">Phone</Label>
                   <Input value={d.phone ?? ""} onChange={(e) => update(d.id, { phone: e.target.value })} />
                 </div>
-                <div className="md:col-span-3">
+                <div className="md:col-span-2">
                   <Label className="text-xs">Email</Label>
                   <Input value={d.email ?? ""} onChange={(e) => update(d.id, { email: e.target.value })} />
                 </div>
                 <div className="md:col-span-2">
+                  <Label className="text-xs">Login PIN</Label>
+                  <Input
+                    placeholder="e.g. 1234"
+                    value={d.login_pin ?? ""}
+                    onChange={(e) => update(d.id, { login_pin: e.target.value.replace(/\D/g, "").slice(0, 8) })}
+                  />
+                </div>
+                <div className="md:col-span-1">
                   <Label className="text-xs">Notes</Label>
                   <Input value={d.notes ?? ""} onChange={(e) => update(d.id, { notes: e.target.value })} />
                 </div>
