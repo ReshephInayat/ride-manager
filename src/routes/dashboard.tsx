@@ -710,6 +710,7 @@ function DashboardInner() {
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="arrived">Arrived</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
                 <SelectItem value="no_show">No show</SelectItem>
