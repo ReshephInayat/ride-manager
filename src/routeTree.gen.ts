@@ -58,9 +58,9 @@ const InvoicesIndexRoute = InvoicesIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const RoutesIdRoute = RoutesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => RoutesRoute,
+  id: '/routes/$id',
+  path: '/routes/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const RidesIdRoute = RidesIdRouteImport.update({
   id: '/rides/$id',
@@ -180,6 +180,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   InvoicesIdRoute: typeof InvoicesIdRoute
   RidesIdRoute: typeof RidesIdRoute
+  RoutesIdRoute: typeof RoutesIdRoute
   InvoicesIndexRoute: typeof InvoicesIndexRoute
   RoutesIndexRoute: typeof RoutesIndexRoute
   InvoicePublicTokenRoute: typeof InvoicePublicTokenRoute
@@ -239,10 +240,10 @@ declare module '@tanstack/react-router' {
     }
     '/routes/$id': {
       id: '/routes/$id'
-      path: '/$id'
+      path: '/routes/$id'
       fullPath: '/routes/$id'
       preLoaderRoute: typeof RoutesIdRouteImport
-      parentRoute: typeof RoutesRoute
+      parentRoute: typeof rootRouteImport
     }
     '/rides/$id': {
       id: '/rides/$id'
@@ -283,6 +284,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   InvoicesIdRoute: InvoicesIdRoute,
   RidesIdRoute: RidesIdRoute,
+  RoutesIdRoute: RoutesIdRoute,
   InvoicesIndexRoute: InvoicesIndexRoute,
   RoutesIndexRoute: RoutesIndexRoute,
   InvoicePublicTokenRoute: InvoicePublicTokenRoute,
