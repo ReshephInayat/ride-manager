@@ -2,6 +2,7 @@ import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/r
 import { useEffect, useState } from "react";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
+import { SystemProvider } from "@/lib/system";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -70,10 +71,12 @@ function RootComponent() {
   useEffect(() => setMounted(true), []);
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <Outlet />
-        {mounted && <Toaster richColors position="top-right" />}
-      </AuthProvider>
+      <SystemProvider>
+        <AuthProvider>
+          <Outlet />
+          {mounted && <Toaster richColors position="top-right" />}
+        </AuthProvider>
+      </SystemProvider>
     </ThemeProvider>
   );
 }

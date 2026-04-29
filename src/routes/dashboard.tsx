@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -39,6 +41,7 @@ import {
   MinusCircle,
   Trash2,
   Search,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -50,6 +53,7 @@ import {
   type Driver,
 } from "@/lib/rides";
 import { useNavigate } from "@tanstack/react-router";
+import { useSystem } from "@/lib/system";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -117,14 +121,46 @@ interface PreviewRow {
   data: Partial<Ride> & { ride_date: string };
 }
 
+interface InvoiceLine {
+  id: string;
+  description: string;
+  quantity: number;
+  price: number;
+}
+
+interface ManualRideForm {
+  ride_date: string;
+  pickup_time: string;
+  route_id: string;
+  driver_id: string;
+  riders: number;
+  price: number;
+  passenger_name: string;
+  passenger_email: string;
+  phone: string;
+  flight_number: string;
+  department: string;
+  notes: string;
+}
+
+interface InvoicePreviewState {
+  start: string;
+  end: string;
+  billTo: string;
+  invoiceNumber: string;
+  notes: string;
+  lines: InvoiceLine[];
+}
+
 function DashboardInner() {
+  const { system, label } = useSystem();
   const [rides, setRides] = useState<Ride[]>([]);
   const [routes, setRoutes] = useState<RouteRow[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | RideStatus>("all");
-  const [filterDriver, setFilterDriver] = useState<string>("all"); // "all" | driverId | "unassigned"
+  const [filterDriver, setFilterDriver] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [customMonth, setCustomMonth] = useState<string>("");
   const [search, setSearch] = useState("");
@@ -132,15 +168,17 @@ function DashboardInner() {
   const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
   const [previewFile, setPreviewFile] = useState<string>("");
   const [importing, setImporting] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [invoicePreview, setInvoicePreview] = useState<InvoicePreviewState | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   const load = async () => {
     setLoading(true);
     const [rRes, routeRes, dRes] = await Promise.all([
-      supabase.from("rides").select("*").order("ride_date", { ascending: true }).order("pickup_time", { ascending: true }),
-      supabase.from("routes").select("*").order("created_at"),
-      supabase.from("drivers").select("*").order("created_at"),
+      supabase.from("rides").select("*").eq("system", system).order("ride_date", { ascending: true }).order("pickup_time", { ascending: true }),
+      supabase.from("routes").select("*").eq("system", system).order("created_at"),
+      supabase.from("drivers").select("*").eq("system", system).order("created_at"),
     ]);
     if (rRes.error) toast.error(rRes.error.message);
     if (routeRes.error) toast.error(routeRes.error.message);
@@ -148,10 +186,11 @@ function DashboardInner() {
     setRides((rRes.data as Ride[]) ?? []);
     setRoutes((routeRes.data as RouteRow[]) ?? []);
     setDrivers((dRes.data as Driver[]) ?? []);
+    setSelected(new Set());
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [system]);
 
   const range = useMemo(() => getDateRange(dateFilter, customMonth), [dateFilter, customMonth]);
 
@@ -243,6 +282,7 @@ function DashboardInner() {
         );
         return {
           user_id: u.user!.id,
+          system,
           ride_date: p.ride_date!,
           department: p.department ?? null,
           riders: p.riders ?? 1,
@@ -397,8 +437,9 @@ function DashboardInner() {
       .from("invoices")
       .insert({
         user_id: u.user.id,
+        system,
         invoice_number,
-        bill_to: "Puget Sound Limo Horizon Air API",
+        bill_to: label,
         period_start: dates[0],
         period_end: dates[dates.length - 1],
         subtotal,
@@ -413,7 +454,6 @@ function DashboardInner() {
 
     let itemRows: Array<{ invoice_id: string; ride_id: string | null; description: string; amount: number }>;
     if (groupByRoute) {
-      // Group by route_id; one line per route with quantity & per-ride price
       const groups = new Map<string, { name: string; price: number; rides: Ride[] }>();
       for (const r of items) {
         const key = r.route_id ?? "__unassigned__";
@@ -445,10 +485,119 @@ function DashboardInner() {
     navigate({ to: "/invoices/$id", params: { id: inv!.id } });
   };
 
-  const createByRouteInvoice = async () => {
-    const items = filtered.filter((r) => r.status === "completed");
-    if (!items.length) return toast.error("No completed rides in current view.");
-    await createInvoice(items, `By-route invoice — ${dateFilter}`, true);
+  // ----- Invoice by route: open preview dialog with date range + editable lines -----
+  const openByRouteInvoice = () => {
+    const today = new Date();
+    const first = new Date(today.getFullYear(), today.getMonth(), 1);
+    const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const start = ymd(first);
+    const end = ymd(last);
+    setInvoicePreview({
+      start,
+      end,
+      billTo: label,
+      invoiceNumber: `INV-${Date.now()}`,
+      notes: `By-route invoice (${start} → ${end})`,
+      lines: buildRouteLines(start, end),
+    });
+  };
+
+  const buildRouteLines = (start: string, end: string): InvoiceLine[] => {
+    const items = rides.filter(
+      (r) => r.status === "completed" && r.ride_date >= start && r.ride_date <= end
+    );
+    const groups = new Map<string, { name: string; price: number; rides: Ride[] }>();
+    for (const r of items) {
+      const key = r.route_id ?? "__unassigned__";
+      const route = routes.find((rt) => rt.id === r.route_id);
+      const name = route?.name ?? "Unassigned route";
+      const price = route ? Number(route.price) : Number(r.amount);
+      if (!groups.has(key)) groups.set(key, { name, price, rides: [] });
+      groups.get(key)!.rides.push(r);
+    }
+    return Array.from(groups.values()).map((g, i) => ({
+      id: `line-${i}-${Date.now()}`,
+      description: `${g.name}`,
+      quantity: g.rides.length,
+      price: g.price,
+    }));
+  };
+
+  const recalcLinesForDates = (start: string, end: string) => {
+    setInvoicePreview((p) => p ? { ...p, start, end, lines: buildRouteLines(start, end) } : p);
+  };
+
+  const saveInvoiceFromPreview = async () => {
+    if (!invoicePreview) return;
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return;
+    const lines = invoicePreview.lines.filter((l) => l.description.trim());
+    if (!lines.length) return toast.error("Add at least one line item.");
+    const subtotal = lines.reduce((s, l) => s + Number(l.quantity) * Number(l.price), 0);
+    const sales_tax_rate = 9.9;
+    const sales_tax_amount = +(subtotal * sales_tax_rate / 100).toFixed(2);
+    const total = +(subtotal + sales_tax_amount).toFixed(2);
+    const { data: inv, error } = await supabase
+      .from("invoices")
+      .insert({
+        user_id: u.user.id,
+        system,
+        invoice_number: invoicePreview.invoiceNumber,
+        bill_to: invoicePreview.billTo,
+        period_start: invoicePreview.start,
+        period_end: invoicePreview.end,
+        subtotal,
+        sales_tax_rate,
+        sales_tax_amount,
+        total,
+        notes: invoicePreview.notes || null,
+      })
+      .select()
+      .single();
+    if (error) return toast.error(error.message);
+    const itemRows = lines.map((l) => ({
+      invoice_id: inv!.id,
+      ride_id: null,
+      description: `${l.description} — ${l.quantity} ride${l.quantity === 1 ? "" : "s"} × $${Number(l.price).toFixed(2)}`,
+      amount: +(Number(l.quantity) * Number(l.price)).toFixed(2),
+    }));
+    const { error: e2 } = await supabase.from("invoice_items").insert(itemRows);
+    if (e2) return toast.error(e2.message);
+    toast.success(`Invoice ${inv!.invoice_number} created`);
+    setInvoicePreview(null);
+    navigate({ to: "/invoices/$id", params: { id: inv!.id } });
+  };
+
+  // ----- Manual ride entry (used by both systems, primary for LLC) -----
+  const addManualRide = async (form: ManualRideForm) => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return;
+    const route = routes.find((r) => r.id === form.route_id);
+    const { error } = await supabase.from("rides").insert({
+      user_id: u.user.id,
+      system,
+      ride_date: form.ride_date,
+      department: form.department || null,
+      riders: form.riders,
+      pickup_location: route?.pickup_location ?? null,
+      pickup_from: null,
+      pickup_time: form.pickup_time || null,
+      dropoff_location: route?.dropoff_location ?? null,
+      dropoff_to: null,
+      status: "pending",
+      route_id: form.route_id || null,
+      driver_id: form.driver_id || null,
+      amount: form.price,
+      passenger_name: form.passenger_name || null,
+      passenger_email: form.passenger_email || null,
+      phone: form.phone || null,
+      flight_number: form.flight_number || null,
+      notes: form.notes || null,
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Ride added");
+    setManualOpen(false);
+    await load();
   };
 
   return (
@@ -457,24 +606,34 @@ function DashboardInner() {
         <div>
           <h1 className="text-3xl font-bold">Rides</h1>
           <p className="text-muted-foreground mt-1">
-            Upload a hotel schedule PDF, review the extracted rides, then import. Assign drivers, mark statuses, and bill.
+            <span className="font-medium text-foreground">{label}</span> —{" "}
+            {system === "api"
+              ? "upload hotel schedule PDFs, review extracted rides, then import."
+              : "add rides manually using your saved routes & prices."}
           </p>
         </div>
-        <div className="flex gap-2">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleUpload(f);
-            }}
-          />
-          <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
-            {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-            {uploading ? "Reading PDF…" : "Upload PDF"}
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={() => setManualOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Add ride
           </Button>
+          {system === "api" && (
+            <>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleUpload(f);
+                }}
+              />
+              <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
+                {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                {uploading ? "Reading PDF…" : "Upload PDF"}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -566,8 +725,8 @@ function DashboardInner() {
             <Button variant="outline" onClick={createInvoiceFromSelected}>
               <FileText className="h-4 w-4 mr-1" /> Invoice selected
             </Button>
-            <Button variant="outline" onClick={createByRouteInvoice}>
-              <FileText className="h-4 w-4 mr-1" /> Invoice by route
+            <Button variant="outline" onClick={openByRouteInvoice}>
+              <FileText className="h-4 w-4 mr-1" /> Invoice by route…
             </Button>
             <Button variant="outline" onClick={createWeeklyInvoice}>
               <FileText className="h-4 w-4 mr-1" /> Weekly invoice
@@ -756,7 +915,23 @@ function DashboardInner() {
         </DialogContent>
       </Dialog>
 
-      {/* Hidden refs to silence lint about driverMap not used */}
+      {/* Manual ride entry */}
+      <ManualRideDialog
+        open={manualOpen}
+        onOpenChange={setManualOpen}
+        routes={routes}
+        drivers={drivers}
+        onSave={addManualRide}
+      />
+
+      {/* Invoice by route — preview & edit */}
+      <InvoicePreviewDialog
+        state={invoicePreview}
+        onChange={setInvoicePreview}
+        onRecalcDates={recalcLinesForDates}
+        onSave={saveInvoiceFromPreview}
+      />
+
       <span className="hidden">{Object.keys(driverMap).length}</span>
     </div>
   );
@@ -801,5 +976,242 @@ function StatusBtn({
   );
 }
 
+function ManualRideDialog({
+  open, onOpenChange, routes, drivers, onSave,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  routes: RouteRow[];
+  drivers: Driver[];
+  onSave: (form: ManualRideForm) => Promise<unknown> | unknown;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [form, setForm] = useState<ManualRideForm>({
+    ride_date: today, pickup_time: "", route_id: "", driver_id: "",
+    riders: 1, price: 0, passenger_name: "", passenger_email: "",
+    phone: "", flight_number: "", department: "", notes: "",
+  });
+  const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (open) {
+      setForm({
+        ride_date: new Date().toISOString().slice(0, 10),
+        pickup_time: "", route_id: "", driver_id: "",
+        riders: 1, price: 0, passenger_name: "", passenger_email: "",
+        phone: "", flight_number: "", department: "", notes: "",
+      });
+    }
+  }, [open]);
+
+  const set = (patch: Partial<ManualRideForm>) => setForm((f) => ({ ...f, ...patch }));
+
+  const onRouteChange = (id: string) => {
+    const r = routes.find((rt) => rt.id === id);
+    set({ route_id: id, price: r ? Number(r.price) : 0 });
+  };
+
+  const submit = async () => {
+    if (!form.ride_date) return toast.error("Date is required");
+    if (!form.route_id) return toast.error("Route is required");
+    setSaving(true);
+    try { await onSave(form); } finally { setSaving(false); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Add ride</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs">Date *</Label>
+            <Input type="date" value={form.ride_date} onChange={(e) => set({ ride_date: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-xs">Pickup time</Label>
+            <Input type="time" value={form.pickup_time} onChange={(e) => set({ pickup_time: e.target.value })} />
+          </div>
+          <div className="col-span-2">
+            <Label className="text-xs">Route *</Label>
+            <Select value={form.route_id} onValueChange={onRouteChange}>
+              <SelectTrigger><SelectValue placeholder={routes.length ? "Pick a route" : "Add routes first"} /></SelectTrigger>
+              <SelectContent>
+                {routes.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>{r.name} — ${Number(r.price).toFixed(2)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Riders</Label>
+            <Input type="number" min={1} value={form.riders} onChange={(e) => set({ riders: parseInt(e.target.value) || 1 })} />
+          </div>
+          <div>
+            <Label className="text-xs">Price ($)</Label>
+            <Input type="number" step="0.01" value={form.price} onChange={(e) => set({ price: parseFloat(e.target.value) || 0 })} />
+          </div>
+          <div>
+            <Label className="text-xs">Driver</Label>
+            <Select value={form.driver_id || "__none__"} onValueChange={(v) => set({ driver_id: v === "__none__" ? "" : v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">— Unassigned —</SelectItem>
+                {drivers.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Department</Label>
+            <Input value={form.department} onChange={(e) => set({ department: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-xs">Passenger name</Label>
+            <Input value={form.passenger_name} onChange={(e) => set({ passenger_name: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-xs">Passenger email</Label>
+            <Input type="email" value={form.passenger_email} onChange={(e) => set({ passenger_email: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-xs">Phone</Label>
+            <Input value={form.phone} onChange={(e) => set({ phone: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-xs">Flight #</Label>
+            <Input value={form.flight_number} onChange={(e) => set({ flight_number: e.target.value })} />
+          </div>
+          <div className="col-span-2">
+            <Label className="text-xs">Notes</Label>
+            <Textarea rows={2} value={form.notes} onChange={(e) => set({ notes: e.target.value })} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
+          <Button onClick={submit} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+            Add ride
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function InvoicePreviewDialog({
+  state, onChange, onRecalcDates, onSave,
+}: {
+  state: InvoicePreviewState | null;
+  onChange: (v: InvoicePreviewState | null) => void;
+  onRecalcDates: (start: string, end: string) => void;
+  onSave: () => Promise<unknown> | unknown;
+}) {
+  const [saving, setSaving] = useState(false);
+  if (!state) return null;
+  const subtotal = state.lines.reduce((s, l) => s + Number(l.quantity || 0) * Number(l.price || 0), 0);
+  const tax = +(subtotal * 9.9 / 100).toFixed(2);
+  const total = +(subtotal + tax).toFixed(2);
+
+  const updateLine = (id: string, patch: Partial<InvoiceLine>) =>
+    onChange({ ...state, lines: state.lines.map((l) => l.id === id ? { ...l, ...patch } : l) });
+  const removeLine = (id: string) =>
+    onChange({ ...state, lines: state.lines.filter((l) => l.id !== id) });
+  const addLine = () =>
+    onChange({ ...state, lines: [...state.lines, { id: `new-${Date.now()}-${Math.random()}`, description: "", quantity: 1, price: 0 }] });
+
+  const submit = async () => {
+    setSaving(true);
+    try { await onSave(); } finally { setSaving(false); }
+  };
+
+  return (
+    <Dialog open={!!state} onOpenChange={(o) => !o && onChange(null)}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Invoice preview — by route</DialogTitle></DialogHeader>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <Label className="text-xs">From</Label>
+            <Input type="date" value={state.start} onChange={(e) => onRecalcDates(e.target.value, state.end)} />
+          </div>
+          <div>
+            <Label className="text-xs">To</Label>
+            <Input type="date" value={state.end} onChange={(e) => onRecalcDates(state.start, e.target.value)} />
+          </div>
+          <div>
+            <Label className="text-xs">Invoice #</Label>
+            <Input value={state.invoiceNumber} onChange={(e) => onChange({ ...state, invoiceNumber: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-xs">Bill to</Label>
+            <Input value={state.billTo} onChange={(e) => onChange({ ...state, billTo: e.target.value })} />
+          </div>
+        </div>
+
+        <div className="border rounded-md mt-2">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Description</TableHead>
+                <TableHead className="w-24 text-right">Quantity</TableHead>
+                <TableHead className="w-28 text-right">Price</TableHead>
+                <TableHead className="w-28 text-right">Amount</TableHead>
+                <TableHead className="w-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {state.lines.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No completed rides in this date range. Add a manual line below.</TableCell></TableRow>
+              ) : state.lines.map((l) => (
+                <TableRow key={l.id}>
+                  <TableCell>
+                    <Input value={l.description} onChange={(e) => updateLine(l.id, { description: e.target.value })} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Input type="number" min={1} value={l.quantity} onChange={(e) => updateLine(l.id, { quantity: parseInt(e.target.value) || 0 })} className="text-right" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Input type="number" step="0.01" value={l.price} onChange={(e) => updateLine(l.id, { price: parseFloat(e.target.value) || 0 })} className="text-right" />
+                  </TableCell>
+                  <TableCell className="text-right font-semibold">
+                    ${(Number(l.quantity || 0) * Number(l.price || 0)).toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    <button onClick={() => removeLine(l.id)} className="h-7 w-7 grid place-items-center rounded text-rose-600 hover:bg-rose-50">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <Button variant="outline" size="sm" onClick={addLine} className="w-fit">
+          <Plus className="h-4 w-4 mr-1" /> Add line item
+        </Button>
+
+        <div>
+          <Label className="text-xs">Notes</Label>
+          <Textarea rows={2} value={state.notes} onChange={(e) => onChange({ ...state, notes: e.target.value })} />
+        </div>
+
+        <div className="flex justify-end">
+          <div className="w-64 text-sm space-y-1">
+            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Sales tax (9.9%)</span><span>${tax.toFixed(2)}</span></div>
+            <div className="flex justify-between text-base font-bold border-t pt-1"><span>Total</span><span>${total.toFixed(2)}</span></div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onChange(null)} disabled={saving}>Cancel</Button>
+          <Button onClick={submit} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+            Create invoice
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 

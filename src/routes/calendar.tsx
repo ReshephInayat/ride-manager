@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Ride, RideStatus, Driver } from "@/lib/rides";
 import { toast } from "sonner";
+import { useSystem } from "@/lib/system";
 
 export const Route = createFileRoute("/calendar")({ component: CalendarPage });
 
@@ -45,6 +46,7 @@ function startOfWeek(d: Date) {
 }
 
 function CalendarInner() {
+  const { system, label: systemLabel } = useSystem();
   const [rides, setRides] = useState<Ride[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [view, setView] = useState<"week" | "day">("week");
@@ -53,15 +55,15 @@ function CalendarInner() {
   useEffect(() => {
     (async () => {
       const [r, d] = await Promise.all([
-        supabase.from("rides").select("*").order("ride_date").order("pickup_time"),
-        supabase.from("drivers").select("*"),
+        supabase.from("rides").select("*").eq("system", system).order("ride_date").order("pickup_time"),
+        supabase.from("drivers").select("*").eq("system", system),
       ]);
       if (r.error) toast.error(r.error.message);
       if (d.error) toast.error(d.error.message);
       setRides((r.data as Ride[]) ?? []);
       setDrivers((d.data as Driver[]) ?? []);
     })();
-  }, []);
+  }, [system]);
 
   const driverMap = useMemo(
     () => Object.fromEntries(drivers.map((d) => [d.id, d.name])),
@@ -104,7 +106,7 @@ function CalendarInner() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold">Calendar</h1>
-          <p className="text-muted-foreground mt-1">Upcoming rides at a glance, color-coded by status.</p>
+          <p className="text-muted-foreground mt-1"><span className="font-medium text-foreground">{systemLabel}</span> — color-coded by status.</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex rounded-md border overflow-hidden">

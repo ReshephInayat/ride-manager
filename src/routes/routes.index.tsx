@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/Spinner";
 import { Plus, Trash2, Save, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { useSystem } from "@/lib/system";
 
 export const Route = createFileRoute("/routes/")({ component: RoutesPage });
 
@@ -32,6 +33,7 @@ function RoutesPage() {
 }
 
 function RoutesInner() {
+  const { system, label } = useSystem();
   const [rows, setRows] = useState<RouteRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,6 +42,7 @@ function RoutesInner() {
     const { data, error } = await supabase
       .from("routes")
       .select("*")
+      .eq("system", system)
       .order("created_at", { ascending: true });
     if (error) toast.error(error.message);
     setRows((data as RouteRow[]) ?? []);
@@ -48,7 +51,7 @@ function RoutesInner() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [system]);
 
   const update = (id: string, patch: Partial<RouteRow>) =>
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -74,6 +77,7 @@ function RoutesInner() {
       .from("routes")
       .insert({
         user_id: u.user.id,
+        system,
         name: "New route",
         pickup_location: "",
         dropoff_location: "",
@@ -98,7 +102,7 @@ function RoutesInner() {
         <div>
           <h1 className="text-3xl font-bold">Routes & Pricing</h1>
           <p className="text-muted-foreground mt-1">
-            Set the fixed price for each pickup → dropoff route. Rides are auto-priced based on these.
+            <span className="font-medium text-foreground">{label}</span> — set the fixed price for each pickup → dropoff route.
           </p>
         </div>
         <Button onClick={add}>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { PageLoader } from "@/components/Spinner";
+import { useSystem } from "@/lib/system";
 
 export const Route = createFileRoute("/invoices/")({ component: InvoicesPage });
 
@@ -33,6 +34,7 @@ function InvoicesPage() {
 }
 
 function Inner() {
+  const { system, label } = useSystem();
   const [list, setList] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,6 +43,7 @@ function Inner() {
     const { data, error } = await supabase
       .from("invoices")
       .select("*")
+      .eq("system", system)
       .order("created_at", { ascending: false });
     if (error) toast.error(error.message);
     setList((data as Invoice[]) ?? []);
@@ -48,7 +51,7 @@ function Inner() {
   };
   useEffect(() => {
     load();
-  }, []);
+  }, [system]);
 
   const del = async (id: string) => {
     if (!confirm("Delete invoice?")) return;
@@ -57,13 +60,30 @@ function Inner() {
     setList((l) => l.filter((i) => i.id !== id));
   };
 
+  const deleteAll = async () => {
+    if (!list.length) return toast.error("No invoices to delete.");
+    if (!confirm(`Delete ALL ${list.length} invoices in ${label}? This cannot be undone.`)) return;
+    const ids = list.map((i) => i.id);
+    const { error } = await supabase.from("invoices").delete().in("id", ids);
+    if (error) return toast.error(error.message);
+    setList([]);
+    toast.success(`Deleted ${ids.length} invoices`);
+  };
+
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Invoices</h1>
-        <p className="text-muted-foreground mt-1">
-          Generated from completed rides. Create new ones from the Rides page.
-        </p>
+      <div className="mb-6 flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-bold">Invoices</h1>
+          <p className="text-muted-foreground mt-1">
+            <span className="font-medium text-foreground">{label}</span> — generated from completed rides.
+          </p>
+        </div>
+        {list.length > 0 && (
+          <Button variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40" onClick={deleteAll}>
+            <Trash2 className="h-4 w-4 mr-1" /> Delete all invoices
+          </Button>
+        )}
       </div>
 
       {loading ? (

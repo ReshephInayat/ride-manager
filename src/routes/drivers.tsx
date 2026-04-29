@@ -12,6 +12,7 @@ import { Plus, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { PageLoader } from "@/components/Spinner";
 import type { Driver } from "@/lib/rides";
+import { useSystem } from "@/lib/system";
 
 export const Route = createFileRoute("/drivers")({ component: DriversPage });
 
@@ -26,6 +27,7 @@ function DriversPage() {
 }
 
 function DriversInner() {
+  const { system, label } = useSystem();
   const [rows, setRows] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,13 +36,14 @@ function DriversInner() {
     const { data, error } = await supabase
       .from("drivers")
       .select("*")
+      .eq("system", system)
       .order("created_at", { ascending: true });
     if (error) toast.error(error.message);
     setRows((data as Driver[]) ?? []);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [system]);
 
   const update = (id: string, patch: Partial<Driver>) =>
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -65,7 +68,7 @@ function DriversInner() {
     if (!u.user) return;
     const { data, error } = await supabase
       .from("drivers")
-      .insert({ user_id: u.user.id, name: "New driver" })
+      .insert({ user_id: u.user.id, system, name: "New driver" })
       .select()
       .single();
     if (error) return toast.error(error.message);
@@ -85,7 +88,7 @@ function DriversInner() {
         <div>
           <h1 className="text-3xl font-bold">Drivers</h1>
           <p className="text-muted-foreground mt-1">
-            Manage your drivers. Assign them to rides from the dashboard.
+            <span className="font-medium text-foreground">{label}</span> — manage drivers for this workspace.
           </p>
         </div>
         <Button onClick={add}><Plus className="h-4 w-4 mr-1" /> Add driver</Button>
