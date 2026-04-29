@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Car, ShieldCheck, Sparkles, FileText } from "lucide-react";
+import { ShieldCheck, Sparkles, FileText } from "lucide-react";
 import { toast } from "sonner";
 import loginHero from "@/assets/login-hero.jpg";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
@@ -45,13 +46,7 @@ function LoginPage() {
 
         <div className="relative z-10 flex flex-col justify-between h-full p-12 text-white">
           <div className="flex items-center gap-3">
-            <span className="h-12 w-12 rounded-xl bg-white/10 backdrop-blur grid place-items-center ring-1 ring-white/20">
-              <Car className="h-6 w-6 text-white" />
-            </span>
-            <div>
-              <div className="font-semibold text-xl text-white leading-tight">Puget Sound Limo</div>
-              <div className="text-xs text-white/70">Ground Transportation Manager</div>
-            </div>
+            <img src={logo} alt="Puget Sound Limo" className="h-12 w-auto drop-shadow-lg" />
           </div>
 
           <div>
@@ -81,11 +76,9 @@ function LoginPage() {
         {/* Mobile mini hero */}
         <div className="lg:hidden absolute top-0 left-0 right-0 h-40 overflow-hidden">
           <img src={loginHero} alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-slate-950/70" />
-          <div className="absolute inset-0 flex items-center justify-center text-white">
-            <div className="flex items-center gap-2 font-semibold">
-              <Car className="h-5 w-5" /> Puget Sound Limo
-            </div>
+          <div className="absolute inset-0 bg-slate-950/75" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <img src={logo} alt="Puget Sound Limo" className="h-10 w-auto" />
           </div>
         </div>
 
