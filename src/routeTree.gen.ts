@@ -203,6 +203,7 @@ export interface RootRouteChildren {
   InvoicePublicTokenRoute: typeof InvoicePublicTokenRoute
   ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
   ApiPublicHooksNotifyAssignmentRoute: typeof ApiPublicHooksNotifyAssignmentRoute
+}
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
