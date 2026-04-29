@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -39,6 +41,7 @@ import {
   MinusCircle,
   Trash2,
   Search,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -50,6 +53,7 @@ import {
   type Driver,
 } from "@/lib/rides";
 import { useNavigate } from "@tanstack/react-router";
+import { useSystem } from "@/lib/system";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
