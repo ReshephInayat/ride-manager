@@ -123,6 +123,10 @@ function LoginPage() {
           <p className="text-xs text-muted-foreground text-center mt-6">
             Authorized account access only.
           </p>
+          <div className="mt-3 flex items-center justify-between text-xs">
+            <a href="/" className="text-primary hover:underline">← Back to home</a>
+            <a href="/driver" className="text-primary hover:underline">I'm a driver →</a>
+          </div>
         </Card>
       </div>
     </div>
