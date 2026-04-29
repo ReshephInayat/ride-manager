@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/NotificationBell";
 import {
   Car,
   FileText,
@@ -58,6 +59,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <Button
               variant="ghost"
               size="icon"

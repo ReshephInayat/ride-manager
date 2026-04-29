@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
@@ -145,9 +145,11 @@ function CalendarInner() {
                   <div className="text-xs text-muted-foreground italic">No rides</div>
                 ) : (
                   list.map((r) => (
-                    <div
+                    <Link
                       key={r.id}
-                      className={`text-xs rounded border px-2 py-1.5 ${statusColor[r.status]}`}
+                      to="/rides/$id"
+                      params={{ id: r.id }}
+                      className={`block text-xs rounded border px-2 py-1.5 hover:ring-2 hover:ring-primary/40 transition ${statusColor[r.status]}`}
                       title={`${r.pickup_from ?? r.pickup_location ?? ""} → ${r.dropoff_to ?? r.dropoff_location ?? ""}`}
                     >
                       <div className="font-semibold">{r.pickup_time || "—"}</div>
@@ -157,7 +159,7 @@ function CalendarInner() {
                       {r.driver_id && (
                         <div className="opacity-75 truncate">👤 {driverMap[r.driver_id] ?? "—"}</div>
                       )}
-                    </div>
+                    </Link>
                   ))
                 )}
               </div>
