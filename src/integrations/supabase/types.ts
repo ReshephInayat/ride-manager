@@ -49,6 +49,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          login_pin: string | null
           name: string
           notes: string | null
           phone: string | null
@@ -60,6 +61,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          login_pin?: string | null
           name: string
           notes?: string | null
           phone?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          login_pin?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
@@ -398,7 +401,93 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      driver_login: {
+        Args: {
+          _pin: string
+          _system: Database["public"]["Enums"]["workspace_system"]
+        }
+        Returns: {
+          id: string
+          name: string
+          system: Database["public"]["Enums"]["workspace_system"]
+          user_id: string
+        }[]
+      }
+      driver_rides: {
+        Args: { _driver_id: string; _pin: string }
+        Returns: {
+          amount: number
+          created_at: string
+          dedupe_key: string | null
+          department: string | null
+          driver_id: string | null
+          dropoff_location: string | null
+          dropoff_to: string | null
+          flight_number: string | null
+          id: string
+          notes: string | null
+          passenger_email: string | null
+          passenger_name: string | null
+          phone: string | null
+          pickup_from: string | null
+          pickup_location: string | null
+          pickup_time: string | null
+          ride_date: string
+          riders: number
+          route_id: string | null
+          source_file: string | null
+          status: Database["public"]["Enums"]["ride_status"]
+          system: Database["public"]["Enums"]["workspace_system"]
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "rides"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      driver_update_ride_status: {
+        Args: {
+          _driver_id: string
+          _pin: string
+          _ride_id: string
+          _status: Database["public"]["Enums"]["ride_status"]
+        }
+        Returns: {
+          amount: number
+          created_at: string
+          dedupe_key: string | null
+          department: string | null
+          driver_id: string | null
+          dropoff_location: string | null
+          dropoff_to: string | null
+          flight_number: string | null
+          id: string
+          notes: string | null
+          passenger_email: string | null
+          passenger_name: string | null
+          phone: string | null
+          pickup_from: string | null
+          pickup_location: string | null
+          pickup_time: string | null
+          ride_date: string
+          riders: number
+          route_id: string | null
+          source_file: string | null
+          status: Database["public"]["Enums"]["ride_status"]
+          system: Database["public"]["Enums"]["workspace_system"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rides"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       ride_status: "pending" | "completed" | "cancelled" | "no_show"
