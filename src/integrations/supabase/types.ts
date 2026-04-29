@@ -490,7 +490,7 @@ export type Database = {
       }
     }
     Enums: {
-      ride_status: "pending" | "completed" | "cancelled" | "no_show"
+      ride_status: "pending" | "completed" | "cancelled" | "no_show" | "arrived"
       workspace_system: "api" | "llc"
     }
     CompositeTypes: {
@@ -619,7 +619,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      ride_status: ["pending", "completed", "cancelled", "no_show"],
+      ride_status: ["pending", "completed", "cancelled", "no_show", "arrived"],
       workspace_system: ["api", "llc"],
     },
   },
