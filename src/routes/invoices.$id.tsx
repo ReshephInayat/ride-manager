@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Download, Save, Plus, Trash2, Pencil, X, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
+import { PageLoader } from "@/components/Spinner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import QRCode from "qrcode";
@@ -284,7 +285,7 @@ function Inner() {
     toast.success("Public link copied");
   };
 
-  if (loading) return <p className="text-muted-foreground">Loading…</p>;
+  if (loading) return <PageLoader label="Loading invoice…" />;
   if (!inv) return <p>Invoice not found.</p>;
 
   const issueDate = new Date(inv.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });

@@ -17,6 +17,7 @@ import {
   User as UserIcon, Plane, Phone, FileText as FileTextIcon, Bell, CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PageLoader } from "@/components/Spinner";
 import type { Ride, RideStatus, RouteRow, Driver, RideReminder } from "@/lib/rides";
 
 export const Route = createFileRoute("/rides/$id")({ component: RideDetailPage });
@@ -147,7 +148,7 @@ function Inner() {
     setReminders((rs) => rs.filter((r) => r.id !== rid));
   };
 
-  if (loading) return <p className="text-muted-foreground">Loading…</p>;
+  if (loading) return <PageLoader label="Loading ride…" />;
   if (!ride) return <p>Ride not found.</p>;
 
   const driver = drivers.find((d) => d.id === ride.driver_id);

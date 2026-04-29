@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { PageLoader } from "@/components/Spinner";
 
 export const Route = createFileRoute("/invoices/")({ component: InvoicesPage });
 
@@ -66,7 +67,7 @@ function Inner() {
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <PageLoader label="Loading invoices…" />
       ) : list.length === 0 ? (
         <Card className="p-12 text-center text-muted-foreground">
           <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
