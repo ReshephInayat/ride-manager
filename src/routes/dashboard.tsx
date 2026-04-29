@@ -267,6 +267,7 @@ function DashboardInner() {
         );
         return {
           user_id: u.user!.id,
+          system,
           ride_date: p.ride_date!,
           department: p.department ?? null,
           riders: p.riders ?? 1,
