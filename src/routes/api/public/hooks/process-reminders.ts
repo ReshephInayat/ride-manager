@@ -73,6 +73,16 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
               });
               await sb.from("driver_notification_log").insert({ ride_id: r.id, kind: w.kind });
               summary.driver_auto += 1;
+
+              // SMS to driver — currently we only send for the 1-hour window
+              if (w.kind === "hour" && driver?.phone) {
+                try {
+                  const smsBody = `${title}\n${body}`.slice(0, 600);
+                  await sendSms(driver.phone, smsBody);
+                } catch (e) {
+                  console.error("Twilio SMS failed", e);
+                }
+              }
             }
           }
         }
