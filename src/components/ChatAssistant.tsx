@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useSystem } from "@/lib/system";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 
 type Msg = { role: "user" | "assistant"; content: string };
 

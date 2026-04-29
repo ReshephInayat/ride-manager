@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { ShieldCheck, Sparkles, FileText } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import loginHero from "@/assets/login-hero.jpg";
 import logo from "@/assets/logo.png";
 

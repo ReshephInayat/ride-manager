@@ -43,7 +43,7 @@ import {
   Search,
   Plus,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import {
   autoMatchRoute,
   callParser,
@@ -214,13 +214,13 @@ function DashboardInner() {
   }, [rides, filterStatus, filterDriver, range, search]);
 
   const completedSum = useMemo(
-    () => filtered.filter((r) => r.status === "completed").reduce((s, r) => s + Number(r.amount), 0),
+    () => filtered.filter((r) => r.status === "completed" || r.status === "no_show").reduce((s, r) => s + Number(r.amount), 0),
     [filtered]
   );
   const selectedSum = useMemo(
     () =>
       filtered
-        .filter((r) => selected.has(r.id) && r.status === "completed")
+        .filter((r) => selected.has(r.id) && (r.status === "completed" || r.status === "no_show"))
         .reduce((s, r) => s + Number(r.amount), 0),
     [filtered, selected]
   );
@@ -236,7 +236,7 @@ function DashboardInner() {
     try {
       const parsed = await callParser(file);
       if (!parsed?.length) {
-        toast.warning("No rides found in the PDF.");
+        toast("No rides found in the PDF.");
         return;
       }
       setPreviewFile(file.name);
@@ -372,7 +372,7 @@ function DashboardInner() {
 
   const completeAllFiltered = async () => {
     const targets = filtered.filter((r) => r.status !== "completed");
-    if (!targets.length) return toast.info("All filtered rides are already completed.");
+    if (!targets.length) return toast("All filtered rides are already completed.");
     if (!confirm(`Mark ${targets.length} ride${targets.length === 1 ? "" : "s"} as completed?`)) return;
     const ids = targets.map((r) => r.id);
     const { error } = await supabase.from("rides").update({ status: "completed" }).in("id", ids);
@@ -393,15 +393,17 @@ function DashboardInner() {
     else setSelected(new Set(filtered.map((r) => r.id)));
   };
 
+  const isBillable = (s: RideStatus) => s === "completed" || s === "no_show";
+
   const createInvoiceFromSelected = async () => {
     const ids = Array.from(selected);
-    const items = filtered.filter((r) => ids.includes(r.id) && r.status === "completed");
-    if (!items.length) return toast.error("Select at least one completed ride.");
+    const items = filtered.filter((r) => ids.includes(r.id) && isBillable(r.status));
+    if (!items.length) return toast.error("Select at least one completed or no-show ride.");
     await createInvoice(items, "Selected rides invoice");
   };
   const createFilteredInvoice = async () => {
-    const items = filtered.filter((r) => r.status === "completed");
-    if (!items.length) return toast.error("No completed rides in current view.");
+    const items = filtered.filter((r) => isBillable(r.status));
+    if (!items.length) return toast.error("No billable rides in current view.");
     await createInvoice(items, `Invoice — ${dateFilter}`);
   };
   const createWeeklyInvoice = async () => {
@@ -411,19 +413,28 @@ function DashboardInner() {
     const mon = new Date(today); mon.setDate(today.getDate() - monDiff);
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
     const start = ymd(mon); const end = ymd(sun);
-    const items = rides.filter((r) => r.status === "completed" && r.ride_date >= start && r.ride_date <= end);
-    if (!items.length) return toast.error("No completed rides this week.");
-    await createInvoice(items, `Weekly invoice (${start} → ${end})`);
+    const items = rides.filter((r) => isBillable(r.status) && r.ride_date >= start && r.ride_date <= end);
+    if (!items.length) return toast.error("No billable rides this week.");
+    await createInvoice(items, `Weekly invoice (${start} → ${end})`, true);
   };
   const createMonthlyInvoice = async () => {
     const today = new Date();
     const first = new Date(today.getFullYear(), today.getMonth(), 1);
     const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     const start = ymd(first); const end = ymd(last);
-    const items = rides.filter((r) => r.status === "completed" && r.ride_date >= start && r.ride_date <= end);
-    if (!items.length) return toast.error("No completed rides this month.");
+    const items = rides.filter((r) => isBillable(r.status) && r.ride_date >= start && r.ride_date <= end);
+    if (!items.length) return toast.error("No billable rides this month.");
     await createInvoice(items, `Monthly invoice (${start} → ${end})`);
   };
+  const nextInvoiceNumber = async (): Promise<string> => {
+    const { count } = await supabase
+      .from("invoices")
+      .select("id", { count: "exact", head: true })
+      .eq("system", system);
+    const next = (count ?? 0) + 1;
+    return String(next).padStart(3, "0");
+  };
+
   const createInvoice = async (items: Ride[], notes: string, groupByRoute = false) => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
@@ -432,7 +443,7 @@ function DashboardInner() {
     const sales_tax_amount = +(subtotal * sales_tax_rate / 100).toFixed(2);
     const total = +(subtotal + sales_tax_amount).toFixed(2);
     const dates = items.map((r) => r.ride_date).sort();
-    const invoice_number = `INV-${Date.now()}`;
+    const invoice_number = await nextInvoiceNumber();
     const { data: inv, error } = await supabase
       .from("invoices")
       .insert({
@@ -466,7 +477,7 @@ function DashboardInner() {
       itemRows = Array.from(groups.values()).map((g) => ({
         invoice_id: inv!.id,
         ride_id: null,
-        description: `${g.name} — ${g.rides.length} ride${g.rides.length === 1 ? "" : "s"} × $${g.price.toFixed(2)}`,
+        description: `${g.name} — Total rides: ${g.rides.length} × $${g.price.toFixed(2)}`,
         amount: +(g.rides.reduce((s, r) => s + Number(r.amount), 0)).toFixed(2),
       }));
     } else {
@@ -486,17 +497,18 @@ function DashboardInner() {
   };
 
   // ----- Invoice by route: open preview dialog with date range + editable lines -----
-  const openByRouteInvoice = () => {
+  const openByRouteInvoice = async () => {
     const today = new Date();
     const first = new Date(today.getFullYear(), today.getMonth(), 1);
     const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     const start = ymd(first);
     const end = ymd(last);
+    const num = await nextInvoiceNumber();
     setInvoicePreview({
       start,
       end,
       billTo: label,
-      invoiceNumber: `INV-${Date.now()}`,
+      invoiceNumber: num,
       notes: `By-route invoice (${start} → ${end})`,
       lines: buildRouteLines(start, end),
     });
@@ -504,7 +516,7 @@ function DashboardInner() {
 
   const buildRouteLines = (start: string, end: string): InvoiceLine[] => {
     const items = rides.filter(
-      (r) => r.status === "completed" && r.ride_date >= start && r.ride_date <= end
+      (r) => (r.status === "completed" || r.status === "no_show") && r.ride_date >= start && r.ride_date <= end
     );
     const groups = new Map<string, { name: string; price: number; rides: Ride[] }>();
     for (const r of items) {
@@ -558,7 +570,7 @@ function DashboardInner() {
     const itemRows = lines.map((l) => ({
       invoice_id: inv!.id,
       ride_id: null,
-      description: `${l.description} — ${l.quantity} ride${l.quantity === 1 ? "" : "s"} × $${Number(l.price).toFixed(2)}`,
+      description: `${l.description} — Total rides: ${l.quantity} × $${Number(l.price).toFixed(2)}`,
       amount: +(Number(l.quantity) * Number(l.price)).toFixed(2),
     }));
     const { error: e2 } = await supabase.from("invoice_items").insert(itemRows);
@@ -927,6 +939,8 @@ function DashboardInner() {
         onOpenChange={setManualOpen}
         routes={routes}
         drivers={drivers}
+        system={system}
+        onRoutesChanged={load}
         onSave={addManualRide}
       />
 
@@ -985,12 +999,14 @@ function StatusBtn({
 }
 
 function ManualRideDialog({
-  open, onOpenChange, routes, drivers, onSave,
+  open, onOpenChange, routes, drivers, system, onRoutesChanged, onSave,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   routes: RouteRow[];
   drivers: Driver[];
+  system: "api" | "llc";
+  onRoutesChanged: () => Promise<unknown> | unknown;
   onSave: (form: ManualRideForm) => Promise<unknown> | unknown;
 }) {
   const today = new Date().toISOString().slice(0, 10);
@@ -1000,6 +1016,9 @@ function ManualRideDialog({
     phone: "", flight_number: "", department: "", notes: "",
   });
   const [saving, setSaving] = useState(false);
+  const [showNewRoute, setShowNewRoute] = useState(false);
+  const [newRoute, setNewRoute] = useState({ name: "", pickup_location: "", dropoff_location: "", price: 0 });
+  const [creatingRoute, setCreatingRoute] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -1009,14 +1028,54 @@ function ManualRideDialog({
         riders: 1, price: 0, passenger_name: "", passenger_email: "",
         phone: "", flight_number: "", department: "", notes: "",
       });
+      setShowNewRoute(false);
+      setNewRoute({ name: "", pickup_location: "", dropoff_location: "", price: 0 });
     }
   }, [open]);
 
   const set = (patch: Partial<ManualRideForm>) => setForm((f) => ({ ...f, ...patch }));
 
   const onRouteChange = (id: string) => {
+    if (id === "__new__") {
+      setShowNewRoute(true);
+      return;
+    }
     const r = routes.find((rt) => rt.id === id);
     set({ route_id: id, price: r ? Number(r.price) : 0 });
+  };
+
+  const createRoute = async () => {
+    if (!newRoute.name.trim()) return toast.error("Route name is required");
+    if (!newRoute.pickup_location.trim() || !newRoute.dropoff_location.trim())
+      return toast.error("Pickup and dropoff are required");
+    setCreatingRoute(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      const { data, error } = await supabase
+        .from("routes")
+        .insert({
+          user_id: u.user.id,
+          system,
+          name: newRoute.name.trim(),
+          pickup_location: newRoute.pickup_location.trim(),
+          dropoff_location: newRoute.dropoff_location.trim(),
+          price: Number(newRoute.price) || 0,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      toast.success("Route created");
+      await onRoutesChanged();
+      // Auto-select the newly created route
+      set({ route_id: data!.id, price: Number(data!.price) || 0 });
+      setShowNewRoute(false);
+      setNewRoute({ name: "", pickup_location: "", dropoff_location: "", price: 0 });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setCreatingRoute(false);
+    }
   };
 
   const submit = async () => {
@@ -1042,13 +1101,44 @@ function ManualRideDialog({
           <div className="col-span-2">
             <Label className="text-xs">Route *</Label>
             <Select value={form.route_id} onValueChange={onRouteChange}>
-              <SelectTrigger><SelectValue placeholder={routes.length ? "Pick a route" : "Add routes first"} /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={routes.length ? "Pick a route" : "Add a route"} /></SelectTrigger>
               <SelectContent>
                 {routes.map((r) => (
                   <SelectItem key={r.id} value={r.id}>{r.name} — ${Number(r.price).toFixed(2)}</SelectItem>
                 ))}
+                <SelectItem value="__new__">+ New route…</SelectItem>
               </SelectContent>
             </Select>
+            {showNewRoute && (
+              <div className="mt-3 rounded-md border bg-muted/30 p-3 space-y-2">
+                <div className="text-xs font-semibold">New route</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="col-span-2">
+                    <Label className="text-xs">Name</Label>
+                    <Input value={newRoute.name} onChange={(e) => setNewRoute((s) => ({ ...s, name: e.target.value }))} placeholder="e.g. Hotel ↔ SEA" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Pickup</Label>
+                    <Input value={newRoute.pickup_location} onChange={(e) => setNewRoute((s) => ({ ...s, pickup_location: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Dropoff</Label>
+                    <Input value={newRoute.dropoff_location} onChange={(e) => setNewRoute((s) => ({ ...s, dropoff_location: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Price ($)</Label>
+                    <Input type="number" step="0.01" value={newRoute.price} onChange={(e) => setNewRoute((s) => ({ ...s, price: parseFloat(e.target.value) || 0 }))} />
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button size="sm" variant="ghost" onClick={() => setShowNewRoute(false)} disabled={creatingRoute}>Cancel</Button>
+                  <Button size="sm" onClick={createRoute} disabled={creatingRoute}>
+                    {creatingRoute ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Plus className="h-3 w-3 mr-1" />}
+                    Create route
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <Label className="text-xs">Riders</Label>

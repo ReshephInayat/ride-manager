@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Download, Save, Plus, Trash2, Pencil, X, Link as LinkIcon } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import { PageLoader } from "@/components/Spinner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
