@@ -98,6 +98,7 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
         for (const m of due ?? []) {
           await sb.from("notifications").insert({
             user_id: m.user_id,
+            system: m.system ?? "api",
             ride_id: m.ride_id,
             kind: "manual",
             title: m.message ?? "Ride reminder",
