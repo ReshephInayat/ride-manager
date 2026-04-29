@@ -915,7 +915,23 @@ function DashboardInner() {
         </DialogContent>
       </Dialog>
 
-      {/* Hidden refs to silence lint about driverMap not used */}
+      {/* Manual ride entry */}
+      <ManualRideDialog
+        open={manualOpen}
+        onOpenChange={setManualOpen}
+        routes={routes}
+        drivers={drivers}
+        onSave={addManualRide}
+      />
+
+      {/* Invoice by route — preview & edit */}
+      <InvoicePreviewDialog
+        state={invoicePreview}
+        onChange={setInvoicePreview}
+        onRecalcDates={recalcLinesForDates}
+        onSave={saveInvoiceFromPreview}
+      />
+
       <span className="hidden">{Object.keys(driverMap).length}</span>
     </div>
   );
