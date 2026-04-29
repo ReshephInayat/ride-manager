@@ -85,11 +85,14 @@ function DriversInner() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold">Drivers</h1>
           <p className="text-muted-foreground mt-1">
             <span className="font-medium text-foreground">{label}</span> — manage drivers for this workspace.
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Drivers sign in at <code className="bg-muted px-1 py-0.5 rounded">/driver</code> using the Login PIN you set below.
           </p>
         </div>
         <Button onClick={add}><Plus className="h-4 w-4 mr-1" /> Add driver</Button>
