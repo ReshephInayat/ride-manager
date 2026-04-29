@@ -15,6 +15,7 @@ export interface Ride {
   dropoff_to: string | null;
   status: RideStatus;
   route_id: string | null;
+  driver_id: string | null;
   amount: number;
   source_file: string | null;
 }
@@ -25,6 +26,16 @@ export interface RouteRow {
   pickup_location: string;
   dropoff_location: string;
   price: number;
+}
+
+export interface Driver {
+  id: string;
+  user_id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  notes: string | null;
+  active: boolean;
 }
 
 // Find best matching route by checking if pickup/dropoff text contains the
