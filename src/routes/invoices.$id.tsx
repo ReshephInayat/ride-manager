@@ -231,7 +231,11 @@ function Inner() {
     autoTable(doc, {
       startY: yBlock + 60,
       head: [["Items", "Quantity", "Price", "Amount"]],
-      body: items.map((i) => [i.description, "1", `$${Number(i.amount).toFixed(2)}`, `$${Number(i.amount).toFixed(2)}`]),
+      body: items.map((i) => {
+        const qty = extractQuantity(i.description);
+        const unit = qty > 0 ? Number(i.amount) / qty : Number(i.amount);
+        return [i.description, String(qty), `$${unit.toFixed(2)}`, `$${Number(i.amount).toFixed(2)}`];
+      }),
       theme: "plain",
       styles: { fontSize: 10, cellPadding: 6 },
       headStyles: { fillColor: [255, 255, 255], textColor: 90, fontStyle: "bold", lineWidth: { bottom: 0.5 }, lineColor: [200, 200, 200] },
