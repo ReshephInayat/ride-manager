@@ -14,7 +14,7 @@ import { PageLoader } from "@/components/Spinner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import QRCode from "qrcode";
-import logoImg from "@/assets/logo.png";
+
 
 export const Route = createFileRoute("/invoices/$id")({ component: InvoiceDetail });
 
@@ -35,6 +35,17 @@ interface Invoice {
 interface Item { id: string; description: string; amount: number; }
 
 const TAX_RATE = 9.9;
+
+// If a line description was generated as "... — Total rides: N × $P", pull
+// out the ride count so we can show it as the line Quantity. Falls back to 1.
+function extractQuantity(desc: string): number {
+  const m = desc.match(/Total rides:\s*(\d+)/i);
+  if (m) {
+    const n = parseInt(m[1], 10);
+    if (!isNaN(n) && n > 0) return n;
+  }
+  return 1;
+}
 
 function InvoiceDetail() {
   return (
@@ -166,17 +177,14 @@ function Inner() {
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 48;
 
-    // Header logo (text fallback if image fails)
-    try {
-      doc.addImage(logoImg, "PNG", margin, 36, 110, 50);
-    } catch { /* noop */ }
-    doc.setFontSize(11);
+    // Header brand (text only — logo intentionally removed)
+    doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
-    doc.text("Puget Sound Limo", margin + 60, 56);
+    doc.text("Puget Sound Limo", margin, 56);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(120);
-    doc.text("(888) 977-2757", margin + 60, 70);
+    doc.text("(888) 977-2757", margin, 70);
 
     doc.setTextColor(0);
     doc.setFontSize(11);
@@ -223,7 +231,11 @@ function Inner() {
     autoTable(doc, {
       startY: yBlock + 60,
       head: [["Items", "Quantity", "Price", "Amount"]],
-      body: items.map((i) => [i.description, "1", `$${Number(i.amount).toFixed(2)}`, `$${Number(i.amount).toFixed(2)}`]),
+      body: items.map((i) => {
+        const qty = extractQuantity(i.description);
+        const unit = qty > 0 ? Number(i.amount) / qty : Number(i.amount);
+        return [i.description, String(qty), `$${unit.toFixed(2)}`, `$${Number(i.amount).toFixed(2)}`];
+      }),
       theme: "plain",
       styles: { fontSize: 10, cellPadding: 6 },
       headStyles: { fillColor: [255, 255, 255], textColor: 90, fontStyle: "bold", lineWidth: { bottom: 0.5 }, lineColor: [200, 200, 200] },
@@ -313,14 +325,9 @@ function Inner() {
       {/* On-screen rendition matching the reference invoice */}
       <Card className="p-10 max-w-3xl mx-auto bg-white text-slate-900 dark:bg-white dark:text-slate-900">
         <header className="flex items-start justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-slate-900 rounded-md px-3 py-2">
-              <img src={logoImg} alt="Puget Sound Limo" className="h-10 w-auto object-contain" />
-            </div>
-            <div>
-              <div className="font-bold">Puget Sound Limo</div>
-              <div className="text-xs text-slate-500">(888) 977-2757</div>
-            </div>
+          <div>
+            <div className="font-bold text-lg">Puget Sound Limo</div>
+            <div className="text-xs text-slate-500">(888) 977-2757</div>
           </div>
           <div className="text-right text-sm">
             <div className="font-bold">Invoice #{inv.invoice_number}</div>
@@ -384,11 +391,11 @@ function Inner() {
                     />
                   ) : it.description}
                 </td>
-                <td className="text-right">1</td>
+                <td className="text-right">{extractQuantity(it.description)}</td>
                 <td className="text-right">
                   {editing ? (
                     <Input type="number" step="0.01" value={it.amount} onChange={(e) => updateDraftItem(idx, { amount: Number(e.target.value) })} className="text-right bg-white text-slate-900 w-24 ml-auto" />
-                  ) : `$${Number(it.amount).toFixed(2)}`}
+                  ) : `$${(() => { const q = extractQuantity(it.description); return (q > 0 ? Number(it.amount) / q : Number(it.amount)).toFixed(2); })()}`}
                 </td>
                 <td className="text-right">${Number(it.amount).toFixed(2)}</td>
                 {editing && (

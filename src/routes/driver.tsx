@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "react-hot-toast";
-import { Logo } from "@/components/Logo";
+import { playNotificationSound } from "@/lib/sound";
 import { LogOut, CalendarDays, Clock, MapPin, User, Phone, Plane, CheckCircle2, XCircle, Hourglass, ListChecks } from "lucide-react";
 import type { Ride, RideStatus } from "@/lib/rides";
 import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
@@ -17,6 +17,28 @@ import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
 export const Route = createFileRoute("/driver")({ component: DriverPortal });
 
 const STORAGE_KEY = "psl.driver.session";
+
+function parsePickup(date: string, time: string): number | null {
+  const s = (time ?? "").trim();
+  let h = 0, m = 0;
+  const ampm = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (ampm) {
+    h = parseInt(ampm[1], 10);
+    m = parseInt(ampm[2], 10);
+    const isPm = ampm[3].toUpperCase() === "PM";
+    if (h === 12) h = isPm ? 12 : 0;
+    else if (isPm) h += 12;
+  } else {
+    const hm = s.match(/^(\d{1,2}):(\d{2})/);
+    if (!hm) return null;
+    h = parseInt(hm[1], 10);
+    m = parseInt(hm[2], 10);
+  }
+  const d = new Date(`${date}T00:00:00`);
+  if (isNaN(d.getTime())) return null;
+  d.setHours(h, m, 0, 0);
+  return d.getTime();
+}
 
 interface DriverSession {
   driverId: string;
@@ -74,12 +96,9 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
   return (
     <div className="min-h-screen grid place-items-center bg-gradient-to-br from-background via-background to-muted/40 px-4">
       <Card className="w-full max-w-md p-8 shadow-xl border-border/60">
-        <div className="flex items-center gap-3 mb-6">
-          <Logo />
-          <div>
-            <h1 className="text-2xl font-bold">Driver Portal</h1>
-            <p className="text-sm text-muted-foreground">Sign in with your PIN</p>
-          </div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Driver Portal</h1>
+          <p className="text-sm text-muted-foreground">Sign in with your PIN</p>
         </div>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-2">
@@ -130,15 +149,14 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
   const [view, setView] = useState<"list" | "calendar">("list");
   const [filter, setFilter] = useState<"upcoming" | "today" | "past" | "all">("upcoming");
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
     const { data, error } = await supabase.rpc("driver_rides", {
       _driver_id: session.driverId,
       _pin: session.pin,
     });
     if (error) {
       toast.error(error.message);
-      // PIN may have been changed/disabled
       onLogout();
       return;
     }
@@ -146,7 +164,46 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [session.driverId]);
+  useEffect(() => {
+    load();
+    // Realtime: refresh whenever a ride changes (admin reassign, status, etc.)
+    const ch = supabase
+      .channel(`driver-rides-${session.driverId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => load(true))
+      .subscribe();
+    // Lightweight poll as a safety net
+    const t = setInterval(() => load(true), 60_000);
+    return () => { supabase.removeChannel(ch); clearInterval(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.driverId]);
+
+  // 1-hour-before pickup reminder (in-app toast + sound).
+  // Persists fired-ride keys in localStorage so we don't repeat after a refresh.
+  useEffect(() => {
+    const KEY = "psl.driver.firedHourReminders";
+    const fired: Set<string> = new Set(
+      (() => { try { return JSON.parse(localStorage.getItem(KEY) ?? "[]") as string[]; } catch { return []; } })()
+    );
+    const tick = () => {
+      const now = Date.now();
+      for (const r of rides) {
+        if (!r.pickup_time || !r.ride_date) continue;
+        if (r.status === "cancelled" || r.status === "completed") continue;
+        const pickup = parsePickup(r.ride_date, r.pickup_time);
+        if (!pickup) continue;
+        const minsUntil = (pickup - now) / 60000;
+        if (minsUntil <= 60 && minsUntil > 55 && !fired.has(r.id)) {
+          fired.add(r.id);
+          try { localStorage.setItem(KEY, JSON.stringify(Array.from(fired))); } catch { /* noop */ }
+          playNotificationSound();
+          toast(`Pickup in ~1 hour: ${r.passenger_name ?? "Passenger"} • ${r.pickup_time}`, { duration: 8000, icon: "⏰" });
+        }
+      }
+    };
+    tick();
+    const t = setInterval(tick, 60_000);
+    return () => clearInterval(t);
+  }, [rides]);
 
   const setStatus = async (rideId: string, status: RideStatus) => {
     const { error } = await supabase.rpc("driver_update_ride_status", {
@@ -178,12 +235,9 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <Logo />
-            <div className="min-w-0">
-              <div className="font-semibold truncate">{session.name}</div>
-              <div className="text-xs text-muted-foreground truncate">{SYSTEM_LABELS[session.system]}</div>
-            </div>
+          <div className="min-w-0">
+            <div className="font-semibold truncate">{session.name}</div>
+            <div className="text-xs text-muted-foreground truncate">{SYSTEM_LABELS[session.system]}</div>
           </div>
           <Button variant="ghost" size="sm" onClick={onLogout}>
             <LogOut className="h-4 w-4 mr-1" /> Sign out

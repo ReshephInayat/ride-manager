@@ -1,24 +1,6 @@
-import logo from "@/assets/logo.png";
-
-export function Logo({
-  className = "",
-  withBg = true,
-}: {
-  className?: string;
-  withBg?: boolean;
-}) {
-  return (
-    <span
-      className={`inline-flex items-center justify-center rounded-md ${
-        withBg ? "bg-slate-900 px-2 py-1" : ""
-      } ${className}`}
-    >
-      <img
-        src={logo}
-        alt="Puget Sound Limo"
-        className="h-6 w-auto object-contain select-none"
-        draggable={false}
-      />
-    </span>
-  );
+// Logo intentionally renders nothing.
+// The user requested removing the logo from everywhere in the app, so this
+// component is a no-op to keep existing imports/usages safe.
+export function Logo(_props: { className?: string; withBg?: boolean }) {
+  return null;
 }
