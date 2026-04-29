@@ -4,7 +4,7 @@ import { useTheme } from "@/lib/theme";
 import { useSystem, SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
-import { Logo } from "@/components/Logo";
+
 import { ChatAssistant } from "@/components/ChatAssistant";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -42,8 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="border-b bg-card">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-3">
           <Link to="/dashboard" className="flex items-center gap-2 font-semibold text-lg min-w-0">
-            <Logo />
-            <span className="hidden sm:inline truncate">{label}</span>
+            <span className="truncate">{label}</span>
           </Link>
           <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-md bg-secondary/60 border">
             <Building2 className="h-4 w-4 text-muted-foreground" />
