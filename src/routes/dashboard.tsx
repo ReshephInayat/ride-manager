@@ -477,7 +477,7 @@ function DashboardInner() {
       itemRows = Array.from(groups.values()).map((g) => ({
         invoice_id: inv!.id,
         ride_id: null,
-        description: `${g.name} — ${g.rides.length} ride${g.rides.length === 1 ? "" : "s"} × $${g.price.toFixed(2)}`,
+        description: `${g.name} — Total rides: ${g.rides.length} × $${g.price.toFixed(2)}`,
         amount: +(g.rides.reduce((s, r) => s + Number(r.amount), 0)).toFixed(2),
       }));
     } else {
