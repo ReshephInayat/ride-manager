@@ -168,7 +168,7 @@ function Inner() {
 
     // Header logo (text fallback if image fails)
     try {
-      doc.addImage(logoImg, "JPEG", margin, 36, 50, 50);
+      doc.addImage(logoImg, "PNG", margin, 36, 110, 50);
     } catch { /* noop */ }
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
