@@ -52,6 +52,7 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
+          system: Database["public"]["Enums"]["workspace_system"]
           user_id: string
         }
         Insert: {
@@ -62,6 +63,7 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
           user_id: string
         }
         Update: {
@@ -72,6 +74,7 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
           user_id?: string
         }
         Relationships: []
@@ -128,6 +131,7 @@ export type Database = {
           sales_tax_amount: number
           sales_tax_rate: number
           subtotal: number
+          system: Database["public"]["Enums"]["workspace_system"]
           total: number
           user_id: string
         }
@@ -143,6 +147,7 @@ export type Database = {
           sales_tax_amount?: number
           sales_tax_rate?: number
           subtotal?: number
+          system?: Database["public"]["Enums"]["workspace_system"]
           total?: number
           user_id: string
         }
@@ -158,6 +163,7 @@ export type Database = {
           sales_tax_amount?: number
           sales_tax_rate?: number
           subtotal?: number
+          system?: Database["public"]["Enums"]["workspace_system"]
           total?: number
           user_id?: string
         }
@@ -172,6 +178,7 @@ export type Database = {
           kind: string
           read: boolean
           ride_id: string | null
+          system: Database["public"]["Enums"]["workspace_system"]
           title: string
           user_id: string
         }
@@ -183,6 +190,7 @@ export type Database = {
           kind: string
           read?: boolean
           ride_id?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
           title: string
           user_id: string
         }
@@ -194,6 +202,7 @@ export type Database = {
           kind?: string
           read?: boolean
           ride_id?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
           title?: string
           user_id?: string
         }
@@ -222,6 +231,7 @@ export type Database = {
           notified: boolean
           remind_at: string
           ride_id: string
+          system: Database["public"]["Enums"]["workspace_system"]
           user_id: string
         }
         Insert: {
@@ -231,6 +241,7 @@ export type Database = {
           notified?: boolean
           remind_at: string
           ride_id: string
+          system?: Database["public"]["Enums"]["workspace_system"]
           user_id: string
         }
         Update: {
@@ -240,6 +251,7 @@ export type Database = {
           notified?: boolean
           remind_at?: string
           ride_id?: string
+          system?: Database["public"]["Enums"]["workspace_system"]
           user_id?: string
         }
         Relationships: [
@@ -264,6 +276,7 @@ export type Database = {
           flight_number: string | null
           id: string
           notes: string | null
+          passenger_email: string | null
           passenger_name: string | null
           phone: string | null
           pickup_from: string | null
@@ -274,6 +287,7 @@ export type Database = {
           route_id: string | null
           source_file: string | null
           status: Database["public"]["Enums"]["ride_status"]
+          system: Database["public"]["Enums"]["workspace_system"]
           updated_at: string
           user_id: string
         }
@@ -288,6 +302,7 @@ export type Database = {
           flight_number?: string | null
           id?: string
           notes?: string | null
+          passenger_email?: string | null
           passenger_name?: string | null
           phone?: string | null
           pickup_from?: string | null
@@ -298,6 +313,7 @@ export type Database = {
           route_id?: string | null
           source_file?: string | null
           status?: Database["public"]["Enums"]["ride_status"]
+          system?: Database["public"]["Enums"]["workspace_system"]
           updated_at?: string
           user_id: string
         }
@@ -312,6 +328,7 @@ export type Database = {
           flight_number?: string | null
           id?: string
           notes?: string | null
+          passenger_email?: string | null
           passenger_name?: string | null
           phone?: string | null
           pickup_from?: string | null
@@ -322,6 +339,7 @@ export type Database = {
           route_id?: string | null
           source_file?: string | null
           status?: Database["public"]["Enums"]["ride_status"]
+          system?: Database["public"]["Enums"]["workspace_system"]
           updated_at?: string
           user_id?: string
         }
@@ -350,6 +368,7 @@ export type Database = {
           name: string
           pickup_location: string
           price: number
+          system: Database["public"]["Enums"]["workspace_system"]
           user_id: string
         }
         Insert: {
@@ -359,6 +378,7 @@ export type Database = {
           name: string
           pickup_location: string
           price?: number
+          system?: Database["public"]["Enums"]["workspace_system"]
           user_id: string
         }
         Update: {
@@ -368,6 +388,7 @@ export type Database = {
           name?: string
           pickup_location?: string
           price?: number
+          system?: Database["public"]["Enums"]["workspace_system"]
           user_id?: string
         }
         Relationships: []
@@ -381,6 +402,7 @@ export type Database = {
     }
     Enums: {
       ride_status: "pending" | "completed" | "cancelled" | "no_show"
+      workspace_system: "api" | "llc"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -509,6 +531,7 @@ export const Constants = {
   public: {
     Enums: {
       ride_status: ["pending", "completed", "cancelled", "no_show"],
+      workspace_system: ["api", "llc"],
     },
   },
 } as const
