@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -293,6 +293,42 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
     tick();
     const t = setInterval(tick, 60_000);
     return () => clearInterval(t);
+  }, [rides]);
+
+  // In-system notifications: alert the driver when admin assigns a new ride
+  // or updates the status of one of their existing rides.
+  const prevRidesRef = useRef<Map<string, Ride> | null>(null);
+  useEffect(() => {
+    const prev = prevRidesRef.current;
+    const next = new Map(rides.map((r) => [r.id, r]));
+    if (prev) {
+      // New rides → assignment
+      for (const [id, r] of next) {
+        if (!prev.has(id)) {
+          playNotificationSound();
+          toast.success(
+            `New ride assigned: ${r.passenger_name ?? "Passenger"} • ${r.ride_date}${r.pickup_time ? ` ${r.pickup_time}` : ""} • ${r.pickup_location ?? "?"} → ${r.dropoff_location ?? "?"}`,
+            { duration: 9000, icon: "🚗" }
+          );
+        } else {
+          const old = prev.get(id)!;
+          if (old.status !== r.status) {
+            playNotificationSound();
+            toast(
+              `Ride status updated: ${r.passenger_name ?? "Passenger"} • ${r.pickup_time ?? ""} → ${r.status.replace("_", " ").toUpperCase()}`,
+              { duration: 7000, icon: "🔔" }
+            );
+          }
+        }
+      }
+      // Removed rides → unassigned
+      for (const [id, r] of prev) {
+        if (!next.has(id)) {
+          toast(`Ride unassigned: ${r.passenger_name ?? "Passenger"} • ${r.ride_date}`, { duration: 6000, icon: "↩️" });
+        }
+      }
+    }
+    prevRidesRef.current = next;
   }, [rides]);
 
   const setStatus = async (rideId: string, status: RideStatus) => {

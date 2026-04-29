@@ -9,9 +9,11 @@ import { ExternalLink, Plane } from "lucide-react";
  */
 export function extractFlightCode(text: string | null | undefined): string | null {
   if (!text) return null;
-  // Match airline code (2 letters or letter+digit) + optional space/hyphen + 1-4 digits.
-  // Use word boundaries to avoid grabbing parts of words.
-  const re = /\b([A-Z]{2}|[A-Z]\d|\d[A-Z])[\s-]?(\d{1,4})\b/i;
+  // Match airline code: 3-letter ICAO (e.g. ASA, DAL, UAL), 2-letter IATA
+  // (e.g. AS, DL, UA), or 2-char alphanumeric (e.g. B6, 9E), optionally
+  // followed by space/hyphen and 1-4 flight digits. Prefer 3-letter match
+  // first since FlightAware tracks via ICAO + flight number reliably.
+  const re = /\b([A-Z]{3}|[A-Z]{2}|[A-Z]\d|\d[A-Z])[\s-]?(\d{1,4})\b/i;
   const m = text.match(re);
   if (!m) return null;
   return `${m[1]}${m[2]}`.toUpperCase();
