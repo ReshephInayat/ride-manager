@@ -319,6 +319,28 @@ function DashboardInner() {
     toast.success("Deleted");
   };
 
+  const deleteAllFiltered = async () => {
+    if (!filtered.length) return toast.error("Nothing to delete.");
+    if (!confirm(`Delete ALL ${filtered.length} rides in current view? This cannot be undone.`)) return;
+    const ids = filtered.map((r) => r.id);
+    const { error } = await supabase.from("rides").delete().in("id", ids);
+    if (error) return toast.error(error.message);
+    setRides((rs) => rs.filter((r) => !ids.includes(r.id)));
+    setSelected(new Set());
+    toast.success(`Deleted ${ids.length} rides`);
+  };
+
+  const completeAllFiltered = async () => {
+    const targets = filtered.filter((r) => r.status !== "completed");
+    if (!targets.length) return toast.info("All filtered rides are already completed.");
+    if (!confirm(`Mark ${targets.length} ride${targets.length === 1 ? "" : "s"} as completed?`)) return;
+    const ids = targets.map((r) => r.id);
+    const { error } = await supabase.from("rides").update({ status: "completed" }).in("id", ids);
+    if (error) return toast.error(error.message);
+    setRides((rs) => rs.map((r) => (ids.includes(r.id) ? { ...r, status: "completed" } : r)));
+    toast.success(`Completed ${ids.length} rides`);
+  };
+
   const toggleSelect = (id: string) => {
     setSelected((s) => {
       const n = new Set(s);
