@@ -54,6 +54,7 @@ import {
 } from "@/lib/rides";
 import { useNavigate } from "@tanstack/react-router";
 import { useSystem } from "@/lib/system";
+import { FlightSearchButton } from "@/components/FlightTrackLink";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
