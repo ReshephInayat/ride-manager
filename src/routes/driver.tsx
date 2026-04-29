@@ -14,6 +14,7 @@ import { LogOut, CalendarDays, Clock, MapPin, User, Phone, Plane, CheckCircle2, 
 import type { Ride, RideStatus } from "@/lib/rides";
 import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
 import driverHero from "@/assets/driver-hero.jpg";
+import { FlightTrackLink } from "@/components/FlightTrackLink";
 
 export const Route = createFileRoute("/driver")({ component: DriverPortal });
 
@@ -416,7 +417,7 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
               <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> <a href={`tel:${ride.phone}`} className="text-primary hover:underline">{ride.phone}</a></div>
             )}
             {ride.flight_number && (
-              <div className="flex items-center gap-2"><Plane className="h-4 w-4 text-muted-foreground" /> {ride.flight_number}</div>
+              <div className="flex items-center gap-2"><Plane className="h-4 w-4 text-muted-foreground" /> <FlightTrackLink flightNumber={ride.flight_number} /></div>
             )}
             <div className="flex items-start gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />

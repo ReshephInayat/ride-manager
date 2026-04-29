@@ -110,8 +110,8 @@ export interface FileRoutesByFullPath {
   '/invoices/': typeof InvoicesIndexRoute
   '/routes/': typeof RoutesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
-  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/notify-assignment': typeof ApiPublicHooksNotifyAssignmentRoute
+  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -126,8 +126,8 @@ export interface FileRoutesByTo {
   '/invoices': typeof InvoicesIndexRoute
   '/routes': typeof RoutesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
-  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/notify-assignment': typeof ApiPublicHooksNotifyAssignmentRoute
+  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,8 +143,8 @@ export interface FileRoutesById {
   '/invoices/': typeof InvoicesIndexRoute
   '/routes/': typeof RoutesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
-  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/notify-assignment': typeof ApiPublicHooksNotifyAssignmentRoute
+  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,8 +161,8 @@ export interface FileRouteTypes {
     | '/invoices/'
     | '/routes/'
     | '/invoice/public/$token'
-    | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/notify-assignment'
+    | '/api/public/hooks/process-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -177,8 +177,8 @@ export interface FileRouteTypes {
     | '/invoices'
     | '/routes'
     | '/invoice/public/$token'
-    | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/notify-assignment'
+    | '/api/public/hooks/process-reminders'
   id:
     | '__root__'
     | '/'
@@ -193,8 +193,8 @@ export interface FileRouteTypes {
     | '/invoices/'
     | '/routes/'
     | '/invoice/public/$token'
-    | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/notify-assignment'
+    | '/api/public/hooks/process-reminders'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -210,8 +210,8 @@ export interface RootRouteChildren {
   InvoicesIndexRoute: typeof InvoicesIndexRoute
   RoutesIndexRoute: typeof RoutesIndexRoute
   InvoicePublicTokenRoute: typeof InvoicePublicTokenRoute
-  ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
   ApiPublicHooksNotifyAssignmentRoute: typeof ApiPublicHooksNotifyAssignmentRoute
+  ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -330,8 +330,8 @@ const rootRouteChildren: RootRouteChildren = {
   InvoicesIndexRoute: InvoicesIndexRoute,
   RoutesIndexRoute: RoutesIndexRoute,
   InvoicePublicTokenRoute: InvoicePublicTokenRoute,
-  ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
   ApiPublicHooksNotifyAssignmentRoute: ApiPublicHooksNotifyAssignmentRoute,
+  ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
