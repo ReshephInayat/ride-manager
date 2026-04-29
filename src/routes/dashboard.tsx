@@ -54,6 +54,7 @@ import {
 } from "@/lib/rides";
 import { useNavigate } from "@tanstack/react-router";
 import { useSystem } from "@/lib/system";
+import { FlightSearchButton } from "@/components/FlightTrackLink";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -825,6 +826,7 @@ function DashboardInner() {
                         <div className="font-medium">{r.pickup_location}</div>
                         <div className="text-muted-foreground">{r.pickup_from}</div>
                         <div className="text-muted-foreground">{r.pickup_time}</div>
+                        <div className="mt-1"><FlightSearchButton ride={r} size="xs" /></div>
                       </TableCell>
                       <TableCell className="text-xs">
                         <div className="font-medium">{r.dropoff_location}</div>

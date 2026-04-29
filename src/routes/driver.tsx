@@ -14,7 +14,7 @@ import { LogOut, CalendarDays, Clock, MapPin, User, Phone, Plane, CheckCircle2, 
 import type { Ride, RideStatus } from "@/lib/rides";
 import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
 import driverHero from "@/assets/driver-hero.jpg";
-import { FlightTrackLink } from "@/components/FlightTrackLink";
+import { FlightTrackLink, FlightSearchButton } from "@/components/FlightTrackLink";
 
 export const Route = createFileRoute("/driver")({ component: DriverPortal });
 
@@ -431,9 +431,12 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
             )}
           </div>
         </div>
-        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusTone[ride.status]}`}>
-          {ride.status.replace("_", " ")}
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusTone[ride.status]}`}>
+            {ride.status.replace("_", " ")}
+          </span>
+          <FlightSearchButton ride={ride} />
+        </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button size="sm" variant={ride.status === "arrived" ? "default" : "outline"} onClick={() => onSetStatus("arrived")}>
