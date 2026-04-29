@@ -384,7 +384,7 @@ function DashboardInner() {
     if (!items.length) return toast.error("No completed rides this month.");
     await createInvoice(items, `Monthly invoice (${start} → ${end})`);
   };
-  const createInvoice = async (items: Ride[], notes: string) => {
+  const createInvoice = async (items: Ride[], notes: string, groupByRoute = false) => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
     const subtotal = items.reduce((s, r) => s + Number(r.amount), 0);
@@ -398,7 +398,7 @@ function DashboardInner() {
       .insert({
         user_id: u.user.id,
         invoice_number,
-        bill_to: "Horizon Air",
+        bill_to: "Puget Sound Limo Horizon Air API",
         period_start: dates[0],
         period_end: dates[dates.length - 1],
         subtotal,
@@ -411,18 +411,44 @@ function DashboardInner() {
       .single();
     if (error) return toast.error(error.message);
 
-    const itemRows = items.map((r) => ({
-      invoice_id: inv!.id,
-      ride_id: r.id,
-      description: `${r.ride_date} • ${r.pickup_from ?? r.pickup_location} → ${r.dropoff_to ?? r.dropoff_location}`,
-      amount: r.amount,
-    }));
+    let itemRows: Array<{ invoice_id: string; ride_id: string | null; description: string; amount: number }>;
+    if (groupByRoute) {
+      // Group by route_id; one line per route with quantity & per-ride price
+      const groups = new Map<string, { name: string; price: number; rides: Ride[] }>();
+      for (const r of items) {
+        const key = r.route_id ?? "__unassigned__";
+        const route = routes.find((rt) => rt.id === r.route_id);
+        const name = route?.name ?? "Unassigned route";
+        const price = route ? Number(route.price) : Number(r.amount);
+        if (!groups.has(key)) groups.set(key, { name, price, rides: [] });
+        groups.get(key)!.rides.push(r);
+      }
+      itemRows = Array.from(groups.values()).map((g) => ({
+        invoice_id: inv!.id,
+        ride_id: null,
+        description: `${g.name} — ${g.rides.length} ride${g.rides.length === 1 ? "" : "s"} × $${g.price.toFixed(2)}`,
+        amount: +(g.rides.reduce((s, r) => s + Number(r.amount), 0)).toFixed(2),
+      }));
+    } else {
+      itemRows = items.map((r) => ({
+        invoice_id: inv!.id,
+        ride_id: r.id,
+        description: `${r.ride_date} • ${r.pickup_from ?? r.pickup_location} → ${r.dropoff_to ?? r.dropoff_location}`,
+        amount: r.amount,
+      }));
+    }
     const { error: e2 } = await supabase.from("invoice_items").insert(itemRows);
     if (e2) return toast.error(e2.message);
 
     toast.success(`Invoice ${invoice_number} created`);
     setSelected(new Set());
     navigate({ to: "/invoices/$id", params: { id: inv!.id } });
+  };
+
+  const createByRouteInvoice = async () => {
+    const items = filtered.filter((r) => r.status === "completed");
+    if (!items.length) return toast.error("No completed rides in current view.");
+    await createInvoice(items, `By-route invoice — ${dateFilter}`, true);
   };
 
   return (
