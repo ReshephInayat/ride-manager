@@ -83,12 +83,15 @@ Rules:
     let parsed: { rides: unknown[] };
     try {
       parsed = JSON.parse(content);
-    } catch {
+    } catch (e) {
+      console.error("[parse-rides-pdf] JSON parse failed:", e, "raw:", content.slice(0, 500));
       return json({ error: "Failed to parse AI JSON", raw: content.slice(0, 500) }, 502);
     }
 
+    console.log(`[parse-rides-pdf] Success: extracted ${parsed.rides?.length ?? 0} rides`);
     return json({ rides: parsed.rides ?? [] });
   } catch (err) {
+    console.error("[parse-rides-pdf] Unhandled error:", err);
     return json({ error: String(err) }, 500);
   }
 });
