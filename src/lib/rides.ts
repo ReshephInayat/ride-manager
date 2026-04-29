@@ -65,6 +65,8 @@ export interface Driver {
   email: string | null;
   notes: string | null;
   active: boolean;
+  login_pin?: string | null;
+  system?: WorkspaceSystem;
 }
 
 // Find best matching route by checking if pickup/dropoff text contains the
