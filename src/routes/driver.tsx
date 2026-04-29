@@ -18,6 +18,28 @@ export const Route = createFileRoute("/driver")({ component: DriverPortal });
 
 const STORAGE_KEY = "psl.driver.session";
 
+function parsePickup(date: string, time: string): number | null {
+  const s = (time ?? "").trim();
+  let h = 0, m = 0;
+  const ampm = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (ampm) {
+    h = parseInt(ampm[1], 10);
+    m = parseInt(ampm[2], 10);
+    const isPm = ampm[3].toUpperCase() === "PM";
+    if (h === 12) h = isPm ? 12 : 0;
+    else if (isPm) h += 12;
+  } else {
+    const hm = s.match(/^(\d{1,2}):(\d{2})/);
+    if (!hm) return null;
+    h = parseInt(hm[1], 10);
+    m = parseInt(hm[2], 10);
+  }
+  const d = new Date(`${date}T00:00:00`);
+  if (isNaN(d.getTime())) return null;
+  d.setHours(h, m, 0, 0);
+  return d.getTime();
+}
+
 interface DriverSession {
   driverId: string;
   pin: string;
