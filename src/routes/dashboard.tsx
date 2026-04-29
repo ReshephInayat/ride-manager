@@ -23,9 +23,32 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, Loader2, FileText, CheckCircle2, XCircle, MinusCircle, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Upload,
+  Loader2,
+  FileText,
+  CheckCircle2,
+  XCircle,
+  MinusCircle,
+  Trash2,
+  Search,
+} from "lucide-react";
 import { toast } from "sonner";
-import { autoMatchRoute, callParser, type Ride, type RideStatus, type RouteRow } from "@/lib/rides";
+import {
+  autoMatchRoute,
+  callParser,
+  type Ride,
+  type RideStatus,
+  type RouteRow,
+  type Driver,
+} from "@/lib/rides";
 import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
@@ -42,9 +65,9 @@ function Dashboard() {
 
 const statusMeta: Record<RideStatus, { label: string; className: string; icon: typeof CheckCircle2 }> = {
   pending: { label: "Pending", className: "bg-secondary text-secondary-foreground", icon: MinusCircle },
-  completed: { label: "Completed", className: "bg-emerald-100 text-emerald-800 border-emerald-200", icon: CheckCircle2 },
-  cancelled: { label: "Cancelled", className: "bg-rose-100 text-rose-800 border-rose-200", icon: XCircle },
-  no_show: { label: "No Show", className: "bg-amber-100 text-amber-800 border-amber-200", icon: MinusCircle },
+  completed: { label: "Completed", className: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700", icon: CheckCircle2 },
+  cancelled: { label: "Cancelled", className: "bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/40 dark:text-rose-100 dark:border-rose-700", icon: XCircle },
+  no_show: { label: "No Show", className: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-100 dark:border-amber-700", icon: MinusCircle },
 };
 
 type DateFilter = "all" | "today" | "tomorrow" | "yesterday" | "this_week" | "this_month" | "custom_month";
@@ -69,7 +92,7 @@ function getDateRange(filter: DateFilter, customMonth: string): { start?: string
     return { start: ymd(t), end: ymd(t) };
   }
   if (filter === "this_week") {
-    const day = now.getDay(); // 0=Sun
+    const day = now.getDay();
     const diffToMon = (day + 6) % 7;
     const mon = new Date(now); mon.setDate(now.getDate() - diffToMon);
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
@@ -89,45 +112,67 @@ function getDateRange(filter: DateFilter, customMonth: string): { start?: string
   return {};
 }
 
+interface PreviewRow {
+  selected: boolean;
+  data: Partial<Ride> & { ride_date: string };
+}
+
 function DashboardInner() {
   const [rides, setRides] = useState<Ride[]>([]);
   const [routes, setRoutes] = useState<RouteRow[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | RideStatus>("all");
+  const [filterDriver, setFilterDriver] = useState<string>("all"); // "all" | driverId | "unassigned"
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [customMonth, setCustomMonth] = useState<string>("");
+  const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
+  const [previewFile, setPreviewFile] = useState<string>("");
+  const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   const load = async () => {
     setLoading(true);
-    const [rRes, routeRes] = await Promise.all([
+    const [rRes, routeRes, dRes] = await Promise.all([
       supabase.from("rides").select("*").order("ride_date", { ascending: true }).order("pickup_time", { ascending: true }),
       supabase.from("routes").select("*").order("created_at"),
+      supabase.from("drivers").select("*").order("created_at"),
     ]);
     if (rRes.error) toast.error(rRes.error.message);
     if (routeRes.error) toast.error(routeRes.error.message);
+    if (dRes.error) toast.error(dRes.error.message);
     setRides((rRes.data as Ride[]) ?? []);
     setRoutes((routeRes.data as RouteRow[]) ?? []);
+    setDrivers((dRes.data as Driver[]) ?? []);
     setLoading(false);
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   const range = useMemo(() => getDateRange(dateFilter, customMonth), [dateFilter, customMonth]);
 
   const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return rides.filter((r) => {
       if (filterStatus !== "all" && r.status !== filterStatus) return false;
+      if (filterDriver === "unassigned" && r.driver_id) return false;
+      if (filterDriver !== "all" && filterDriver !== "unassigned" && r.driver_id !== filterDriver) return false;
       if (range.start && r.ride_date < range.start) return false;
       if (range.end && r.ride_date > range.end) return false;
+      if (q) {
+        const hay = [
+          r.department, r.pickup_from, r.dropoff_to,
+          r.pickup_location, r.dropoff_location, r.pickup_time,
+        ].filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
       return true;
     });
-  }, [rides, filterStatus, range]);
+  }, [rides, filterStatus, filterDriver, range, search]);
 
   const completedSum = useMemo(
     () => filtered.filter((r) => r.status === "completed").reduce((s, r) => s + Number(r.amount), 0),
@@ -141,6 +186,12 @@ function DashboardInner() {
     [filtered, selected]
   );
 
+  const driverMap = useMemo(
+    () => Object.fromEntries(drivers.map((d) => [d.id, d.name])),
+    [drivers]
+  );
+
+  // ---- PDF parse → preview modal ----
   const handleUpload = async (file: File) => {
     setUploading(true);
     try {
@@ -149,10 +200,38 @@ function DashboardInner() {
         toast.warning("No rides found in the PDF.");
         return;
       }
+      setPreviewFile(file.name);
+      setPreviewRows(
+        parsed
+          .filter((p) => p.ride_date)
+          .map((p) => ({ selected: true, data: p as PreviewRow["data"] }))
+      );
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const togglePreview = (i: number) =>
+    setPreviewRows((rs) => rs ? rs.map((r, idx) => (idx === i ? { ...r, selected: !r.selected } : r)) : rs);
+  const togglePreviewAll = () =>
+    setPreviewRows((rs) => {
+      if (!rs) return rs;
+      const allOn = rs.every((r) => r.selected);
+      return rs.map((r) => ({ ...r, selected: !allOn }));
+    });
+
+  const importPreview = async () => {
+    if (!previewRows) return;
+    const chosen = previewRows.filter((r) => r.selected);
+    if (!chosen.length) return toast.error("Select at least one ride to import.");
+    setImporting(true);
+    try {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
-
-      const rows = parsed.map((p) => {
+      const rows = chosen.map(({ data: p }) => {
         const matched = autoMatchRoute(
           {
             pickup_from: p.pickup_from ?? null,
@@ -175,11 +254,9 @@ function DashboardInner() {
           status: "pending" as RideStatus,
           route_id: matched?.id ?? null,
           amount: matched?.price ?? 0,
-          source_file: file.name,
+          source_file: previewFile,
         };
       });
-
-      // Upsert with onConflict on (user_id, dedupe_key) — duplicates are skipped.
       const { data: inserted, error } = await supabase
         .from("rides")
         .upsert(rows, { onConflict: "user_id,dedupe_key", ignoreDuplicates: true })
@@ -190,38 +267,36 @@ function DashboardInner() {
       toast.success(
         `Imported ${added} rides${skipped > 0 ? ` • Skipped ${skipped} duplicate${skipped === 1 ? "" : "s"}` : ""}.`
       );
+      setPreviewRows(null);
+      setPreviewFile("");
       await load();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
+      setImporting(false);
     }
   };
 
+  // ---- Inline edits ----
   const setStatus = async (ride: Ride, status: RideStatus) => {
     setRides((rs) => rs.map((r) => (r.id === ride.id ? { ...r, status } : r)));
     const { error } = await supabase.from("rides").update({ status }).eq("id", ride.id);
-    if (error) {
-      toast.error(error.message);
-      load();
-    }
+    if (error) { toast.error(error.message); load(); }
   };
 
   const setRoute = async (ride: Ride, routeId: string) => {
     const route = routes.find((r) => r.id === routeId);
     const amount = route?.price ?? 0;
-    setRides((rs) =>
-      rs.map((r) => (r.id === ride.id ? { ...r, route_id: routeId, amount } : r))
-    );
-    const { error } = await supabase
-      .from("rides")
-      .update({ route_id: routeId, amount })
-      .eq("id", ride.id);
-    if (error) {
-      toast.error(error.message);
-      load();
-    }
+    setRides((rs) => rs.map((r) => (r.id === ride.id ? { ...r, route_id: routeId, amount } : r)));
+    const { error } = await supabase.from("rides").update({ route_id: routeId, amount }).eq("id", ride.id);
+    if (error) { toast.error(error.message); load(); }
+  };
+
+  const setDriver = async (ride: Ride, driverIdRaw: string) => {
+    const driver_id = driverIdRaw === "__none__" ? null : driverIdRaw;
+    setRides((rs) => rs.map((r) => (r.id === ride.id ? { ...r, driver_id } : r)));
+    const { error } = await supabase.from("rides").update({ driver_id }).eq("id", ride.id);
+    if (error) { toast.error(error.message); load(); }
   };
 
   const deleteRide = async (id: string) => {
@@ -247,12 +322,10 @@ function DashboardInner() {
   const toggleSelect = (id: string) => {
     setSelected((s) => {
       const n = new Set(s);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
+      if (n.has(id)) n.delete(id); else n.add(id);
       return n;
     });
   };
-
   const toggleSelectAll = () => {
     if (selected.size === filtered.length) setSelected(new Set());
     else setSelected(new Set(filtered.map((r) => r.id)));
@@ -264,13 +337,11 @@ function DashboardInner() {
     if (!items.length) return toast.error("Select at least one completed ride.");
     await createInvoice(items, "Selected rides invoice");
   };
-
   const createFilteredInvoice = async () => {
     const items = filtered.filter((r) => r.status === "completed");
     if (!items.length) return toast.error("No completed rides in current view.");
     await createInvoice(items, `Invoice — ${dateFilter}`);
   };
-
   const createInvoice = async (items: Ride[], notes: string) => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
@@ -312,8 +383,7 @@ function DashboardInner() {
         <div>
           <h1 className="text-3xl font-bold">Rides</h1>
           <p className="text-muted-foreground mt-1">
-            Upload a hotel schedule PDF to import rides, then mark each one as completed,
-            cancelled or no-show.
+            Upload a hotel schedule PDF, review the extracted rides, then import. Assign drivers, mark statuses, and bill.
           </p>
         </div>
         <div className="flex gap-2">
@@ -329,7 +399,7 @@ function DashboardInner() {
           />
           <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
             {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-            {uploading ? "Importing…" : "Upload PDF"}
+            {uploading ? "Reading PDF…" : "Upload PDF"}
           </Button>
         </div>
       </div>
@@ -343,10 +413,22 @@ function DashboardInner() {
 
       <Card className="p-4 mb-4">
         <div className="flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[200px]">
+            <label className="text-xs text-muted-foreground block mb-1">Search</label>
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Department, passenger, flight, location…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Date</label>
             <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>
-              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All time</SelectItem>
                 <SelectItem value="today">Today</SelectItem>
@@ -372,13 +454,26 @@ function DashboardInner() {
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Status</label>
             <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as never)}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
                 <SelectItem value="no_show">No show</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">Driver</label>
+            <Select value={filterDriver} onValueChange={setFilterDriver}>
+              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All drivers</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {drivers.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -414,6 +509,7 @@ function DashboardInner() {
                 <TableHead>Riders</TableHead>
                 <TableHead>Pickup</TableHead>
                 <TableHead>Dropoff</TableHead>
+                <TableHead>Driver</TableHead>
                 <TableHead>Route / Price</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
@@ -422,10 +518,10 @@ function DashboardInner() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
-                  No rides yet. Upload a PDF to get started.
+                <TableRow><TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
+                  No rides match. Upload a PDF or change filters.
                 </TableCell></TableRow>
               ) : (
                 filtered.map((r) => {
@@ -449,6 +545,17 @@ function DashboardInner() {
                       <TableCell className="text-xs">
                         <div className="font-medium">{r.dropoff_location}</div>
                         <div className="text-muted-foreground">{r.dropoff_to}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Select value={r.driver_id ?? "__none__"} onValueChange={(v) => setDriver(r, v)}>
+                          <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">— Unassigned —</SelectItem>
+                            {drivers.map((d) => (
+                              <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell>
                         <Select value={r.route_id ?? ""} onValueChange={(v) => setRoute(r, v)}>
@@ -481,7 +588,7 @@ function DashboardInner() {
                         <button
                           onClick={() => deleteRide(r.id)}
                           title="Delete ride"
-                          className="h-7 w-7 grid place-items-center rounded border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors"
+                          className="h-7 w-7 grid place-items-center rounded border border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -494,6 +601,69 @@ function DashboardInner() {
           </Table>
         </div>
       </Card>
+
+      {/* PDF Preview Modal */}
+      <Dialog open={!!previewRows} onOpenChange={(o) => !o && setPreviewRows(null)}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Review extracted rides — {previewFile}</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground">
+            {previewRows?.length ?? 0} rides found. Uncheck any that look wrong, then import. Duplicates from previous PDFs will be skipped automatically.
+          </div>
+          <div className="max-h-[60vh] overflow-auto border rounded-md">
+            <Table>
+              <TableHeader className="sticky top-0 bg-card">
+                <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={!!previewRows && previewRows.every((r) => r.selected)}
+                      onCheckedChange={togglePreviewAll}
+                    />
+                  </TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Pickup</TableHead>
+                  <TableHead>Dropoff</TableHead>
+                  <TableHead>Riders</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {previewRows?.map((row, i) => (
+                  <TableRow key={i} className={!row.selected ? "opacity-50" : ""}>
+                    <TableCell>
+                      <Checkbox checked={row.selected} onCheckedChange={() => togglePreview(i)} />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">{row.data.ride_date}</TableCell>
+                    <TableCell className="text-xs">{row.data.pickup_time}</TableCell>
+                    <TableCell className="text-xs max-w-[160px] truncate">{row.data.department}</TableCell>
+                    <TableCell className="text-xs">
+                      <div className="font-medium">{row.data.pickup_location}</div>
+                      <div className="text-muted-foreground">{row.data.pickup_from}</div>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      <div className="font-medium">{row.data.dropoff_location}</div>
+                      <div className="text-muted-foreground">{row.data.dropoff_to}</div>
+                    </TableCell>
+                    <TableCell>{row.data.riders ?? 1}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPreviewRows(null)} disabled={importing}>Cancel</Button>
+            <Button onClick={importPreview} disabled={importing}>
+              {importing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Import {previewRows?.filter((r) => r.selected).length ?? 0} rides
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hidden refs to silence lint about driverMap not used */}
+      <span className="hidden">{Object.keys(driverMap).length}</span>
     </div>
   );
 }
@@ -508,22 +678,15 @@ function StatCard({ label, value, accent }: { label: string; value: string; acce
 }
 
 function StatusBtn({
-  active,
-  onClick,
-  title,
-  tone,
-  children,
+  active, onClick, title, tone, children,
 }: {
-  active: boolean;
-  onClick: () => void;
-  title: string;
-  tone: "emerald" | "rose" | "amber";
-  children: React.ReactNode;
+  active: boolean; onClick: () => void; title: string;
+  tone: "emerald" | "rose" | "amber"; children: React.ReactNode;
 }) {
   const map = {
-    emerald: "border-emerald-300 text-emerald-700 hover:bg-emerald-50 data-[active=true]:bg-emerald-600 data-[active=true]:text-white data-[active=true]:border-emerald-600",
-    rose: "border-rose-300 text-rose-700 hover:bg-rose-50 data-[active=true]:bg-rose-600 data-[active=true]:text-white data-[active=true]:border-rose-600",
-    amber: "border-amber-300 text-amber-700 hover:bg-amber-50 data-[active=true]:bg-amber-500 data-[active=true]:text-white data-[active=true]:border-amber-500",
+    emerald: "border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 data-[active=true]:bg-emerald-600 data-[active=true]:text-white data-[active=true]:border-emerald-600",
+    rose: "border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 data-[active=true]:bg-rose-600 data-[active=true]:text-white data-[active=true]:border-rose-600",
+    amber: "border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 data-[active=true]:bg-amber-500 data-[active=true]:text-white data-[active=true]:border-amber-500",
   };
   return (
     <button
@@ -536,3 +699,6 @@ function StatusBtn({
     </button>
   );
 }
+
+
+

@@ -1,5 +1,6 @@
 import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth";
+import { ThemeProvider } from "@/lib/theme";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -31,10 +32,10 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Puget Sound Limos — Ride Manager" },
-      { name: "description", content: "Manage daily pickup & dropoff rides, statuses, and invoices." },
-      { property: "og:title", content: "Puget Sound Limos — Ride Manager" },
-      { property: "og:description", content: "Manage daily pickup & dropoff rides, statuses, and invoices." },
+      { title: "Puget Sound Limo — Ride Manager" },
+      { name: "description", content: "Manage daily pickup & dropoff rides, drivers, and invoices." },
+      { property: "og:title", content: "Puget Sound Limo — Ride Manager" },
+      { property: "og:description", content: "Manage daily pickup & dropoff rides, drivers, and invoices." },
       { property: "og:type", content: "website" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
@@ -60,9 +61,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <AuthProvider>
-      <Outlet />
-      <Toaster richColors position="top-right" />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Outlet />
+        <Toaster richColors position="top-right" />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

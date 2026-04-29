@@ -1,17 +1,31 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
+import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
-import { Car, FileText, LayoutDashboard, Settings, LogOut } from "lucide-react";
+import {
+  Car,
+  FileText,
+  LayoutDashboard,
+  Settings,
+  LogOut,
+  Users,
+  CalendarDays,
+  Sun,
+  Moon,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 const nav = [
   { to: "/dashboard", label: "Rides", icon: LayoutDashboard },
+  { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/invoices", label: "Invoices", icon: FileText },
-  { to: "/routes", label: "Routes & Pricing", icon: Settings },
+  { to: "/drivers", label: "Drivers", icon: Users },
+  { to: "/routes", label: "Routes", icon: Settings },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
+  const { theme, toggle } = useTheme();
   const loc = useLocation();
   const navigate = useNavigate();
 
@@ -23,7 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="h-8 w-8 rounded-md bg-primary text-primary-foreground grid place-items-center">
               <Car className="h-4 w-4" />
             </span>
-            <span>Puget Sound Limos</span>
+            <span>Puget Sound Limo</span>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
             {nav.map((n) => {
@@ -43,7 +57,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggle}
+              title={theme === "dark" ? "Switch to light" : "Switch to dark"}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             <span className="hidden sm:inline text-sm text-muted-foreground">{user?.email}</span>
             <Button
               variant="ghost"
@@ -65,7 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 key={n.to}
                 to={n.to}
-                className={`flex-1 flex items-center justify-center gap-1 py-2 text-xs ${
+                className={`flex-1 flex items-center justify-center gap-1 py-2 text-xs whitespace-nowrap ${
                   active ? "text-foreground border-b-2 border-accent" : "text-muted-foreground"
                 }`}
               >

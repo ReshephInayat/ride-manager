@@ -49,7 +49,7 @@ function LoginPage() {
               <Car className="h-6 w-6 text-white" />
             </span>
             <div>
-              <div className="font-semibold text-xl text-white leading-tight">Puget Sound Limos</div>
+              <div className="font-semibold text-xl text-white leading-tight">Puget Sound Limo</div>
               <div className="text-xs text-white/70">Ground Transportation Manager</div>
             </div>
           </div>
@@ -72,7 +72,7 @@ function LoginPage() {
             </div>
           </div>
 
-          <div className="text-xs text-white/60">© {new Date().getFullYear()} Puget Sound Limos</div>
+          <div className="text-xs text-white/60">© {new Date().getFullYear()} Puget Sound Limo</div>
         </div>
       </div>
 
@@ -84,7 +84,7 @@ function LoginPage() {
           <div className="absolute inset-0 bg-slate-950/70" />
           <div className="absolute inset-0 flex items-center justify-center text-white">
             <div className="flex items-center gap-2 font-semibold">
-              <Car className="h-5 w-5" /> Puget Sound Limos
+              <Car className="h-5 w-5" /> Puget Sound Limo
             </div>
           </div>
         </div>
