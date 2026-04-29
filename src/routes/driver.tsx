@@ -47,6 +47,31 @@ interface DriverSession {
   system: WorkspaceSystem;
 }
 
+// Force light theme on the driver portal regardless of admin's saved theme.
+function useForceLightTheme() {
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const el = document.documentElement;
+    const had = el.classList.contains("dark");
+    el.classList.remove("dark");
+    return () => { if (had) el.classList.add("dark"); };
+  }, []);
+}
+
+// Stable per-device client key for rate limiting — never identifies the user.
+function getClientKey(): string {
+  if (typeof window === "undefined") return "ssr";
+  try {
+    const k = "psl.driver.clientKey";
+    let v = window.localStorage.getItem(k);
+    if (!v) {
+      v = (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      window.localStorage.setItem(k, v);
+    }
+    return v;
+  } catch { return "anon"; }
+}
+
 function loadSession(): DriverSession | null {
   if (typeof window === "undefined") return null;
   try {
@@ -62,6 +87,7 @@ function saveSession(s: DriverSession | null) {
 }
 
 function DriverPortal() {
+  useForceLightTheme();
   const [session, setSession] = useState<DriverSession | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -82,14 +108,18 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pin.trim()) return;
+    const trimmed = pin.trim();
+    if (!trimmed) return;
+    if (trimmed.length < 4) return toast.error("PIN must be at least 4 digits");
     setBusy(true);
-    const { data, error } = await supabase.rpc("driver_login", { _pin: pin.trim(), _system: system });
+    const { data, error } = await supabase.rpc("driver_login", {
+      _pin: trimmed, _system: system, _client_key: getClientKey(),
+    });
     setBusy(false);
     if (error) return toast.error(error.message);
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return toast.error("Invalid PIN for this workspace");
-    onSuccess({ driverId: row.id, pin: pin.trim(), name: row.name, system });
+    onSuccess({ driverId: row.id, pin: trimmed, name: row.name, system });
     toast.success(`Welcome, ${row.name}`);
   };
 
@@ -128,6 +158,9 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
           </Button>
           <p className="text-xs text-muted-foreground text-center">
             Don't have a PIN? Ask the dispatcher to set one for you.
+          </p>
+          <p className="text-xs text-center">
+            <a href="/" className="text-primary hover:underline">← Back to home</a>
           </p>
         </form>
       </Card>

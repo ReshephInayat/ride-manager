@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      driver_login_attempts: {
+        Row: {
+          attempted_at: string
+          client_key: string
+          id: string
+          success: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          client_key: string
+          id?: string
+          success?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          client_key?: string
+          id?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
       driver_notification_log: {
         Row: {
           id: string
@@ -53,6 +74,7 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
+          pin_hash: string | null
           system: Database["public"]["Enums"]["workspace_system"]
           user_id: string
         }
@@ -65,6 +87,7 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
+          pin_hash?: string | null
           system?: Database["public"]["Enums"]["workspace_system"]
           user_id: string
         }
@@ -77,6 +100,7 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
+          pin_hash?: string | null
           system?: Database["public"]["Enums"]["workspace_system"]
           user_id?: string
         }
@@ -133,6 +157,7 @@ export type Database = {
           public_token: string | null
           sales_tax_amount: number
           sales_tax_rate: number
+          status: Database["public"]["Enums"]["invoice_status"]
           subtotal: number
           system: Database["public"]["Enums"]["workspace_system"]
           total: number
@@ -149,6 +174,7 @@ export type Database = {
           public_token?: string | null
           sales_tax_amount?: number
           sales_tax_rate?: number
+          status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
           system?: Database["public"]["Enums"]["workspace_system"]
           total?: number
@@ -165,6 +191,7 @@ export type Database = {
           public_token?: string | null
           sales_tax_amount?: number
           sales_tax_rate?: number
+          status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
           system?: Database["public"]["Enums"]["workspace_system"]
           total?: number
@@ -401,18 +428,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      driver_login: {
-        Args: {
-          _pin: string
-          _system: Database["public"]["Enums"]["workspace_system"]
-        }
-        Returns: {
-          id: string
-          name: string
-          system: Database["public"]["Enums"]["workspace_system"]
-          user_id: string
-        }[]
-      }
+      driver_login:
+        | {
+            Args: {
+              _pin: string
+              _system: Database["public"]["Enums"]["workspace_system"]
+            }
+            Returns: {
+              id: string
+              name: string
+              system: Database["public"]["Enums"]["workspace_system"]
+              user_id: string
+            }[]
+          }
+        | {
+            Args: {
+              _client_key?: string
+              _pin: string
+              _system: Database["public"]["Enums"]["workspace_system"]
+            }
+            Returns: {
+              id: string
+              name: string
+              system: Database["public"]["Enums"]["workspace_system"]
+              user_id: string
+            }[]
+          }
       driver_rides: {
         Args: { _driver_id: string; _pin: string }
         Returns: {
@@ -488,8 +529,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_driver_pin: {
+        Args: { _driver_id: string; _pin: string }
+        Returns: undefined
+      }
     }
     Enums: {
+      invoice_status: "draft" | "finalized"
       ride_status: "pending" | "completed" | "cancelled" | "no_show" | "arrived"
       workspace_system: "api" | "llc"
     }
@@ -619,6 +665,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      invoice_status: ["draft", "finalized"],
       ride_status: ["pending", "completed", "cancelled", "no_show", "arrived"],
       workspace_system: ["api", "llc"],
     },
