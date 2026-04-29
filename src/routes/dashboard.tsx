@@ -121,6 +121,22 @@ interface PreviewRow {
   data: Partial<Ride> & { ride_date: string };
 }
 
+interface InvoiceLine {
+  id: string;
+  description: string;
+  quantity: number;
+  price: number;
+}
+
+interface InvoicePreviewState {
+  start: string;
+  end: string;
+  billTo: string;
+  invoiceNumber: string;
+  notes: string;
+  lines: InvoiceLine[];
+}
+
 function DashboardInner() {
   const { system, label } = useSystem();
   const [rides, setRides] = useState<Ride[]>([]);
