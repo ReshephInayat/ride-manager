@@ -700,9 +700,5 @@ function StatusBtn({
   );
 }
 
-// Patch Ride type at runtime: tiny helper to safely access optional fields in search.
-declare module "@/lib/rides" {
-  interface Ride {
-    pickup_to_safe?: () => string | null;
-  }
-}
+
+
