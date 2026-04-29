@@ -112,6 +112,8 @@ export interface FileRoutesByFullPath {
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/notify-assignment': typeof ApiPublicHooksNotifyAssignmentRoute
+}
+export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/dashboard': typeof DashboardRoute
@@ -126,6 +128,8 @@ export interface FileRoutesByFullPath {
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/notify-assignment': typeof ApiPublicHooksNotifyAssignmentRoute
+}
+export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
@@ -141,6 +145,8 @@ export interface FileRoutesByFullPath {
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/notify-assignment': typeof ApiPublicHooksNotifyAssignmentRoute
+}
+export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
     | '/invoice/public/$token'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/notify-assignment'
+  fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/calendar'
@@ -172,6 +179,7 @@ export interface FileRoutesByFullPath {
     | '/invoice/public/$token'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/notify-assignment'
+  id:
     | '__root__'
     | '/'
     | '/calendar'
@@ -187,6 +195,7 @@ export interface FileRoutesByFullPath {
     | '/invoice/public/$token'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/notify-assignment'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
