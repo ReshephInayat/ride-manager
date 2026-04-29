@@ -22,6 +22,7 @@ import { Route as RidesIdRouteImport } from './routes/rides.$id'
 import { Route as InvoicesIdRouteImport } from './routes/invoices.$id'
 import { Route as InvoicePublicTokenRouteImport } from './routes/invoice.public.$token'
 import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
+import { Route as ApiPublicHooksNotifyAssignmentRouteImport } from './routes/api/public/hooks/notify-assignment'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -89,6 +90,12 @@ const ApiPublicHooksProcessRemindersRoute =
     path: '/api/public/hooks/process-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksNotifyAssignmentRoute =
+  ApiPublicHooksNotifyAssignmentRouteImport.update({
+    id: '/api/public/hooks/notify-assignment',
+    path: '/api/public/hooks/notify-assignment',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/routes/': typeof RoutesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
+  '/api/public/hooks/notify-assignment': typeof ApiPublicHooksNotifyAssignmentRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -119,6 +127,7 @@ export interface FileRoutesByTo {
   '/routes': typeof RoutesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
+  '/api/public/hooks/notify-assignment': typeof ApiPublicHooksNotifyAssignmentRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -135,6 +144,7 @@ export interface FileRoutesById {
   '/routes/': typeof RoutesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
+  '/api/public/hooks/notify-assignment': typeof ApiPublicHooksNotifyAssignmentRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -152,6 +162,7 @@ export interface FileRouteTypes {
     | '/routes/'
     | '/invoice/public/$token'
     | '/api/public/hooks/process-reminders'
+    | '/api/public/hooks/notify-assignment'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/routes'
     | '/invoice/public/$token'
     | '/api/public/hooks/process-reminders'
+    | '/api/public/hooks/notify-assignment'
   id:
     | '__root__'
     | '/'
@@ -182,6 +194,7 @@ export interface FileRouteTypes {
     | '/routes/'
     | '/invoice/public/$token'
     | '/api/public/hooks/process-reminders'
+    | '/api/public/hooks/notify-assignment'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -198,6 +211,7 @@ export interface RootRouteChildren {
   RoutesIndexRoute: typeof RoutesIndexRoute
   InvoicePublicTokenRoute: typeof InvoicePublicTokenRoute
   ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
+  ApiPublicHooksNotifyAssignmentRoute: typeof ApiPublicHooksNotifyAssignmentRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -293,6 +307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksProcessRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/notify-assignment': {
+      id: '/api/public/hooks/notify-assignment'
+      path: '/api/public/hooks/notify-assignment'
+      fullPath: '/api/public/hooks/notify-assignment'
+      preLoaderRoute: typeof ApiPublicHooksNotifyAssignmentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -310,6 +331,7 @@ const rootRouteChildren: RootRouteChildren = {
   RoutesIndexRoute: RoutesIndexRoute,
   InvoicePublicTokenRoute: InvoicePublicTokenRoute,
   ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
+  ApiPublicHooksNotifyAssignmentRoute: ApiPublicHooksNotifyAssignmentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
