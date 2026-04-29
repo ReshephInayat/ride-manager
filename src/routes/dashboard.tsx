@@ -637,10 +637,16 @@ function DashboardInner() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className={`grid grid-cols-2 ${system === "api" ? "md:grid-cols-6" : "md:grid-cols-4"} gap-4 mb-6`}>
         <StatCard tone="blue" label="Total rides (filtered)" value={filtered.length.toString()} />
         <StatCard tone="violet" label="Completed" value={filtered.filter((r) => r.status === "completed").length.toString()} />
         <StatCard tone="emerald" label="Completed total" value={`$${completedSum.toFixed(2)}`} />
+        {system === "api" && (
+          <>
+            <StatCard tone="rose" label="Commission (10%)" value={`$${(completedSum * 0.1).toFixed(2)}`} />
+            <StatCard tone="teal" label="Net after commission" value={`$${(completedSum * 0.9).toFixed(2)}`} />
+          </>
+        )}
         <StatCard tone="amber" label="Selected total" value={`$${selectedSum.toFixed(2)}`} />
       </div>
 
