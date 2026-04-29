@@ -424,6 +424,15 @@ function DashboardInner() {
     if (!items.length) return toast.error("No completed rides this month.");
     await createInvoice(items, `Monthly invoice (${start} → ${end})`);
   };
+  const nextInvoiceNumber = async (): Promise<string> => {
+    const { count } = await supabase
+      .from("invoices")
+      .select("id", { count: "exact", head: true })
+      .eq("system", system);
+    const next = (count ?? 0) + 1;
+    return String(next).padStart(3, "0");
+  };
+
   const createInvoice = async (items: Ride[], notes: string, groupByRoute = false) => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
@@ -432,7 +441,7 @@ function DashboardInner() {
     const sales_tax_amount = +(subtotal * sales_tax_rate / 100).toFixed(2);
     const total = +(subtotal + sales_tax_amount).toFixed(2);
     const dates = items.map((r) => r.ride_date).sort();
-    const invoice_number = `INV-${Date.now()}`;
+    const invoice_number = await nextInvoiceNumber();
     const { data: inv, error } = await supabase
       .from("invoices")
       .insert({
