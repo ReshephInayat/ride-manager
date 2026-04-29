@@ -8,7 +8,6 @@ import { Card } from "@/components/ui/card";
 import { ShieldCheck, Sparkles, FileText } from "lucide-react";
 import { toast } from "react-hot-toast";
 import loginHero from "@/assets/login-hero.jpg";
-import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
@@ -46,7 +45,7 @@ function LoginPage() {
 
         <div className="relative z-10 flex flex-col justify-between h-full p-12 text-white">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Puget Sound Limo" className="h-12 w-auto drop-shadow-lg" />
+            <span className="text-2xl font-bold tracking-tight text-white">Puget Sound Limo</span>
           </div>
 
           <div>
