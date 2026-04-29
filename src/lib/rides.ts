@@ -66,6 +66,7 @@ export interface Driver {
   notes: string | null;
   active: boolean;
   login_pin?: string | null;
+  pin_hash?: string | null;
   system?: WorkspaceSystem;
 }
 
