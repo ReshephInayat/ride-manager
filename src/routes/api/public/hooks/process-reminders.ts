@@ -130,3 +130,29 @@ function normalizeTime(t: string): string {
   if (hm) return `${hm[1].padStart(2, "0")}:${hm[2]}`;
   return "00:00";
 }
+
+// Sends SMS via the Lovable Twilio connector gateway. Silently skips when
+// Twilio is not yet linked (no env vars). Configure TWILIO_FROM_NUMBER in
+// project secrets for the sender phone number.
+async function sendSms(to: string, body: string): Promise<void> {
+  const lovableKey = process.env.LOVABLE_API_KEY;
+  const twilioKey = process.env.TWILIO_API_KEY;
+  const from = process.env.TWILIO_FROM_NUMBER;
+  if (!lovableKey || !twilioKey || !from) {
+    console.log("Twilio not configured — skipping SMS to", to);
+    return;
+  }
+  const res = await fetch("https://connector-gateway.lovable.dev/twilio/Messages.json", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${lovableKey}`,
+      "X-Connection-Api-Key": twilioKey,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ To: to, From: from, Body: body }),
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Twilio ${res.status}: ${txt}`);
+  }
+}
