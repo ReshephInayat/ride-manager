@@ -18,6 +18,32 @@ export interface Ride {
   driver_id: string | null;
   amount: number;
   source_file: string | null;
+  passenger_name?: string | null;
+  flight_number?: string | null;
+  phone?: string | null;
+  notes?: string | null;
+}
+
+export interface RideReminder {
+  id: string;
+  user_id: string;
+  ride_id: string;
+  remind_at: string;
+  message: string | null;
+  notified: boolean;
+  created_at: string;
+}
+
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  driver_id: string | null;
+  ride_id: string | null;
+  kind: string;
+  title: string;
+  body: string | null;
+  read: boolean;
+  created_at: string;
 }
 
 export interface RouteRow {
