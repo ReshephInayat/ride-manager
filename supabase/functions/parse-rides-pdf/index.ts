@@ -36,6 +36,8 @@ Rules:
 - Skip header rows and any rows in BOLD (those are repeated from the previous month).
 - Return ONLY valid JSON: {"rides":[ ... ]}. No prose.`;
 
+    console.log(`[parse-rides-pdf] Calling AI gateway, file: ${fileName}, size: ${fileBase64.length} chars`);
+
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -64,6 +66,13 @@ Rules:
 
     if (!aiRes.ok) {
       const t = await aiRes.text();
+      console.error(`[parse-rides-pdf] AI gateway error ${aiRes.status}: ${t}`);
+      if (aiRes.status === 429) {
+        return json({ error: "Rate limit exceeded. Please wait a moment and try again." }, 429);
+      }
+      if (aiRes.status === 402) {
+        return json({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }, 402);
+      }
       return json({ error: `AI error ${aiRes.status}: ${t}` }, 502);
     }
     const data = await aiRes.json();
@@ -74,12 +83,15 @@ Rules:
     let parsed: { rides: unknown[] };
     try {
       parsed = JSON.parse(content);
-    } catch {
+    } catch (e) {
+      console.error("[parse-rides-pdf] JSON parse failed:", e, "raw:", content.slice(0, 500));
       return json({ error: "Failed to parse AI JSON", raw: content.slice(0, 500) }, 502);
     }
 
+    console.log(`[parse-rides-pdf] Success: extracted ${parsed.rides?.length ?? 0} rides`);
     return json({ rides: parsed.rides ?? [] });
   } catch (err) {
+    console.error("[parse-rides-pdf] Unhandled error:", err);
     return json({ error: String(err) }, 500);
   }
 });
