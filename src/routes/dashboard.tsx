@@ -606,24 +606,34 @@ function DashboardInner() {
         <div>
           <h1 className="text-3xl font-bold">Rides</h1>
           <p className="text-muted-foreground mt-1">
-            Upload a hotel schedule PDF, review the extracted rides, then import. Assign drivers, mark statuses, and bill.
+            <span className="font-medium text-foreground">{label}</span> —{" "}
+            {system === "api"
+              ? "upload hotel schedule PDFs, review extracted rides, then import."
+              : "add rides manually using your saved routes & prices."}
           </p>
         </div>
-        <div className="flex gap-2">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleUpload(f);
-            }}
-          />
-          <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
-            {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-            {uploading ? "Reading PDF…" : "Upload PDF"}
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={() => setManualOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Add ride
           </Button>
+          {system === "api" && (
+            <>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleUpload(f);
+                }}
+              />
+              <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
+                {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                {uploading ? "Reading PDF…" : "Upload PDF"}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -715,8 +725,8 @@ function DashboardInner() {
             <Button variant="outline" onClick={createInvoiceFromSelected}>
               <FileText className="h-4 w-4 mr-1" /> Invoice selected
             </Button>
-            <Button variant="outline" onClick={createByRouteInvoice}>
-              <FileText className="h-4 w-4 mr-1" /> Invoice by route
+            <Button variant="outline" onClick={openByRouteInvoice}>
+              <FileText className="h-4 w-4 mr-1" /> Invoice by route…
             </Button>
             <Button variant="outline" onClick={createWeeklyInvoice}>
               <FileText className="h-4 w-4 mr-1" /> Weekly invoice
