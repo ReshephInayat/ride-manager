@@ -22,6 +22,7 @@ import { Route as RidesIdRouteImport } from './routes/rides.$id'
 import { Route as InvoicesIdRouteImport } from './routes/invoices.$id'
 import { Route as InvoicePublicTokenRouteImport } from './routes/invoice.public.$token'
 import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
+import { Route as ApiPublicHooksNotifyAssignmentRouteImport } from './routes/api/public/hooks/notify-assignment'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -87,6 +88,12 @@ const ApiPublicHooksProcessRemindersRoute =
   ApiPublicHooksProcessRemindersRouteImport.update({
     id: '/api/public/hooks/process-reminders',
     path: '/api/public/hooks/process-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksNotifyAssignmentRoute =
+  ApiPublicHooksNotifyAssignmentRouteImport.update({
+    id: '/api/public/hooks/notify-assignment',
+    path: '/api/public/hooks/notify-assignment',
     getParentRoute: () => rootRouteImport,
   } as any)
 
