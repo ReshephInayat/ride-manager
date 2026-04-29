@@ -391,11 +391,11 @@ function Inner() {
                     />
                   ) : it.description}
                 </td>
-                <td className="text-right">1</td>
+                <td className="text-right">{extractQuantity(it.description)}</td>
                 <td className="text-right">
                   {editing ? (
                     <Input type="number" step="0.01" value={it.amount} onChange={(e) => updateDraftItem(idx, { amount: Number(e.target.value) })} className="text-right bg-white text-slate-900 w-24 ml-auto" />
-                  ) : `$${Number(it.amount).toFixed(2)}`}
+                  ) : `$${(() => { const q = extractQuantity(it.description); return (q > 0 ? Number(it.amount) / q : Number(it.amount)).toFixed(2); })()}`}
                 </td>
                 <td className="text-right">${Number(it.amount).toFixed(2)}</td>
                 {editing && (
