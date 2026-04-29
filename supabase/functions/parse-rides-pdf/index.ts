@@ -36,6 +36,8 @@ Rules:
 - Skip header rows and any rows in BOLD (those are repeated from the previous month).
 - Return ONLY valid JSON: {"rides":[ ... ]}. No prose.`;
 
+    console.log(`[parse-rides-pdf] Calling AI gateway, file: ${fileName}, size: ${fileBase64.length} chars`);
+
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -64,6 +66,13 @@ Rules:
 
     if (!aiRes.ok) {
       const t = await aiRes.text();
+      console.error(`[parse-rides-pdf] AI gateway error ${aiRes.status}: ${t}`);
+      if (aiRes.status === 429) {
+        return json({ error: "Rate limit exceeded. Please wait a moment and try again." }, 429);
+      }
+      if (aiRes.status === 402) {
+        return json({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }, 402);
+      }
       return json({ error: `AI error ${aiRes.status}: ${t}` }, 502);
     }
     const data = await aiRes.json();
