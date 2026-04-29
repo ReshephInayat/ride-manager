@@ -15,6 +15,7 @@ import type { Ride, RideStatus } from "@/lib/rides";
 import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
 import driverHero from "@/assets/driver-hero.jpg";
 import { FlightTrackLink, FlightSearchButton } from "@/components/FlightTrackLink";
+import { DriverNotificationBell } from "@/components/DriverNotificationBell";
 
 export const Route = createFileRoute("/driver")({ component: DriverPortal });
 
@@ -365,9 +366,12 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
             <div className="font-semibold truncate">{session.name}</div>
             <div className="text-xs text-muted-foreground truncate">{SYSTEM_LABELS[session.system]}</div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onLogout}>
-            <LogOut className="h-4 w-4 mr-1" /> Sign out
-          </Button>
+          <div className="flex items-center gap-1">
+            <DriverNotificationBell driverId={session.driverId} pin={session.pin} />
+            <Button variant="ghost" size="sm" onClick={onLogout}>
+              <LogOut className="h-4 w-4 mr-1" /> Sign out
+            </Button>
+          </div>
         </div>
       </header>
 
