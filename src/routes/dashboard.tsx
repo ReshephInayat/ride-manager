@@ -340,18 +340,13 @@ function DashboardInner() {
         return { ...row, ride_key, dedupe_key: ride_key };
       });
 
-      // Step 1: deduplicate within the current batch (same key in PDF only inserts once).
-      const seen = new Set<string>();
-      const rows: typeof allRows = [];
-      let inBatchDuplicates = 0;
-      for (const r of allRows) {
-        if (seen.has(r.ride_key)) { inBatchDuplicates++; continue; }
-        seen.add(r.ride_key);
-        rows.push(r);
-      }
+      // Step 1: per request, KEEP duplicates that appear inside the same PDF.
+      //         Only skip rides that already exist in the database.
+      const rows = allRows;
 
-      // Step 2: check which keys already exist in DB so we report accurate counts.
-      const keys = rows.map((r) => r.ride_key);
+      // Step 2: check which keys already exist in DB so we report accurate counts
+      //         and skip them on insert.
+      const keys = Array.from(new Set(rows.map((r) => r.ride_key)));
       const { data: existing, error: exErr } = await supabase
         .from("rides")
         .select("ride_key")
@@ -360,25 +355,26 @@ function DashboardInner() {
         .in("ride_key", keys);
       if (exErr) throw exErr;
       const existingSet = new Set((existing ?? []).map((e) => e.ride_key as string));
-      const dbDuplicates = existingSet.size;
       const toInsert = rows.filter((r) => !existingSet.has(r.ride_key));
+      const dbDuplicates = rows.length - toInsert.length;
 
-      // Step 3: insert in safe batches with database-level uniqueness as a hard guard.
+      // Step 3: plain insert in safe batches. Duplicate ride_keys within the
+      //         PDF are allowed because the unique constraint was removed.
       let inserted = 0;
       const BATCH = 200;
       for (let i = 0; i < toInsert.length; i += BATCH) {
         const slice = toInsert.slice(i, i + BATCH);
         const { data: ins, error } = await supabase
           .from("rides")
-          .upsert(slice, { onConflict: "user_id,system,ride_key", ignoreDuplicates: true })
+          .insert(slice)
           .select("id");
         if (error) throw error;
         inserted += ins?.length ?? 0;
       }
 
-      const totalSkipped = inBatchDuplicates + dbDuplicates + (rows.length - toInsert.length - dbDuplicates);
       toast.success(
-        `Imported ${inserted} • Skipped ${totalSkipped} duplicate${totalSkipped === 1 ? "" : "s"}` +
+        `Imported ${inserted}` +
+          (dbDuplicates > 0 ? ` • Skipped ${dbDuplicates} already in system` : "") +
           (previewInvalid > 0 ? ` • ${previewInvalid} invalid row${previewInvalid === 1 ? "" : "s"}` : "")
       );
       setPreviewRows(null);
