@@ -56,8 +56,8 @@ export function DriverNotificationBell({ driverId, pin }: Props) {
 
   const unread = items.filter((i) => !i.read).length;
 
-  const markAllRead = async () => {
-    await supabase.rpc("driver_mark_notifications_read", {
+  const clearAll = async () => {
+    await supabase.rpc("driver_delete_notifications", {
       _driver_id: driverId,
       _pin: pin,
     });
@@ -79,8 +79,8 @@ export function DriverNotificationBell({ driverId, pin }: Props) {
       <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
         <SheetHeader className="px-4 py-3 border-b flex-row items-center justify-between space-y-0">
           <SheetTitle className="text-base">Notifications</SheetTitle>
-          {unread > 0 && (
-            <button className="text-xs text-primary hover:underline flex items-center gap-1" onClick={markAllRead}>
+          {items.length > 0 && (
+            <button className="text-xs text-primary hover:underline flex items-center gap-1" onClick={clearAll}>
               <Check className="h-3 w-3" /> Mark all read
             </button>
           )}
