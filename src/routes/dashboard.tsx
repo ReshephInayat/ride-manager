@@ -446,8 +446,14 @@ function DashboardInner() {
     });
   };
   const toggleSelectAll = () => {
-    if (selected.size === filtered.length) setSelected(new Set());
-    else setSelected(new Set(filtered.map((r) => r.id)));
+    const pageIds = pagedRides.map((r) => r.id);
+    const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
+    setSelected((s) => {
+      const next = new Set(s);
+      if (allPageSelected) pageIds.forEach((id) => next.delete(id));
+      else pageIds.forEach((id) => next.add(id));
+      return next;
+    });
   };
 
   const isBillable = (s: RideStatus) => s === "completed" || s === "no_show";
@@ -846,7 +852,7 @@ function DashboardInner() {
               <TableRow>
                 <TableHead className="w-10">
                   <Checkbox
-                    checked={filtered.length > 0 && selected.size === filtered.length}
+                    checked={pagedRides.length > 0 && pagedRides.every((r) => selected.has(r.id))}
                     onCheckedChange={toggleSelectAll}
                   />
                 </TableHead>
@@ -870,7 +876,7 @@ function DashboardInner() {
                   No rides match. Upload a PDF or change filters.
                 </TableCell></TableRow>
               ) : (
-                filtered.map((r) => {
+                pagedRides.map((r) => {
                   const meta = statusMeta[r.status];
                   return (
                     <TableRow key={r.id} className={selected.has(r.id) ? "bg-secondary/40" : ""}>
