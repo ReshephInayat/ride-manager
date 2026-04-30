@@ -42,6 +42,7 @@ import {
   Trash2,
   Search,
   Plus,
+  MapPin,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import {
@@ -58,6 +59,7 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { useSystem } from "@/lib/system";
 import { FlightSearchButton } from "@/components/FlightTrackLink";
+import { TrackRideDialog } from "@/components/TrackRideDialog";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
