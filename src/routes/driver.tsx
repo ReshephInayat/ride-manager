@@ -11,7 +11,7 @@ import {
 import { toast } from "react-hot-toast";
 import { playNotificationSound } from "@/lib/sound";
 import { LogOut, CalendarDays, Clock, MapPin, User, Phone, Plane, CheckCircle2, XCircle, Hourglass, ListChecks, ShieldCheck, Sparkles, ArrowRight } from "lucide-react";
-import type { Ride, RideStatus } from "@/lib/rides";
+import { extractDropoffTime, stripTrailingTime, type Ride, type RideStatus } from "@/lib/rides";
 import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
 import driverHero from "@/assets/driver-hero.jpg";
 import { FlightTrackLink, FlightSearchButton } from "@/components/FlightTrackLink";

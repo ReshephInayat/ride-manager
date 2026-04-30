@@ -48,6 +48,8 @@ import {
   autoMatchRoute,
   buildRideKey,
   callParser,
+  extractDropoffTime,
+  stripTrailingTime,
   type Ride,
   type RideStatus,
   type RouteRow,
