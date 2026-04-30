@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AutocompleteInput } from "@/components/AutocompleteInput";
 import { PageLoader } from "@/components/Spinner";
 import { Plus, Trash2, Save, ExternalLink } from "lucide-react";
 import { toast } from "react-hot-toast";
