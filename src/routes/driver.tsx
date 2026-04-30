@@ -16,6 +16,8 @@ import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
 import driverHero from "@/assets/driver-hero.jpg";
 import { FlightTrackLink, FlightSearchButton } from "@/components/FlightTrackLink";
 import { DriverNotificationBell } from "@/components/DriverNotificationBell";
+import { useLiveLocation } from "@/hooks/useLiveLocation";
+import { Radio } from "lucide-react";
 
 export const Route = createFileRoute("/driver")({ component: DriverPortal });
 
