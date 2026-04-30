@@ -662,6 +662,7 @@ function DashboardInner() {
       phone: form.phone || null,
       flight_number: form.flight_number || null,
       notes: form.notes || null,
+      status: "pending" as RideStatus,
     };
     const ride_key = buildRideKey(row);
     const { error } = await supabase.from("rides").insert([{ ...row, ride_key, dedupe_key: ride_key }]);
