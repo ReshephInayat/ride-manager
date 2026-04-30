@@ -1081,7 +1081,7 @@ function DashboardInner() {
         </div>
       )}
 
-      {trackRide && (
+      {trackRide && trackRide.driver_id && liveLocations[trackRide.driver_id] && (Date.now() - new Date(liveLocations[trackRide.driver_id].updated_at).getTime() < 60_000) && (
         <TrackRideDialog
           ride={trackRide}
           open={!!trackRide}
