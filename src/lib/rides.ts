@@ -233,10 +233,15 @@ async function callParserText(page: PdfPageText, fileName: string, documentConte
 export async function callParser(file: File) {
   const pages = await extractPdfPagesText(file);
   const readablePages = pages.filter((page) => page.text.length > 40);
-  if (!readablePages.length) throw new Error("Could not read text from this PDF. Please upload a text-based schedule PDF.");
+  if (!readablePages.length) {
+    throw new Error("Could not read text from this PDF. Please upload a text-based schedule PDF.");
+  }
 
   const rides: Array<Partial<Ride>> = [];
-  const documentContext = pages.map((page) => page.text).join("\n").slice(0, 4000);
+  const documentContext = pages
+    .map((page) => page.text)
+    .join("\n")
+    .slice(0, 4000);
   for (let i = 0; i < readablePages.length; i += 1) {
     const chunkRides = await callParserText(readablePages[i], file.name, documentContext);
     rides.push(...chunkRides);
