@@ -1378,10 +1378,7 @@ function ManualRideDialog({
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label className="text-xs">Passenger name</Label>
-            <Input value={form.passenger_name} onChange={(e) => set({ passenger_name: e.target.value })} />
-          </div>
+          {/* Passenger name removed — only rider count is required. */}
           <div>
             <Label className="text-xs">Phone</Label>
             <Input value={form.phone} onChange={(e) => set({ phone: e.target.value })} />
