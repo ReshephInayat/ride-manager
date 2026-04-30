@@ -42,8 +42,6 @@ import {
   Trash2,
   Search,
   Plus,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import {
