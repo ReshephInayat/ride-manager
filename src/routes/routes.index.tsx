@@ -159,16 +159,20 @@ function RoutesInner() {
                 </div>
                 <div className="md:col-span-3">
                   <Label className="text-xs">Pickup</Label>
-                  <Input
+                  <AutocompleteInput
                     value={r.pickup_location}
-                    onChange={(e) => update(r.id, { pickup_location: e.target.value })}
+                    onChange={(v) => update(r.id, { pickup_location: v })}
+                    suggestions={pickupSuggestions}
+                    placeholder="Start typing an address…"
                   />
                 </div>
                 <div className="md:col-span-3">
                   <Label className="text-xs">Dropoff</Label>
-                  <Input
+                  <AutocompleteInput
                     value={r.dropoff_location}
-                    onChange={(e) => update(r.id, { dropoff_location: e.target.value })}
+                    onChange={(v) => update(r.id, { dropoff_location: v })}
+                    suggestions={dropoffSuggestions}
+                    placeholder="Start typing an address…"
                   />
                 </div>
                 <div className="md:col-span-2">
