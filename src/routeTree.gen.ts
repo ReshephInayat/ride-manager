@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DriversRouteImport } from './routes/drivers'
 import { Route as DriverRouteImport } from './routes/driver'
@@ -24,6 +25,11 @@ import { Route as InvoicePublicTokenRouteImport } from './routes/invoice.public.
 import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
 import { Route as ApiPublicHooksNotifyAssignmentRouteImport } from './routes/api/public/hooks/notify-assignment'
 
+const LogsRoute = LogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/driver': typeof DriverRoute
   '/drivers': typeof DriversRoute
   '/login': typeof LoginRoute
+  '/logs': typeof LogsRoute
   '/invoices/$id': typeof InvoicesIdRoute
   '/rides/$id': typeof RidesIdRoute
   '/routes/$id': typeof RoutesIdRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/driver': typeof DriverRoute
   '/drivers': typeof DriversRoute
   '/login': typeof LoginRoute
+  '/logs': typeof LogsRoute
   '/invoices/$id': typeof InvoicesIdRoute
   '/rides/$id': typeof RidesIdRoute
   '/routes/$id': typeof RoutesIdRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/driver': typeof DriverRoute
   '/drivers': typeof DriversRoute
   '/login': typeof LoginRoute
+  '/logs': typeof LogsRoute
   '/invoices/$id': typeof InvoicesIdRoute
   '/rides/$id': typeof RidesIdRoute
   '/routes/$id': typeof RoutesIdRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/driver'
     | '/drivers'
     | '/login'
+    | '/logs'
     | '/invoices/$id'
     | '/rides/$id'
     | '/routes/$id'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/driver'
     | '/drivers'
     | '/login'
+    | '/logs'
     | '/invoices/$id'
     | '/rides/$id'
     | '/routes/$id'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/driver'
     | '/drivers'
     | '/login'
+    | '/logs'
     | '/invoices/$id'
     | '/rides/$id'
     | '/routes/$id'
@@ -204,6 +216,7 @@ export interface RootRouteChildren {
   DriverRoute: typeof DriverRoute
   DriversRoute: typeof DriversRoute
   LoginRoute: typeof LoginRoute
+  LogsRoute: typeof LogsRoute
   InvoicesIdRoute: typeof InvoicesIdRoute
   RidesIdRoute: typeof RidesIdRoute
   RoutesIdRoute: typeof RoutesIdRoute
@@ -216,6 +229,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/logs': {
+      id: '/logs'
+      path: '/logs'
+      fullPath: '/logs'
+      preLoaderRoute: typeof LogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -324,6 +344,7 @@ const rootRouteChildren: RootRouteChildren = {
   DriverRoute: DriverRoute,
   DriversRoute: DriversRoute,
   LoginRoute: LoginRoute,
+  LogsRoute: LogsRoute,
   InvoicesIdRoute: InvoicesIdRoute,
   RidesIdRoute: RidesIdRoute,
   RoutesIdRoute: RoutesIdRoute,
