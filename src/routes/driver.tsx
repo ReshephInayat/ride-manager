@@ -424,9 +424,15 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
       </div>
 
       <div className="px-4 sm:px-5 py-3 grid gap-2 text-sm">
-        <div className="flex items-center justify-between gap-2 text-sm font-bold tabular-nums">
-          <span>Pickup: {ride.pickup_time ?? "—"}</span>
-          <span className="text-muted-foreground">Dropoff: {dropoffTime ?? "—"}</span>
+        <div className="flex flex-wrap gap-2">
+          <div className="flex-1 min-w-[120px] rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5">
+            <div className="text-[9px] uppercase tracking-wider font-bold text-primary/80">Pickup</div>
+            <div className="text-sm font-bold tabular-nums leading-tight">{ride.pickup_time ?? "—"}</div>
+          </div>
+          <div className="flex-1 min-w-[120px] rounded-md border border-border bg-muted/40 px-2.5 py-1.5">
+            <div className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Dropoff</div>
+            <div className="text-sm font-bold tabular-nums leading-tight">{dropoffTime ?? "—"}</div>
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <User className="h-4 w-4 text-muted-foreground shrink-0" />

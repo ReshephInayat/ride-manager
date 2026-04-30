@@ -210,6 +210,18 @@ function DashboardInner() {
 
   useEffect(() => { load(); }, [system]);
 
+  // Realtime: refresh whenever rides, routes, or drivers change in this workspace.
+  useEffect(() => {
+    const ch = supabase
+      .channel(`dashboard-${system}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "routes" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [system]);
+
   const range = useMemo(() => getDateRange(dateFilter, customMonth, customStart, customEnd), [dateFilter, customMonth, customStart, customEnd]);
 
   const filtered = useMemo(() => {
@@ -926,9 +938,17 @@ function DashboardInner() {
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">{r.department}</TableCell>
                       <TableCell className="font-bold">{r.riders}</TableCell>
-                      <TableCell className="whitespace-nowrap text-xs tabular-nums">
-                        <div className="font-bold">{r.pickup_time ?? "—"}</div>
-                        <div className="text-muted-foreground">{extractDropoffTime(r) ?? "—"}</div>
+                      <TableCell className="whitespace-nowrap">
+                        <div className="flex flex-col gap-1">
+                          <div className="rounded border border-primary/30 bg-primary/5 px-1.5 py-0.5 leading-tight">
+                            <div className="text-[8px] uppercase tracking-wider font-bold text-primary/80">Pickup</div>
+                            <div className="text-xs font-bold tabular-nums">{r.pickup_time ?? "—"}</div>
+                          </div>
+                          <div className="rounded border border-border bg-muted/40 px-1.5 py-0.5 leading-tight">
+                            <div className="text-[8px] uppercase tracking-wider font-bold text-muted-foreground">Dropoff</div>
+                            <div className="text-xs font-bold tabular-nums">{extractDropoffTime(r) ?? "—"}</div>
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell className="text-xs">
                         <div className="font-medium">{r.pickup_location}</div>
