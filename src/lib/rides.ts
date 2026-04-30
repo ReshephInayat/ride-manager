@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { PDFDocument } from "pdf-lib";
 
 export type RideStatus = "pending" | "arrived" | "completed" | "cancelled" | "no_show";
 export type WorkspaceSystem = "api" | "llc";
@@ -161,12 +162,59 @@ export function fileToBase64(file: File): Promise<string> {
   });
 }
 
-export async function callParser(file: File) {
-  const fileBase64 = await fileToBase64(file);
-  const { data, error } = await supabase.functions.invoke("parse-rides-pdf", {
-    body: { fileBase64, fileName: file.name },
+async function callParserBase64(fileBase64: string, fileName: string) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-rides-pdf`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ fileBase64, fileName }),
   });
-  if (error) throw error;
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!response.ok) {
+    throw new Error(data?.message ?? data?.error ?? `PDF import failed (${response.status}).`);
+  }
   if (data?.error) throw new Error(data.error);
-  return data.rides as Array<Partial<Ride>>;
+  return (data?.rides ?? []) as Array<Partial<Ride>>;
+}
+
+async function splitPdfToSinglePageBase64(file: File): Promise<string[]> {
+  const bytes = await file.arrayBuffer();
+  const source = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const pages: string[] = [];
+
+  for (let i = 0; i < source.getPageCount(); i += 1) {
+    const chunk = await PDFDocument.create();
+    const [page] = await chunk.copyPages(source, [i]);
+    chunk.addPage(page);
+    const chunkBytes = await chunk.save();
+    let binary = "";
+    const view = new Uint8Array(chunkBytes);
+    for (let j = 0; j < view.length; j += 0x8000) {
+      binary += String.fromCharCode(...view.subarray(j, j + 0x8000));
+    }
+    pages.push(btoa(binary));
+  }
+
+  return pages;
+}
+
+export async function callParser(file: File) {
+  const pages = await splitPdfToSinglePageBase64(file);
+  if (pages.length <= 1) {
+    const fileBase64 = await fileToBase64(file);
+    return callParserBase64(fileBase64, file.name);
+  }
+
+  const rides: Array<Partial<Ride>> = [];
+  for (let i = 0; i < pages.length; i += 1) {
+    const chunkRides = await callParserBase64(pages[i], `${file.name} page ${i + 1} of ${pages.length}`);
+    rides.push(...chunkRides);
+  }
+  return rides;
 }
