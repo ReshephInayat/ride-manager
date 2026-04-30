@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          actor: string
+          actor_name: string | null
+          created_at: string
+          details: string | null
+          driver_id: string | null
+          id: string
+          kind: string
+          ride_id: string | null
+          system: Database["public"]["Enums"]["workspace_system"]
+          title: string
+          user_id: string
+        }
+        Insert: {
+          actor: string
+          actor_name?: string | null
+          created_at?: string
+          details?: string | null
+          driver_id?: string | null
+          id?: string
+          kind: string
+          ride_id?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
+          title: string
+          user_id: string
+        }
+        Update: {
+          actor?: string
+          actor_name?: string | null
+          created_at?: string
+          details?: string | null
+          driver_id?: string | null
+          id?: string
+          kind?: string
+          ride_id?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       driver_locations: {
         Row: {
           accuracy: number | null
@@ -497,6 +539,10 @@ export type Database = {
         Args: { _driver_id: string; _pin: string }
         Returns: undefined
       }
+      driver_delete_notifications: {
+        Args: { _driver_id: string; _pin: string }
+        Returns: undefined
+      }
       driver_login:
         | {
             Args: {
@@ -637,6 +683,20 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      log_activity: {
+        Args: {
+          _actor: string
+          _actor_name: string
+          _details?: string
+          _driver_id?: string
+          _kind: string
+          _ride_id?: string
+          _system: Database["public"]["Enums"]["workspace_system"]
+          _title: string
+          _user_id: string
+        }
+        Returns: undefined
       }
       normalize_ride_key_text: { Args: { _value: string }; Returns: string }
       normalize_ride_key_time: { Args: { _value: string }; Returns: string }

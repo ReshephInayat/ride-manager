@@ -19,6 +19,7 @@ import {
   Sun,
   Moon,
   Building2,
+  ScrollText,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -28,6 +29,7 @@ const nav = [
   { to: "/invoices", label: "Invoices", icon: FileText },
   { to: "/drivers", label: "Drivers", icon: Users },
   { to: "/routes", label: "Routes", icon: Settings },
+  { to: "/logs", label: "Logs", icon: ScrollText },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {

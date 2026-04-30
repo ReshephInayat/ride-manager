@@ -55,10 +55,10 @@ export function NotificationBell() {
 
   const unread = items.filter((i) => !i.read).length;
 
-  const markAllRead = async () => {
-    const ids = items.filter((i) => !i.read).map((i) => i.id);
+  const clearAll = async () => {
+    const ids = items.map((i) => i.id);
     if (!ids.length) return;
-    await supabase.from("notifications").update({ read: true }).in("id", ids);
+    await supabase.from("notifications").delete().in("id", ids);
     load();
   };
 
@@ -77,8 +77,8 @@ export function NotificationBell() {
       <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
         <SheetHeader className="px-4 py-3 border-b flex-row items-center justify-between space-y-0">
           <SheetTitle className="text-base">Notifications</SheetTitle>
-          {unread > 0 && (
-            <button className="text-xs text-primary hover:underline flex items-center gap-1" onClick={markAllRead}>
+          {items.length > 0 && (
+            <button className="text-xs text-primary hover:underline flex items-center gap-1" onClick={clearAll}>
               <Check className="h-3 w-3" /> Mark all read
             </button>
           )}

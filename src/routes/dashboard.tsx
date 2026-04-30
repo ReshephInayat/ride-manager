@@ -176,7 +176,7 @@ function DashboardInner() {
   const [rides, setRides] = useState<Ride[]>([]);
   const [routes, setRoutes] = useState<RouteRow[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [liveLocations, setLiveLocations] = useState<Record<string, { lat: number; lng: number; updated_at: string }>>({});
+  const [liveLocations, setLiveLocations] = useState<Record<string, { lat: number; lng: number; updated_at: string; ride_id: string | null }>>({});
   const [trackRide, setTrackRide] = useState<Ride | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -232,12 +232,12 @@ function DashboardInner() {
     const fetchAll = async () => {
       const { data } = await supabase
         .from("driver_locations")
-        .select("driver_id, lat, lng, updated_at")
+        .select("driver_id, lat, lng, updated_at, ride_id")
         .eq("system", system);
       if (data) {
-        const next: Record<string, { lat: number; lng: number; updated_at: string }> = {};
-        for (const row of data as Array<{ driver_id: string; lat: number; lng: number; updated_at: string }>) {
-          next[row.driver_id] = { lat: row.lat, lng: row.lng, updated_at: row.updated_at };
+        const next: Record<string, { lat: number; lng: number; updated_at: string; ride_id: string | null }> = {};
+        for (const row of data as Array<{ driver_id: string; lat: number; lng: number; updated_at: string; ride_id: string | null }>) {
+          next[row.driver_id] = { lat: row.lat, lng: row.lng, updated_at: row.updated_at, ride_id: row.ride_id };
         }
         setLiveLocations(next);
       }
@@ -250,8 +250,8 @@ function DashboardInner() {
           const old = payload.old as { driver_id?: string };
           if (old?.driver_id) setLiveLocations((m) => { const n = { ...m }; delete n[old.driver_id!]; return n; });
         } else {
-          const row = payload.new as { driver_id: string; lat: number; lng: number; updated_at: string };
-          setLiveLocations((m) => ({ ...m, [row.driver_id]: { lat: row.lat, lng: row.lng, updated_at: row.updated_at } }));
+          const row = payload.new as { driver_id: string; lat: number; lng: number; updated_at: string; ride_id: string | null };
+          setLiveLocations((m) => ({ ...m, [row.driver_id]: { lat: row.lat, lng: row.lng, updated_at: row.updated_at, ride_id: row.ride_id } }));
         }
       })
       .subscribe();
@@ -1014,8 +1014,10 @@ function DashboardInner() {
                           {(() => {
                             const live = r.driver_id ? liveLocations[r.driver_id] : null;
                             const fresh = !!live && Date.now() - new Date(live.updated_at).getTime() < 60_000;
-                            // Only show tracker while driver is actively sharing (ride in progress).
-                            if (!r.driver_id || !fresh) return null;
+                            // Only show tracker for the SPECIFIC ride this driver is sharing for —
+                            // never mix up location across other rides assigned to the same driver.
+                            const isThisRide = !!live && live.ride_id === r.id;
+                            if (!r.driver_id || !fresh || !isThisRide) return null;
                             return (
                               <button
                                 onClick={() => setTrackRide(r)}
@@ -1082,7 +1084,7 @@ function DashboardInner() {
         </div>
       )}
 
-      {trackRide && trackRide.driver_id && liveLocations[trackRide.driver_id] && (Date.now() - new Date(liveLocations[trackRide.driver_id].updated_at).getTime() < 60_000) && (
+      {trackRide && trackRide.driver_id && liveLocations[trackRide.driver_id] && liveLocations[trackRide.driver_id].ride_id === trackRide.id && (Date.now() - new Date(liveLocations[trackRide.driver_id].updated_at).getTime() < 60_000) && (
         <TrackRideDialog
           ride={trackRide}
           open={!!trackRide}
