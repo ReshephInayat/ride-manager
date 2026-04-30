@@ -26,16 +26,16 @@ export function useLiveLocation({ enabled, driverId, pin, rideId, onError }: Arg
 
     let cancelled = false;
 
-    const send = async (lat: number, lng: number, acc?: number, hdg?: number, spd?: number) => {
+    const send = async (lat: number, lng: number, acc: number | null, hdg: number | null, spd: number | null) => {
       const { error } = await supabase.rpc("driver_update_location", {
         _driver_id: driverId,
         _pin: pin,
         _ride_id: rideId,
         _lat: lat,
         _lng: lng,
-        _accuracy: acc ?? null,
-        _heading: hdg ?? null,
-        _speed: spd ?? null,
+        _accuracy: acc,
+        _heading: hdg,
+        _speed: spd,
       });
       if (error) {
         onError?.(error.message);
@@ -63,7 +63,7 @@ export function useLiveLocation({ enabled, driverId, pin, rideId, onError }: Arg
       const elapsed = last ? now - last.at : Infinity;
       if (elapsed >= 10000 || moved >= 25) {
         lastSentRef.current = { at: now, lat: latitude, lng: longitude };
-        void send(latitude, longitude, accuracy ?? undefined, heading ?? undefined, speed ?? undefined);
+        void send(latitude, longitude, accuracy ?? null, heading ?? null, speed ?? null);
       }
     };
 
