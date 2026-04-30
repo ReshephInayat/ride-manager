@@ -6,6 +6,8 @@ export type WorkspaceSystem = "api" | "llc";
 export interface Ride {
   id: string;
   user_id: string;
+  ride_key?: string;
+  dedupe_key?: string | null;
   ride_date: string;
   department: string | null;
   riders: number;
@@ -97,6 +99,53 @@ export function autoMatchRoute(
     }
   }
   return null;
+}
+
+export function normalizeRideKeyText(value: unknown): string {
+  return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+export function normalizeRideKeyTime(value: unknown): string {
+  const cleaned = normalizeRideKeyText(value);
+  const match = cleaned.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/);
+  if (!match) return cleaned;
+
+  let hour = Number(match[1]);
+  const minute = match[2];
+  const meridiem = match[3];
+  if (meridiem === "pm" && hour < 12) hour += 12;
+  if (meridiem === "am" && hour === 12) hour = 0;
+
+  return `${String(hour % 24).padStart(2, "0")}:${minute}`;
+}
+
+export function buildRideKey(
+  ride: Pick<
+    Partial<Ride>,
+    | "ride_date"
+    | "pickup_time"
+    | "pickup_location"
+    | "pickup_from"
+    | "dropoff_location"
+    | "dropoff_to"
+    | "passenger_name"
+    | "passenger_email"
+    | "phone"
+    | "flight_number"
+  >,
+): string {
+  return [
+    normalizeRideKeyText(ride.ride_date),
+    normalizeRideKeyTime(ride.pickup_time),
+    normalizeRideKeyText(ride.pickup_location),
+    normalizeRideKeyText(ride.pickup_from),
+    normalizeRideKeyText(ride.dropoff_location),
+    normalizeRideKeyText(ride.dropoff_to),
+    normalizeRideKeyText(ride.passenger_name),
+    normalizeRideKeyText(ride.passenger_email),
+    normalizeRideKeyText(ride.phone),
+    normalizeRideKeyText(ride.flight_number),
+  ].join("|");
 }
 
 export function fileToBase64(file: File): Promise<string> {

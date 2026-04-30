@@ -313,6 +313,7 @@ export type Database = {
           pickup_location: string | null
           pickup_time: string | null
           ride_date: string
+          ride_key: string
           riders: number
           route_id: string | null
           source_file: string | null
@@ -339,6 +340,7 @@ export type Database = {
           pickup_location?: string | null
           pickup_time?: string | null
           ride_date: string
+          ride_key: string
           riders?: number
           route_id?: string | null
           source_file?: string | null
@@ -365,6 +367,7 @@ export type Database = {
           pickup_location?: string | null
           pickup_time?: string | null
           ride_date?: string
+          ride_key?: string
           riders?: number
           route_id?: string | null
           source_file?: string | null
@@ -428,6 +431,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      build_ride_key: {
+        Args: {
+          _dropoff_location: string
+          _dropoff_to: string
+          _flight_number: string
+          _passenger_email: string
+          _passenger_name: string
+          _phone: string
+          _pickup_from: string
+          _pickup_location: string
+          _pickup_time: string
+          _ride_date: string
+        }
+        Returns: string
+      }
       driver_login:
         | {
             Args: {
@@ -499,6 +517,7 @@ export type Database = {
           pickup_location: string | null
           pickup_time: string | null
           ride_date: string
+          ride_key: string
           riders: number
           route_id: string | null
           source_file: string | null
@@ -539,6 +558,7 @@ export type Database = {
           pickup_location: string | null
           pickup_time: string | null
           ride_date: string
+          ride_key: string
           riders: number
           route_id: string | null
           source_file: string | null
@@ -554,6 +574,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      normalize_ride_key_text: { Args: { _value: string }; Returns: string }
+      normalize_ride_key_time: { Args: { _value: string }; Returns: string }
       set_driver_pin: {
         Args: { _driver_id: string; _pin: string }
         Returns: undefined

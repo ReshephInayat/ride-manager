@@ -42,10 +42,13 @@ import {
   Trash2,
   Search,
   Plus,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import {
   autoMatchRoute,
+  buildRideKey,
   callParser,
   type Ride,
   type RideStatus,
@@ -77,6 +80,8 @@ const statusMeta: Record<RideStatus, { label: string; className: string; icon: t
 };
 
 type DateFilter = "all" | "today" | "tomorrow" | "yesterday" | "this_week" | "this_month" | "custom_month" | "custom_range";
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100, 200];
 
 function ymd(d: Date) {
   const y = d.getFullYear();
@@ -179,6 +184,8 @@ function DashboardInner() {
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
   const [previewFile, setPreviewFile] = useState<string>("");
@@ -221,12 +228,26 @@ function DashboardInner() {
         const hay = [
           r.department, r.pickup_from, r.dropoff_to,
           r.pickup_location, r.dropoff_location, r.pickup_time,
+          r.passenger_name, r.passenger_email, r.phone, r.flight_number,
         ].filter(Boolean).join(" ").toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
   }, [rides, filterStatus, filterDriver, range, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const pageEnd = Math.min(safePage * pageSize, filtered.length);
+  const pagedRides = useMemo(
+    () => filtered.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [filtered, safePage, pageSize]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterStatus, filterDriver, dateFilter, customMonth, customStart, customEnd, search, pageSize, system]);
 
   const completedSum = useMemo(
     () => filtered.filter((r) => r.status === "completed" || r.status === "no_show").reduce((s, r) => s + Number(r.amount), 0),
@@ -299,7 +320,7 @@ function DashboardInner() {
           },
           routes
         );
-        return {
+        const row = {
           user_id: u.user!.id,
           system,
           ride_date: p.ride_date!,
@@ -310,15 +331,21 @@ function DashboardInner() {
           pickup_time: p.pickup_time ?? null,
           dropoff_location: p.dropoff_location ?? null,
           dropoff_to: p.dropoff_to ?? null,
+          passenger_name: p.passenger_name ?? null,
+          passenger_email: p.passenger_email ?? null,
+          phone: p.phone ?? null,
+          flight_number: p.flight_number ?? null,
           status: "pending" as RideStatus,
           route_id: matched?.id ?? null,
           amount: matched?.price ?? 0,
           source_file: previewFile,
         };
+        const ride_key = buildRideKey(row);
+        return { ...row, ride_key, dedupe_key: ride_key };
       });
       const { data: inserted, error } = await supabase
         .from("rides")
-        .upsert(rows, { onConflict: "user_id,dedupe_key", ignoreDuplicates: true })
+        .upsert(rows, { onConflict: "user_id,system,ride_key", ignoreDuplicates: true })
         .select("id");
       if (error) throw error;
       const added = inserted?.length ?? 0;
@@ -419,8 +446,14 @@ function DashboardInner() {
     });
   };
   const toggleSelectAll = () => {
-    if (selected.size === filtered.length) setSelected(new Set());
-    else setSelected(new Set(filtered.map((r) => r.id)));
+    const pageIds = pagedRides.map((r) => r.id);
+    const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
+    setSelected((s) => {
+      const next = new Set(s);
+      if (allPageSelected) pageIds.forEach((id) => next.delete(id));
+      else pageIds.forEach((id) => next.add(id));
+      return next;
+    });
   };
 
   const isBillable = (s: RideStatus) => s === "completed" || s === "no_show";
@@ -615,7 +648,7 @@ function DashboardInner() {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
     const route = routes.find((r) => r.id === form.route_id);
-    const { error } = await supabase.from("rides").insert({
+    const row = {
       user_id: u.user.id,
       system,
       ride_date: form.ride_date,
@@ -626,7 +659,6 @@ function DashboardInner() {
       pickup_time: form.pickup_time || null,
       dropoff_location: route?.dropoff_location ?? null,
       dropoff_to: null,
-      status: "pending",
       route_id: form.route_id || null,
       driver_id: form.driver_id || null,
       amount: form.price,
@@ -635,7 +667,10 @@ function DashboardInner() {
       phone: form.phone || null,
       flight_number: form.flight_number || null,
       notes: form.notes || null,
-    });
+      status: "pending" as RideStatus,
+    };
+    const ride_key = buildRideKey(row);
+    const { error } = await supabase.from("rides").insert([{ ...row, ride_key, dedupe_key: ride_key }]);
     if (error) return toast.error(error.message);
     toast.success("Ride added");
     setManualOpen(false);
@@ -817,7 +852,7 @@ function DashboardInner() {
               <TableRow>
                 <TableHead className="w-10">
                   <Checkbox
-                    checked={filtered.length > 0 && selected.size === filtered.length}
+                    checked={pagedRides.length > 0 && pagedRides.every((r) => selected.has(r.id))}
                     onCheckedChange={toggleSelectAll}
                   />
                 </TableHead>
@@ -841,7 +876,7 @@ function DashboardInner() {
                   No rides match. Upload a PDF or change filters.
                 </TableCell></TableRow>
               ) : (
-                filtered.map((r) => {
+                pagedRides.map((r) => {
                   const meta = statusMeta[r.status];
                   return (
                     <TableRow key={r.id} className={selected.has(r.id) ? "bg-secondary/40" : ""}>
@@ -927,6 +962,33 @@ function DashboardInner() {
           </Table>
         </div>
       </Card>
+
+      {filtered.length > 0 && (
+        <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="text-sm text-muted-foreground">
+            Showing {pageStart}-{pageEnd} of {filtered.length} rides
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+              <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <SelectItem key={size} value={String(size)}>{size} / page</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage <= 1}>
+              <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+            </Button>
+            <span className="min-w-24 text-center text-sm text-muted-foreground">
+              Page {safePage} of {totalPages}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
+              Next <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* PDF Preview Modal */}
       <Dialog open={!!previewRows} onOpenChange={(o) => !o && setPreviewRows(null)}>
