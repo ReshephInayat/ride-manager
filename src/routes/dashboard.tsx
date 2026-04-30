@@ -320,7 +320,7 @@ function DashboardInner() {
           },
           routes
         );
-        return {
+        const row = {
           user_id: u.user!.id,
           system,
           ride_date: p.ride_date!,
@@ -336,10 +336,12 @@ function DashboardInner() {
           amount: matched?.price ?? 0,
           source_file: previewFile,
         };
+        const ride_key = buildRideKey(row);
+        return { ...row, ride_key, dedupe_key: ride_key };
       });
       const { data: inserted, error } = await supabase
         .from("rides")
-        .upsert(rows, { onConflict: "user_id,dedupe_key", ignoreDuplicates: true })
+        .upsert(rows, { onConflict: "user_id,system,ride_key", ignoreDuplicates: true })
         .select("id");
       if (error) throw error;
       const added = inserted?.length ?? 0;
@@ -636,7 +638,7 @@ function DashboardInner() {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
     const route = routes.find((r) => r.id === form.route_id);
-    const { error } = await supabase.from("rides").insert({
+    const row = {
       user_id: u.user.id,
       system,
       ride_date: form.ride_date,
@@ -656,7 +658,9 @@ function DashboardInner() {
       phone: form.phone || null,
       flight_number: form.flight_number || null,
       notes: form.notes || null,
-    });
+    };
+    const ride_key = buildRideKey(row);
+    const { error } = await supabase.from("rides").insert({ ...row, ride_key, dedupe_key: ride_key });
     if (error) return toast.error(error.message);
     toast.success("Ride added");
     setManualOpen(false);
