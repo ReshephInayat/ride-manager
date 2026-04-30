@@ -79,8 +79,6 @@ const statusMeta: Record<RideStatus, { label: string; className: string; icon: t
 
 type DateFilter = "all" | "today" | "tomorrow" | "yesterday" | "this_week" | "this_month" | "custom_month" | "custom_range";
 
-const PAGE_SIZE_OPTIONS = [25, 50, 100, 200];
-
 function ymd(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
