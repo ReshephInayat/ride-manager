@@ -85,7 +85,12 @@ function ymd(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-function getDateRange(filter: DateFilter, customMonth: string): { start?: string; end?: string } {
+function getDateRange(
+  filter: DateFilter,
+  customMonth: string,
+  customStart: string,
+  customEnd: string,
+): { start?: string; end?: string } {
   const now = new Date();
   const today = ymd(now);
   if (filter === "today") return { start: today, end: today };
@@ -114,6 +119,12 @@ function getDateRange(filter: DateFilter, customMonth: string): { start?: string
     const first = new Date(y, m - 1, 1);
     const last = new Date(y, m, 0);
     return { start: ymd(first), end: ymd(last) };
+  }
+  if (filter === "custom_range") {
+    return {
+      start: customStart || undefined,
+      end: customEnd || undefined,
+    };
   }
   return {};
 }
