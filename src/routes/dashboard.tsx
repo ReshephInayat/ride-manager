@@ -934,7 +934,7 @@ function DashboardInner() {
                           </div>
                           <div className="group relative overflow-hidden rounded-lg border border-accent-foreground/20 bg-gradient-to-br from-accent/60 to-accent/20 px-3 py-1.5 shadow-sm">
                             <div className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold leading-none">Dropoff</div>
-                            <div className="text-base font-bold text-foreground tabular-nums leading-tight mt-0.5">—</div>
+                            <div className="text-base font-bold text-foreground tabular-nums leading-tight mt-0.5">{extractDropoffTime(r) ?? "—"}</div>
                           </div>
                         </div>
                       </TableCell>
@@ -942,12 +942,12 @@ function DashboardInner() {
                         <div className="font-medium">{r.pickup_location}</div>
                         <div className="text-muted-foreground">{r.pickup_from}</div>
                         {r.flight_number && (
-                          <div className="font-bold text-foreground">{r.flight_number}</div>
+                          <div className="font-bold text-foreground">{stripTrailingTime(r.flight_number) || r.flight_number}</div>
                         )}
                         <div className="mt-1"><FlightSearchButton ride={r} size="xs" /></div>
                       </TableCell>
                       <TableCell className="text-xs">
-                        <div className="font-medium">{r.dropoff_to}</div>
+                        <div className="font-medium">{stripTrailingTime(r.dropoff_to) || r.dropoff_to}</div>
                         <div className="text-muted-foreground">{r.dropoff_location}</div>
                       </TableCell>
                       <TableCell>
