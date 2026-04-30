@@ -77,7 +77,7 @@ export interface Driver {
 // route's pickup/dropoff strings (case-insensitive). Returns the first match.
 export function autoMatchRoute(
   ride: Pick<Ride, "pickup_from" | "dropoff_to" | "pickup_location" | "dropoff_location">,
-  routes: RouteRow[]
+  routes: RouteRow[],
 ): RouteRow | null {
   const pickHay = `${ride.pickup_from ?? ""} ${ride.pickup_location ?? ""}`.toLowerCase();
   const dropHay = `${ride.dropoff_to ?? ""} ${ride.dropoff_location ?? ""}`.toLowerCase();
@@ -86,8 +86,10 @@ export function autoMatchRoute(
     const p = r.pickup_location.toLowerCase().trim();
     const d = r.dropoff_location.toLowerCase().trim();
     if (!p || !d) continue;
-    if ((pickHay.includes(p) && dropHay.includes(d)) ||
-        (pickHay.includes(d) && dropHay.includes(p))) {
+    if (
+      (pickHay.includes(p) && dropHay.includes(d)) ||
+      (pickHay.includes(d) && dropHay.includes(p))
+    ) {
       return r;
     }
   }
@@ -103,7 +105,10 @@ export function autoMatchRoute(
 }
 
 export function normalizeRideKeyText(value: unknown): string {
-  return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
 }
 
 export function normalizeRideKeyTime(value: unknown): string {
@@ -165,15 +170,18 @@ export function fileToBase64(file: File): Promise<string> {
 async function callParserBase64(fileBase64: string, fileName: string) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-rides-pdf`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      "Content-Type": "application/json",
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-rides-pdf`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ fileBase64, fileName }),
     },
-    body: JSON.stringify({ fileBase64, fileName }),
-  });
+  );
   const text = await response.text();
   const data = text ? JSON.parse(text) : null;
   if (!response.ok) {
@@ -213,7 +221,10 @@ export async function callParser(file: File) {
 
   const rides: Array<Partial<Ride>> = [];
   for (let i = 0; i < pages.length; i += 1) {
-    const chunkRides = await callParserBase64(pages[i], `${file.name} page ${i + 1} of ${pages.length}`);
+    const chunkRides = await callParserBase64(
+      pages[i],
+      `${file.name} page ${i + 1} of ${pages.length}`,
+    );
     rides.push(...chunkRides);
   }
   return rides;
