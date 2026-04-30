@@ -718,6 +718,7 @@ function DashboardInner() {
                 <SelectItem value="this_week">This week</SelectItem>
                 <SelectItem value="this_month">This month</SelectItem>
                 <SelectItem value="custom_month">Pick month…</SelectItem>
+                <SelectItem value="custom_range">Date range…</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -731,6 +732,28 @@ function DashboardInner() {
                 className="w-44"
               />
             </div>
+          )}
+          {dateFilter === "custom_range" && (
+            <>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">From</label>
+                <Input
+                  type="date"
+                  value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  className="w-40"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">To</label>
+                <Input
+                  type="date"
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  className="w-40"
+                />
+              </div>
+            </>
           )}
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Status</label>
