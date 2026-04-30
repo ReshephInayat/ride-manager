@@ -994,29 +994,8 @@ function DashboardInner() {
       </Card>
 
       {filtered.length > 0 && (
-        <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="text-sm text-muted-foreground">
-            Showing {pageStart}-{pageEnd} of {filtered.length} rides
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
-              <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {PAGE_SIZE_OPTIONS.map((size) => (
-                  <SelectItem key={size} value={String(size)}>{size} / page</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage <= 1}>
-              <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-            </Button>
-            <span className="min-w-24 text-center text-sm text-muted-foreground">
-              Page {safePage} of {totalPages}
-            </span>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
-              Next <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
+        <div className="mt-4 text-sm text-muted-foreground">
+          Showing all {filtered.length} ride{filtered.length === 1 ? "" : "s"}
         </div>
       )}
 
