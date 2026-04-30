@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { PDFDocument } from "pdf-lib";
 
 export type RideStatus = "pending" | "arrived" | "completed" | "cancelled" | "no_show";
 export type WorkspaceSystem = "api" | "llc";
@@ -154,20 +153,41 @@ export function buildRideKey(
   ].join("|");
 }
 
-export function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => {
-      const result = r.result as string;
-      const base64 = result.split(",")[1] ?? "";
-      resolve(base64);
-    };
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
+interface PdfPageText {
+  pageNumber: number;
+  totalPages: number;
+  text: string;
 }
 
-async function callParserBase64(fileBase64: string, fileName: string) {
+function isPdfTextItem(item: unknown): item is { str: string; hasEOL?: boolean } {
+  return typeof item === "object" && item !== null && "str" in item;
+}
+
+async function extractPdfPagesText(file: File): Promise<PdfPageText[]> {
+  const pdfjsLib = await import("pdfjs-dist");
+  const pdfWorker = await import("pdfjs-dist/build/pdf.worker.mjs?url");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker.default;
+
+  const bytes = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+  const pages: PdfPageText[] = [];
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+    const text = content.items
+      .map((item) => (isPdfTextItem(item) ? `${item.str}${item.hasEOL ? "\n" : " "}` : ""))
+      .join("")
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n\s+/g, "\n")
+      .trim();
+    pages.push({ pageNumber, totalPages: pdf.numPages, text });
+  }
+
+  return pages;
+}
+
+async function callParserText(page: PdfPageText, fileName: string, documentContext: string) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   const response = await fetch(
@@ -179,7 +199,13 @@ async function callParserBase64(fileBase64: string, fileName: string) {
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ fileBase64, fileName }),
+      body: JSON.stringify({
+        fileName,
+        pageNumber: page.pageNumber,
+        totalPages: page.totalPages,
+        pageText: page.text,
+        documentContext,
+      }),
     },
   );
   const text = await response.text();
@@ -191,41 +217,22 @@ async function callParserBase64(fileBase64: string, fileName: string) {
   return (data?.rides ?? []) as Array<Partial<Ride>>;
 }
 
-async function splitPdfToSinglePageBase64(file: File): Promise<string[]> {
-  const bytes = await file.arrayBuffer();
-  const source = await PDFDocument.load(bytes, { ignoreEncryption: true });
-  const pages: string[] = [];
-
-  for (let i = 0; i < source.getPageCount(); i += 1) {
-    const chunk = await PDFDocument.create();
-    const [page] = await chunk.copyPages(source, [i]);
-    chunk.addPage(page);
-    const chunkBytes = await chunk.save();
-    let binary = "";
-    const view = new Uint8Array(chunkBytes);
-    for (let j = 0; j < view.length; j += 0x8000) {
-      binary += String.fromCharCode(...view.subarray(j, j + 0x8000));
-    }
-    pages.push(btoa(binary));
-  }
-
-  return pages;
-}
-
 export async function callParser(file: File) {
-  const pages = await splitPdfToSinglePageBase64(file);
-  if (pages.length <= 1) {
-    const fileBase64 = await fileToBase64(file);
-    return callParserBase64(fileBase64, file.name);
+  const pages = await extractPdfPagesText(file);
+  const readablePages = pages.filter((page) => page.text.length > 40);
+  if (!readablePages.length) {
+    throw new Error("Could not read text from this PDF. Please upload a text-based schedule PDF.");
   }
 
   const rides: Array<Partial<Ride>> = [];
-  for (let i = 0; i < pages.length; i += 1) {
-    const chunkRides = await callParserBase64(
-      pages[i],
-      `${file.name} page ${i + 1} of ${pages.length}`,
-    );
+  const documentContext = pages
+    .map((page) => page.text)
+    .join("\n")
+    .slice(0, 4000);
+  for (let i = 0; i < readablePages.length; i += 1) {
+    const chunkRides = await callParserText(readablePages[i], file.name, documentContext);
     rides.push(...chunkRides);
+    if (i < readablePages.length - 1) await new Promise((resolve) => setTimeout(resolve, 250));
   }
   return rides;
 }

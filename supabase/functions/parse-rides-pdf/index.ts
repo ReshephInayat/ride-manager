@@ -1,27 +1,25 @@
-// Parses a Horizon Air ground transportation PDF and returns ride rows.
-// Uses Lovable AI (Gemini 2.5 Pro) for robust extraction.
+// Parses extracted Horizon Air schedule page text and returns ride rows.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { fileBase64, fileName } = await req.json();
-    if (!fileBase64) {
-      return json({ error: "fileBase64 required" }, 400);
+    const { fileName, pageNumber, totalPages, pageText, documentContext } = await req.json();
+    if (!pageText) {
+      return json({ error: "pageText required" }, 400);
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) return json({ error: "Missing LOVABLE_API_KEY" }, 500);
 
-    const prompt = `You are a strict data extractor. The attached PDF is a Horizon Air Ground Transportation Schedule.
-Extract EVERY non-header data row from the table — do not skip any row. The output count must equal the number of data rows in the document.
+    const prompt = `You are a strict data extractor. The input text is from page ${pageNumber ?? "?"} of ${totalPages ?? "?"} in a Horizon Air Ground Transportation Schedule named "${fileName ?? "schedule.pdf"}".
+Extract EVERY non-header data row from THIS PAGE TEXT — do not skip any row. The output count must equal the number of data rows in this page text.
 
 For each row return JSON with fields:
 - ride_date (YYYY-MM-DD; use the year shown in the document title). MANDATORY for every row.
@@ -36,13 +34,21 @@ For each row return JSON with fields:
 - flight_number if present in pickup_from or dropoff_to (e.g. "AS 2270" or "ASA2270"); otherwise null
 
 CRITICAL rules:
-- DATE CARRY-DOWN: when a row's DATE cell is blank because of rowspan, you MUST copy the date from the most recent row above that had a date. Never output a row with a missing ride_date — every output row must have ride_date filled.
+- DATE CARRY-DOWN: when a row's DATE cell is blank because of rowspan, copy the date from the most recent row above that had a date. Use the document context only to infer the schedule year and carry-down date at the top of this page when needed. Never output a row with a missing ride_date.
 - Skip ONLY the table header row and rows rendered in BOLD (those are repeated from the previous month).
 - Do not collapse rows that look similar — output every distinct row.
 - Normalize missing optional values as null, not empty strings.
-- Return ONLY valid JSON: {"rides":[ ... ]}. No prose, no code fences.`;
+- Return ONLY valid JSON: {"rides":[ ... ]}. No prose, no code fences.
 
-    console.log(`[parse-rides-pdf] Calling AI gateway, file: ${fileName}, size: ${fileBase64.length} chars`);
+DOCUMENT CONTEXT:
+${String(documentContext ?? "").slice(0, 4000)}
+
+PAGE TEXT TO EXTRACT:
+${String(pageText).slice(0, 12000)}`;
+
+    console.log(
+      `[parse-rides-pdf] Calling AI gateway, file: ${fileName}, page: ${pageNumber}/${totalPages}, text size: ${String(pageText).length} chars`,
+    );
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -51,20 +57,11 @@ CRITICAL rules:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "google/gemini-3-flash-preview",
         messages: [
           {
             role: "user",
-            content: [
-              { type: "text", text: prompt },
-              {
-                type: "file",
-                file: {
-                  filename: fileName ?? "schedule.pdf",
-                  file_data: `data:application/pdf;base64,${fileBase64}`,
-                },
-              },
-            ],
+            content: prompt,
           },
         ],
       }),
@@ -77,14 +74,20 @@ CRITICAL rules:
         return json({ error: "Rate limit exceeded. Please wait a moment and try again." }, 429);
       }
       if (aiRes.status === 402) {
-        return json({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }, 402);
+        return json(
+          { error: "AI credits exhausted. Please add credits to your Lovable workspace." },
+          402,
+        );
       }
       return json({ error: `AI error ${aiRes.status}: ${t}` }, 502);
     }
     const data = await aiRes.json();
     let content: string = data.choices?.[0]?.message?.content ?? "";
     // Strip code fences if present
-    content = content.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    content = content
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
 
     let parsed: { rides: unknown[] };
     try {
