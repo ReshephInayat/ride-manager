@@ -157,7 +157,7 @@ function DriversInner() {
             <span className="font-medium text-foreground">{label}</span> — manage drivers for this workspace.
           </p>
           <p className="text-xs text-muted-foreground mt-2">
-            Drivers sign in at <code className="bg-muted px-1 py-0.5 rounded">/driver</code> using a 4–8 digit PIN you set below. PINs are stored hashed.
+            Drivers sign in at <code className="bg-muted px-1 py-0.5 rounded">/driver</code> using a 4–8 digit PIN you set below. Saved PINs are visible to admins for easy reference. Older hashed PINs show as "—" until you reset them.
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
