@@ -230,6 +230,7 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
 
 const statusTone: Record<RideStatus, string> = {
   pending: "bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100",
+  started: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100",
   arrived: "bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100",
   completed: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100",
   cancelled: "bg-rose-100 text-rose-900 dark:bg-rose-900/40 dark:text-rose-100",
@@ -326,8 +327,11 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
     completedToday: rides.filter((r) => r.ride_date === today && r.status === "completed").length,
   }), [rides, today]);
 
-  // Auto-share location while a ride is in progress (status = "arrived").
-  const activeRide = useMemo(() => rides.find((r) => r.status === "arrived") ?? null, [rides]);
+  // Auto-share location while a ride is in progress (status = "started" or "arrived").
+  const activeRide = useMemo(
+    () => rides.find((r) => r.status === "started" || r.status === "arrived") ?? null,
+    [rides],
+  );
   const live = useLiveLocation({
     enabled: !!activeRide,
     driverId: session.driverId,
@@ -445,7 +449,7 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
     navigator.geolocation.getCurrentPosition(
       () => {
         setRequestingGeo(false);
-        onSetStatus("arrived");
+        onSetStatus("started");
       },
       (err) => {
         setRequestingGeo(false);
@@ -463,7 +467,8 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
   };
 
   const canStart = ride.status === "pending";
-  const isLive = ride.status === "arrived";
+  const isStarted = ride.status === "started";
+  const isArrived = ride.status === "arrived";
 
   return (
     <Card className="overflow-hidden p-0 shadow-sm hover:shadow-md transition-shadow">
@@ -510,6 +515,12 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
         {ride.notes && (
           <div className="text-xs text-muted-foreground italic break-words">Note: {ride.notes}</div>
         )}
+        {(isStarted || isArrived) && (
+          <div className="flex items-center gap-2 text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-md px-2 py-1">
+            <Radio className="h-3.5 w-3.5 animate-pulse" />
+            Sharing live location with dispatcher
+          </div>
+        )}
       </div>
 
       <div className="px-4 sm:px-5 pb-4 pt-1 flex flex-wrap gap-2">
@@ -524,9 +535,18 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
             {requestingGeo ? "Allow location…" : "Start ride"}
           </Button>
         )}
-        {isLive && (
-          <Button size="sm" variant="default" disabled className="flex-1 sm:flex-none min-w-[90px]">
-            <Radio className="h-4 w-4 mr-1 animate-pulse" /> En route
+        {isStarted && (
+          <Button
+            size="sm"
+            onClick={() => onSetStatus("arrived")}
+            className="flex-1 sm:flex-none min-w-[120px] bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white"
+          >
+            <CheckCircle2 className="h-4 w-4 mr-1" /> Mark arrived
+          </Button>
+        )}
+        {isArrived && (
+          <Button size="sm" variant="default" disabled className="flex-1 sm:flex-none min-w-[100px]">
+            <Radio className="h-4 w-4 mr-1 animate-pulse" /> At pickup
           </Button>
         )}
         <Button size="sm" variant={ride.status === "completed" ? "default" : "outline"} onClick={() => onSetStatus("completed")} className="flex-1 sm:flex-none min-w-[110px]">

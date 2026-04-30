@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type RideStatus = "pending" | "arrived" | "completed" | "cancelled" | "no_show";
+export type RideStatus = "pending" | "started" | "arrived" | "completed" | "cancelled" | "no_show";
 export type WorkspaceSystem = "api" | "llc";
 
 export interface Ride {

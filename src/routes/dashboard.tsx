@@ -75,6 +75,7 @@ function Dashboard() {
 
 const statusMeta: Record<RideStatus, { label: string; className: string; icon: typeof CheckCircle2 }> = {
   pending: { label: "Pending", className: "bg-secondary text-secondary-foreground", icon: MinusCircle },
+  started: { label: "Started", className: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700", icon: CheckCircle2 },
   arrived: { label: "Arrived", className: "bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/40 dark:text-sky-100 dark:border-sky-700", icon: CheckCircle2 },
   completed: { label: "Completed", className: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700", icon: CheckCircle2 },
   cancelled: { label: "Cancelled", className: "bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/40 dark:text-rose-100 dark:border-rose-700", icon: XCircle },
