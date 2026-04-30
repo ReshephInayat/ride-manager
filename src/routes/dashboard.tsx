@@ -996,8 +996,8 @@ function DashboardInner() {
                         <div className="mt-1"><FlightSearchButton ride={r} size="xs" /></div>
                       </TableCell>
                       <TableCell className="text-xs">
-                        <div className="font-medium">{stripTrailingTime(r.dropoff_to) || r.dropoff_to}</div>
-                        <div className="text-muted-foreground">{r.dropoff_location}</div>
+                        <div className="font-medium">{r.dropoff_location}</div>
+                        <div className="text-muted-foreground">{stripTrailingTime(r.dropoff_to) || r.dropoff_to}</div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -1012,17 +1012,18 @@ function DashboardInner() {
                           </Select>
                           {(() => {
                             const live = r.driver_id ? liveLocations[r.driver_id] : null;
-                            const fresh = live && Date.now() - new Date(live.updated_at).getTime() < 60_000;
-                            if (!r.driver_id) return null;
+                            const fresh = !!live && Date.now() - new Date(live.updated_at).getTime() < 60_000;
+                            // Only show tracker while driver is actively sharing (ride in progress).
+                            if (!r.driver_id || !fresh) return null;
                             return (
                               <button
                                 onClick={() => setTrackRide(r)}
-                                title={fresh ? "Live — track driver" : "Open tracker"}
-                                className={`h-8 w-8 grid place-items-center rounded border text-xs transition-colors ${fresh ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "border-border text-muted-foreground hover:bg-muted"}`}
+                                title="Live — track driver"
+                                className="h-8 w-8 grid place-items-center rounded border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs transition-colors"
                               >
                                 <span className="relative">
                                   <MapPin className="h-4 w-4" />
-                                  {fresh && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                                  <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 </span>
                               </button>
                             );
@@ -1080,7 +1081,7 @@ function DashboardInner() {
         </div>
       )}
 
-      {trackRide && (
+      {trackRide && trackRide.driver_id && liveLocations[trackRide.driver_id] && (Date.now() - new Date(liveLocations[trackRide.driver_id].updated_at).getTime() < 60_000) && (
         <TrackRideDialog
           ride={trackRide}
           open={!!trackRide}
@@ -1377,10 +1378,7 @@ function ManualRideDialog({
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label className="text-xs">Passenger name</Label>
-            <Input value={form.passenger_name} onChange={(e) => set({ passenger_name: e.target.value })} />
-          </div>
+          {/* Passenger name removed — only rider count is required. */}
           <div>
             <Label className="text-xs">Phone</Label>
             <Input value={form.phone} onChange={(e) => set({ phone: e.target.value })} />
