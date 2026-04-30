@@ -996,8 +996,8 @@ function DashboardInner() {
                         <div className="mt-1"><FlightSearchButton ride={r} size="xs" /></div>
                       </TableCell>
                       <TableCell className="text-xs">
-                        <div className="font-medium">{stripTrailingTime(r.dropoff_to) || r.dropoff_to}</div>
-                        <div className="text-muted-foreground">{r.dropoff_location}</div>
+                        <div className="font-medium">{r.dropoff_location}</div>
+                        <div className="text-muted-foreground">{stripTrailingTime(r.dropoff_to) || r.dropoff_to}</div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
