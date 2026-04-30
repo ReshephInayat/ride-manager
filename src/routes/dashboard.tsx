@@ -176,6 +176,8 @@ function DashboardInner() {
   const [filterDriver, setFilterDriver] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [customMonth, setCustomMonth] = useState<string>("");
+  const [customStart, setCustomStart] = useState<string>("");
+  const [customEnd, setCustomEnd] = useState<string>("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
