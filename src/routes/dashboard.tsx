@@ -331,6 +331,10 @@ function DashboardInner() {
           pickup_time: p.pickup_time ?? null,
           dropoff_location: p.dropoff_location ?? null,
           dropoff_to: p.dropoff_to ?? null,
+          passenger_name: p.passenger_name ?? null,
+          passenger_email: p.passenger_email ?? null,
+          phone: p.phone ?? null,
+          flight_number: p.flight_number ?? null,
           status: "pending" as RideStatus,
           route_id: matched?.id ?? null,
           amount: matched?.price ?? 0,
@@ -660,7 +664,7 @@ function DashboardInner() {
       notes: form.notes || null,
     };
     const ride_key = buildRideKey(row);
-    const { error } = await supabase.from("rides").insert({ ...row, ride_key, dedupe_key: ride_key });
+    const { error } = await supabase.from("rides").insert([{ ...row, ride_key, dedupe_key: ride_key }]);
     if (error) return toast.error(error.message);
     toast.success("Ride added");
     setManualOpen(false);
