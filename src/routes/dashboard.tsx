@@ -175,6 +175,8 @@ function DashboardInner() {
   const [rides, setRides] = useState<Ride[]>([]);
   const [routes, setRoutes] = useState<RouteRow[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [liveLocations, setLiveLocations] = useState<Record<string, { lat: number; lng: number; updated_at: string }>>({});
+  const [trackRide, setTrackRide] = useState<Ride | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | RideStatus>("all");
@@ -222,6 +224,39 @@ function DashboardInner() {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [system]);
+
+  // Realtime: track live driver locations for this workspace.
+  useEffect(() => {
+    const fetchAll = async () => {
+      const { data } = await supabase
+        .from("driver_locations")
+        .select("driver_id, lat, lng, updated_at")
+        .eq("system", system);
+      if (data) {
+        const next: Record<string, { lat: number; lng: number; updated_at: string }> = {};
+        for (const row of data as Array<{ driver_id: string; lat: number; lng: number; updated_at: string }>) {
+          next[row.driver_id] = { lat: row.lat, lng: row.lng, updated_at: row.updated_at };
+        }
+        setLiveLocations(next);
+      }
+    };
+    void fetchAll();
+    const ch = supabase
+      .channel(`live-locations-${system}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "driver_locations" }, (payload) => {
+        if (payload.eventType === "DELETE") {
+          const old = payload.old as { driver_id?: string };
+          if (old?.driver_id) setLiveLocations((m) => { const n = { ...m }; delete n[old.driver_id!]; return n; });
+        } else {
+          const row = payload.new as { driver_id: string; lat: number; lng: number; updated_at: string };
+          setLiveLocations((m) => ({ ...m, [row.driver_id]: { lat: row.lat, lng: row.lng, updated_at: row.updated_at } }));
+        }
+      })
+      .subscribe();
+    // refresh ticker so "fresh" status decays after 60s
+    const t = setInterval(() => setLiveLocations((m) => ({ ...m })), 30000);
+    return () => { supabase.removeChannel(ch); clearInterval(t); };
   }, [system]);
 
   const range = useMemo(() => getDateRange(dateFilter, customMonth, customStart, customEnd), [dateFilter, customMonth, customStart, customEnd]);
