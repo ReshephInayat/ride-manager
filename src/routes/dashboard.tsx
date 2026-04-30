@@ -924,12 +924,19 @@ function DashboardInner() {
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">{r.department}</TableCell>
                       <TableCell className="font-bold">{r.riders}</TableCell>
-                      <TableCell className="text-xs">
-                        {r.pickup_time && (
-                          <div className="inline-block mb-1 px-3 py-1.5 rounded-md bg-primary/10 border border-primary/30 text-base font-bold text-foreground tracking-wide">
-                            {r.pickup_time}
+                      <TableCell className="whitespace-nowrap">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="group relative overflow-hidden rounded-lg border border-primary/40 bg-gradient-to-br from-primary/15 to-primary/5 px-3 py-1.5 shadow-sm">
+                            <div className="text-[9px] uppercase tracking-widest text-primary/80 font-bold leading-none">Pickup</div>
+                            <div className="text-base font-bold text-foreground tabular-nums leading-tight mt-0.5">{r.pickup_time ?? "—"}</div>
                           </div>
-                        )}
+                          <div className="group relative overflow-hidden rounded-lg border border-accent-foreground/20 bg-gradient-to-br from-accent/60 to-accent/20 px-3 py-1.5 shadow-sm">
+                            <div className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold leading-none">Dropoff</div>
+                            <div className="text-base font-bold text-foreground tabular-nums leading-tight mt-0.5">—</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs">
                         <div className="font-medium">{r.pickup_location}</div>
                         <div className="text-muted-foreground">{r.pickup_from}</div>
                         {r.flight_number && (
@@ -938,12 +945,8 @@ function DashboardInner() {
                         <div className="mt-1"><FlightSearchButton ride={r} size="xs" /></div>
                       </TableCell>
                       <TableCell className="text-xs">
-                        {r.dropoff_to && (
-                          <div className="inline-block mb-1 px-3 py-1.5 rounded-md bg-accent/40 border border-border text-base font-bold text-foreground tracking-wide">
-                            {r.dropoff_to}
-                          </div>
-                        )}
-                        <div className="font-medium">{r.dropoff_location}</div>
+                        <div className="font-medium">{r.dropoff_to}</div>
+                        <div className="text-muted-foreground">{r.dropoff_location}</div>
                       </TableCell>
                       <TableCell>
                         <Select value={r.driver_id ?? "__none__"} onValueChange={(v) => setDriver(r, v)}>
