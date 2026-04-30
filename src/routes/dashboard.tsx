@@ -180,8 +180,6 @@ function DashboardInner() {
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
   const [previewFile, setPreviewFile] = useState<string>("");
