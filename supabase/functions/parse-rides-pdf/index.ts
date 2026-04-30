@@ -3,8 +3,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 Deno.serve(async (req) => {
@@ -47,7 +46,9 @@ ${String(documentContext ?? "").slice(0, 4000)}
 PAGE TEXT TO EXTRACT:
 ${String(pageText).slice(0, 12000)}`;
 
-    console.log(`[parse-rides-pdf] Calling AI gateway, file: ${fileName}, page: ${pageNumber}/${totalPages}, text size: ${String(pageText).length} chars`);
+    console.log(
+      `[parse-rides-pdf] Calling AI gateway, file: ${fileName}, page: ${pageNumber}/${totalPages}, text size: ${String(pageText).length} chars`,
+    );
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -73,14 +74,20 @@ ${String(pageText).slice(0, 12000)}`;
         return json({ error: "Rate limit exceeded. Please wait a moment and try again." }, 429);
       }
       if (aiRes.status === 402) {
-        return json({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }, 402);
+        return json(
+          { error: "AI credits exhausted. Please add credits to your Lovable workspace." },
+          402,
+        );
       }
       return json({ error: `AI error ${aiRes.status}: ${t}` }, 502);
     }
     const data = await aiRes.json();
     let content: string = data.choices?.[0]?.message?.content ?? "";
     // Strip code fences if present
-    content = content.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    content = content
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
 
     let parsed: { rides: unknown[] };
     try {
