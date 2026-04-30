@@ -230,6 +230,7 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
 
 const statusTone: Record<RideStatus, string> = {
   pending: "bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100",
+  started: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100",
   arrived: "bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100",
   completed: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100",
   cancelled: "bg-rose-100 text-rose-900 dark:bg-rose-900/40 dark:text-rose-100",
