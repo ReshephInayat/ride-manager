@@ -326,6 +326,16 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
     completedToday: rides.filter((r) => r.ride_date === today && r.status === "completed").length,
   }), [rides, today]);
 
+  // Auto-share location while a ride is in progress (status = "arrived").
+  const activeRide = useMemo(() => rides.find((r) => r.status === "arrived") ?? null, [rides]);
+  const live = useLiveLocation({
+    enabled: !!activeRide,
+    driverId: session.driverId,
+    pin: session.pin,
+    rideId: activeRide?.id ?? null,
+    onError: (msg) => toast.error(msg, { id: "geo-err" }),
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
