@@ -30,10 +30,13 @@ Extract EVERY ride row from the table. For each row return JSON with fields:
 - pickup_time (the Pickup Date/Time column, e.g. "01 Apr 05:55")
 - dropoff_location (e.g. "PAE", "SEA")
 - dropoff_to (the "To" column, e.g. "AS 2270-01 Apr 06:15" or "Delta Hotels Seattle Everett")
+- passenger_name, passenger_email, phone if present in the row/document; otherwise null
+- flight_number if present in pickup_from or dropoff_to (e.g. "AS 2270" or "ASA2270"); otherwise null
 
 Rules:
 - A row often has an empty DATE cell because of rowspan; carry the date down from the previous row.
 - Skip header rows and any rows in BOLD (those are repeated from the previous month).
+- Normalize missing optional values as null, not empty strings.
 - Return ONLY valid JSON: {"rides":[ ... ]}. No prose.`;
 
     console.log(`[parse-rides-pdf] Calling AI gateway, file: ${fileName}, size: ${fileBase64.length} chars`);
