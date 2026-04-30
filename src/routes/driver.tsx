@@ -431,8 +431,40 @@ function Tile({ icon, label, value }: { icon: React.ReactNode; label: string; va
 
 function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStatus) => void }) {
   const dropoffTime = extractDropoffTime(ride);
-  const cleanDropoff = stripTrailingTime(ride.dropoff_to) || ride.dropoff_to;
+  const cleanDropoffTo = stripTrailingTime(ride.dropoff_to ?? "") || ride.dropoff_to;
   const cleanFlight = stripTrailingTime(ride.flight_number ?? "") || ride.flight_number;
+  const [requestingGeo, setRequestingGeo] = useState(false);
+
+  // Start ride: require location permission. If denied/blocked, keep prompting.
+  const handleStartRide = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      toast.error("Location is not available on this device. Please use a mobile browser.");
+      return;
+    }
+    setRequestingGeo(true);
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        setRequestingGeo(false);
+        onSetStatus("arrived");
+      },
+      (err) => {
+        setRequestingGeo(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          toast.error(
+            "Location permission is required to start the ride. Please allow location access in your browser settings, then tap Start ride again.",
+            { id: "geo-perm", duration: 6000 },
+          );
+        } else {
+          toast.error("Could not read your location. Please try again.", { id: "geo-perm" });
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  };
+
+  const canStart = ride.status === "pending";
+  const isLive = ride.status === "arrived";
+
   return (
     <Card className="overflow-hidden p-0 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-2 px-4 sm:px-5 pt-4 pb-2 border-b bg-muted/30">
@@ -449,19 +481,22 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
       </div>
 
       <div className="px-4 sm:px-5 py-3 grid gap-2 text-sm">
-        <div className="flex flex-wrap gap-2">
-          <div className="flex-1 min-w-[120px] rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5">
             <div className="text-[9px] uppercase tracking-wider font-bold text-primary/80">Pickup</div>
             <div className="text-sm font-bold tabular-nums leading-tight">{ride.pickup_time ?? "—"}</div>
+            <div className="text-xs text-foreground mt-0.5 truncate">{ride.pickup_location ?? "—"}</div>
+            {ride.pickup_from && <div className="text-[10px] text-muted-foreground truncate">{ride.pickup_from}</div>}
           </div>
-          <div className="flex-1 min-w-[120px] rounded-md border border-border bg-muted/40 px-2.5 py-1.5">
+          <div className="rounded-md border border-border bg-muted/40 px-2.5 py-1.5">
             <div className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Dropoff</div>
             <div className="text-sm font-bold tabular-nums leading-tight">{dropoffTime ?? "—"}</div>
+            <div className="text-xs text-foreground mt-0.5 truncate">{ride.dropoff_location ?? "—"}</div>
+            {cleanDropoffTo && <div className="text-[10px] text-muted-foreground truncate">{cleanDropoffTo}</div>}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <User className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="font-medium truncate">{ride.passenger_name ?? "Passenger"}</span>
           <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-bold">
             {ride.riders ?? 1} {(ride.riders ?? 1) === 1 ? "passenger" : "passengers"}
           </span>
@@ -472,22 +507,28 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
         {cleanFlight && (
           <div className="flex items-center gap-2"><Plane className="h-4 w-4 text-muted-foreground shrink-0" /> <span className="font-bold truncate"><FlightTrackLink flightNumber={cleanFlight} /></span></div>
         )}
-        <div className="flex items-start gap-2">
-          <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-          <div className="min-w-0 break-words">
-            <div className="font-medium">{ride.pickup_location ?? "—"}{ride.pickup_from ? ` (${ride.pickup_from})` : ""}</div>
-            <div>→ <span className="font-medium">{cleanDropoff ?? "—"}</span></div>
-          </div>
-        </div>
         {ride.notes && (
           <div className="text-xs text-muted-foreground italic break-words">Note: {ride.notes}</div>
         )}
       </div>
 
       <div className="px-4 sm:px-5 pb-4 pt-1 flex flex-wrap gap-2">
-        <Button size="sm" variant={ride.status === "arrived" ? "default" : "outline"} onClick={() => onSetStatus("arrived")} className="flex-1 sm:flex-none min-w-[90px]">
-          Arrived
-        </Button>
+        {canStart && (
+          <Button
+            size="sm"
+            onClick={handleStartRide}
+            disabled={requestingGeo}
+            className="flex-1 sm:flex-none min-w-[110px] bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white"
+          >
+            <Radio className={`h-4 w-4 mr-1 ${requestingGeo ? "animate-pulse" : ""}`} />
+            {requestingGeo ? "Allow location…" : "Start ride"}
+          </Button>
+        )}
+        {isLive && (
+          <Button size="sm" variant="default" disabled className="flex-1 sm:flex-none min-w-[90px]">
+            <Radio className="h-4 w-4 mr-1 animate-pulse" /> En route
+          </Button>
+        )}
         <Button size="sm" variant={ride.status === "completed" ? "default" : "outline"} onClick={() => onSetStatus("completed")} className="flex-1 sm:flex-none min-w-[110px]">
           <CheckCircle2 className="h-4 w-4 mr-1" /> Complete
         </Button>
