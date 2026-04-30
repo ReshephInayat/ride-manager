@@ -289,7 +289,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
           fired.add(r.id);
           try { localStorage.setItem(KEY, JSON.stringify(Array.from(fired))); } catch { /* noop */ }
           playNotificationSound();
-          toast(`Pickup in ~1 hour: ${r.passenger_name ?? "Passenger"} • ${r.pickup_time}`, { duration: 8000, icon: "⏰" });
+          toast(`Pickup in ~1 hour at ${r.pickup_time} • ${r.pickup_location ?? "—"}`, { duration: 8000, icon: "⏰" });
         }
       }
     };
