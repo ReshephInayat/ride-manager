@@ -360,7 +360,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
             <div className="flex-1 min-w-0">
               <div className="font-semibold">{live.active ? "Sharing live location" : "Starting location share…"}</div>
               <div className="text-xs opacity-80 truncate">
-                Ride for {activeRide.passenger_name ?? "passenger"}
+                Ride • {activeRide.riders ?? 1} {(activeRide.riders ?? 1) === 1 ? "passenger" : "passengers"}
                 {live.lastSentAt ? ` • updated ${Math.max(0, Math.round((Date.now() - live.lastSentAt) / 1000))}s ago` : ""}
               </div>
             </div>
