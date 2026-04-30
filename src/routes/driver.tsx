@@ -405,68 +405,74 @@ function Tile({ icon, label, value }: { icon: React.ReactNode; label: string; va
 }
 
 function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStatus) => void }) {
+  const dropoffTime = extractDropoffTime(ride);
+  const cleanDropoff = stripTrailingTime(ride.dropoff_to) || ride.dropoff_to;
+  const cleanFlight = stripTrailingTime(ride.flight_number ?? "") || ride.flight_number;
   return (
-    <Card className="p-4">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CalendarDays className="h-4 w-4" />
-            <span className="font-bold text-foreground">{ride.ride_date}</span>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <div className="relative overflow-hidden rounded-xl border border-primary/40 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent px-4 py-3 shadow-sm">
-              <div className="text-[10px] uppercase tracking-widest text-primary font-bold">Pickup Time</div>
-              <div className="text-3xl font-bold text-foreground leading-tight tabular-nums mt-1">{ride.pickup_time ?? "—"}</div>
-            </div>
-            <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-accent/60 via-accent/30 to-transparent px-4 py-3 shadow-sm">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Dropoff Time</div>
-              <div className="text-3xl font-bold text-foreground leading-tight tabular-nums mt-1">—</div>
-            </div>
-          </div>
-          <div className="mt-2 grid gap-1 text-sm">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{ride.passenger_name ?? "Passenger"}</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-bold">
-                {ride.riders ?? 1} {(ride.riders ?? 1) === 1 ? "passenger" : "passengers"}
-              </span>
-            </div>
-            {ride.phone && (
-              <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> <a href={`tel:${ride.phone}`} className="text-primary hover:underline">{ride.phone}</a></div>
-            )}
-            {ride.flight_number && (
-              <div className="flex items-center gap-2"><Plane className="h-4 w-4 text-muted-foreground" /> <span className="font-bold"><FlightTrackLink flightNumber={ride.flight_number} /></span></div>
-            )}
-            <div className="flex items-start gap-2">
-              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-              <div className="min-w-0">
-                <div className="font-medium">{ride.pickup_location ?? "—"}{ride.pickup_from ? ` (${ride.pickup_from})` : ""}</div>
-                <div>→ <span className="font-medium">{ride.dropoff_location ?? "—"}</span></div>
-              </div>
-            </div>
-            {ride.notes && (
-              <div className="text-xs text-muted-foreground mt-1 italic">Note: {ride.notes}</div>
-            )}
-          </div>
+    <Card className="overflow-hidden p-0 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between gap-2 px-4 sm:px-5 pt-4 pb-2 border-b bg-muted/30">
+        <div className="flex items-center gap-2 text-sm min-w-0">
+          <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="font-bold text-foreground truncate">{ride.ride_date}</span>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusTone[ride.status]}`}>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-full ${statusTone[ride.status]}`}>
             {ride.status.replace("_", " ")}
           </span>
           <FlightSearchButton ride={ride} />
         </div>
       </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button size="sm" variant={ride.status === "arrived" ? "default" : "outline"} onClick={() => onSetStatus("arrived")}>
+
+      <div className="px-4 sm:px-5 pt-3">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="relative overflow-hidden rounded-xl border border-primary/40 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm">
+            <div className="text-[10px] uppercase tracking-widest text-primary font-bold">Pickup</div>
+            <div className="text-2xl sm:text-3xl font-bold text-foreground leading-tight tabular-nums mt-1 break-words">{ride.pickup_time ?? "—"}</div>
+          </div>
+          <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-accent/60 via-accent/30 to-transparent px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Dropoff</div>
+            <div className="text-2xl sm:text-3xl font-bold text-foreground leading-tight tabular-nums mt-1 break-words">{dropoffTime ?? "—"}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 sm:px-5 py-3 grid gap-2 text-sm">
+        <div className="flex items-center gap-2 flex-wrap">
+          <User className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="font-medium truncate">{ride.passenger_name ?? "Passenger"}</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-bold">
+            {ride.riders ?? 1} {(ride.riders ?? 1) === 1 ? "passenger" : "passengers"}
+          </span>
+        </div>
+        {ride.phone && (
+          <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground shrink-0" /> <a href={`tel:${ride.phone}`} className="text-primary hover:underline truncate">{ride.phone}</a></div>
+        )}
+        {cleanFlight && (
+          <div className="flex items-center gap-2"><Plane className="h-4 w-4 text-muted-foreground shrink-0" /> <span className="font-bold truncate"><FlightTrackLink flightNumber={cleanFlight} /></span></div>
+        )}
+        <div className="flex items-start gap-2">
+          <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+          <div className="min-w-0 break-words">
+            <div className="font-medium">{ride.pickup_location ?? "—"}{ride.pickup_from ? ` (${ride.pickup_from})` : ""}</div>
+            <div>→ <span className="font-medium">{cleanDropoff ?? "—"}</span></div>
+          </div>
+        </div>
+        {ride.notes && (
+          <div className="text-xs text-muted-foreground italic break-words">Note: {ride.notes}</div>
+        )}
+      </div>
+
+      <div className="px-4 sm:px-5 pb-4 pt-1 flex flex-wrap gap-2">
+        <Button size="sm" variant={ride.status === "arrived" ? "default" : "outline"} onClick={() => onSetStatus("arrived")} className="flex-1 sm:flex-none min-w-[90px]">
           Arrived
         </Button>
-        <Button size="sm" variant={ride.status === "completed" ? "default" : "outline"} onClick={() => onSetStatus("completed")}>
+        <Button size="sm" variant={ride.status === "completed" ? "default" : "outline"} onClick={() => onSetStatus("completed")} className="flex-1 sm:flex-none min-w-[110px]">
           <CheckCircle2 className="h-4 w-4 mr-1" /> Complete
         </Button>
-        <Button size="sm" variant="outline" onClick={() => onSetStatus("no_show")}>
+        <Button size="sm" variant="outline" onClick={() => onSetStatus("no_show")} className="flex-1 sm:flex-none min-w-[90px]">
           No-show
         </Button>
-        <Button size="sm" variant="outline" onClick={() => onSetStatus("cancelled")}>
+        <Button size="sm" variant="outline" onClick={() => onSetStatus("cancelled")} className="flex-1 sm:flex-none min-w-[100px]">
           <XCircle className="h-4 w-4 mr-1" /> Cancel
         </Button>
       </div>
