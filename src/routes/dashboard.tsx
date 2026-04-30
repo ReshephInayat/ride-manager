@@ -76,7 +76,7 @@ const statusMeta: Record<RideStatus, { label: string; className: string; icon: t
   no_show: { label: "No Show", className: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-100 dark:border-amber-700", icon: MinusCircle },
 };
 
-type DateFilter = "all" | "today" | "tomorrow" | "yesterday" | "this_week" | "this_month" | "custom_month";
+type DateFilter = "all" | "today" | "tomorrow" | "yesterday" | "this_week" | "this_month" | "custom_month" | "custom_range";
 
 function ymd(d: Date) {
   const y = d.getFullYear();
