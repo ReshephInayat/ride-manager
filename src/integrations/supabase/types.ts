@@ -647,7 +647,13 @@ export type Database = {
     }
     Enums: {
       invoice_status: "draft" | "finalized"
-      ride_status: "pending" | "completed" | "cancelled" | "no_show" | "arrived"
+      ride_status:
+        | "pending"
+        | "completed"
+        | "cancelled"
+        | "no_show"
+        | "started"
+        | "arrived"
       workspace_system: "api" | "llc"
     }
     CompositeTypes: {
@@ -777,7 +783,14 @@ export const Constants = {
   public: {
     Enums: {
       invoice_status: ["draft", "finalized"],
-      ride_status: ["pending", "completed", "cancelled", "no_show", "arrived"],
+      ride_status: [
+        "pending",
+        "completed",
+        "cancelled",
+        "no_show",
+        "started",
+        "arrived",
+      ],
       workspace_system: ["api", "llc"],
     },
   },
