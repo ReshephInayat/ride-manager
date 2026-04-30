@@ -1012,17 +1012,18 @@ function DashboardInner() {
                           </Select>
                           {(() => {
                             const live = r.driver_id ? liveLocations[r.driver_id] : null;
-                            const fresh = live && Date.now() - new Date(live.updated_at).getTime() < 60_000;
-                            if (!r.driver_id) return null;
+                            const fresh = !!live && Date.now() - new Date(live.updated_at).getTime() < 60_000;
+                            // Only show tracker while driver is actively sharing (ride in progress).
+                            if (!r.driver_id || !fresh) return null;
                             return (
                               <button
                                 onClick={() => setTrackRide(r)}
-                                title={fresh ? "Live — track driver" : "Open tracker"}
-                                className={`h-8 w-8 grid place-items-center rounded border text-xs transition-colors ${fresh ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "border-border text-muted-foreground hover:bg-muted"}`}
+                                title="Live — track driver"
+                                className="h-8 w-8 grid place-items-center rounded border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs transition-colors"
                               >
                                 <span className="relative">
                                   <MapPin className="h-4 w-4" />
-                                  {fresh && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                                  <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 </span>
                               </button>
                             );
