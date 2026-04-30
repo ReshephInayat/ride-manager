@@ -21,8 +21,10 @@ Deno.serve(async (req) => {
     if (!LOVABLE_API_KEY) return json({ error: "Missing LOVABLE_API_KEY" }, 500);
 
     const prompt = `You are a strict data extractor. The attached PDF is a Horizon Air Ground Transportation Schedule.
-Extract EVERY ride row from the table. For each row return JSON with fields:
-- ride_date (YYYY-MM-DD; use the year shown in the document title)
+Extract EVERY non-header data row from the table — do not skip any row. The output count must equal the number of data rows in the document.
+
+For each row return JSON with fields:
+- ride_date (YYYY-MM-DD; use the year shown in the document title). MANDATORY for every row.
 - department (e.g. "Flight (2)/ InFlight (2)")
 - riders (integer)
 - pickup_location (e.g. "PAE", "SEA")
@@ -33,11 +35,12 @@ Extract EVERY ride row from the table. For each row return JSON with fields:
 - passenger_name, passenger_email, phone if present in the row/document; otherwise null
 - flight_number if present in pickup_from or dropoff_to (e.g. "AS 2270" or "ASA2270"); otherwise null
 
-Rules:
-- A row often has an empty DATE cell because of rowspan; carry the date down from the previous row.
-- Skip header rows and any rows in BOLD (those are repeated from the previous month).
+CRITICAL rules:
+- DATE CARRY-DOWN: when a row's DATE cell is blank because of rowspan, you MUST copy the date from the most recent row above that had a date. Never output a row with a missing ride_date — every output row must have ride_date filled.
+- Skip ONLY the table header row and rows rendered in BOLD (those are repeated from the previous month).
+- Do not collapse rows that look similar — output every distinct row.
 - Normalize missing optional values as null, not empty strings.
-- Return ONLY valid JSON: {"rides":[ ... ]}. No prose.`;
+- Return ONLY valid JSON: {"rides":[ ... ]}. No prose, no code fences.`;
 
     console.log(`[parse-rides-pdf] Calling AI gateway, file: ${fileName}, size: ${fileBase64.length} chars`);
 
@@ -48,7 +51,7 @@ Rules:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           {
             role: "user",

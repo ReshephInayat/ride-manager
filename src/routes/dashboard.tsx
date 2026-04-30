@@ -198,7 +198,7 @@ function DashboardInner() {
   const load = async () => {
     setLoading(true);
     const [rRes, routeRes, dRes] = await Promise.all([
-      supabase.from("rides").select("*").eq("system", system).order("ride_date", { ascending: true }).order("pickup_time", { ascending: true }),
+      supabase.from("rides").select("*").eq("system", system).order("ride_date", { ascending: true }).order("pickup_time", { ascending: true }).range(0, 9999),
       supabase.from("routes").select("*").eq("system", system).order("created_at"),
       supabase.from("drivers").select("*").eq("system", system).order("created_at"),
     ]);
@@ -271,6 +271,9 @@ function DashboardInner() {
   );
 
   // ---- PDF parse → preview modal ----
+  const [previewExtracted, setPreviewExtracted] = useState(0);
+  const [previewInvalid, setPreviewInvalid] = useState(0);
+
   const handleUpload = async (file: File) => {
     setUploading(true);
     try {
@@ -279,12 +282,17 @@ function DashboardInner() {
         toast("No rides found in the PDF.");
         return;
       }
+      const valid = parsed.filter((p) => p.ride_date);
+      const invalid = parsed.length - valid.length;
       setPreviewFile(file.name);
+      setPreviewExtracted(parsed.length);
+      setPreviewInvalid(invalid);
       setPreviewRows(
-        parsed
-          .filter((p) => p.ride_date)
-          .map((p) => ({ selected: true, data: p as PreviewRow["data"] }))
+        valid.map((p) => ({ selected: true, data: p as PreviewRow["data"] }))
       );
+      if (invalid > 0) {
+        toast(`Extracted ${parsed.length} rows • ${invalid} dropped (missing date).`);
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -310,7 +318,7 @@ function DashboardInner() {
     try {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
-      const rows = chosen.map(({ data: p }) => {
+      const allRows = chosen.map(({ data: p }) => {
         const matched = autoMatchRoute(
           {
             pickup_from: p.pickup_from ?? null,
@@ -343,18 +351,52 @@ function DashboardInner() {
         const ride_key = buildRideKey(row);
         return { ...row, ride_key, dedupe_key: ride_key };
       });
-      const { data: inserted, error } = await supabase
+
+      // Step 1: deduplicate within the current batch (same key in PDF only inserts once).
+      const seen = new Set<string>();
+      const rows: typeof allRows = [];
+      let inBatchDuplicates = 0;
+      for (const r of allRows) {
+        if (seen.has(r.ride_key)) { inBatchDuplicates++; continue; }
+        seen.add(r.ride_key);
+        rows.push(r);
+      }
+
+      // Step 2: check which keys already exist in DB so we report accurate counts.
+      const keys = rows.map((r) => r.ride_key);
+      const { data: existing, error: exErr } = await supabase
         .from("rides")
-        .upsert(rows, { onConflict: "user_id,system,ride_key", ignoreDuplicates: true })
-        .select("id");
-      if (error) throw error;
-      const added = inserted?.length ?? 0;
-      const skipped = rows.length - added;
+        .select("ride_key")
+        .eq("user_id", u.user!.id)
+        .eq("system", system)
+        .in("ride_key", keys);
+      if (exErr) throw exErr;
+      const existingSet = new Set((existing ?? []).map((e) => e.ride_key as string));
+      const dbDuplicates = existingSet.size;
+      const toInsert = rows.filter((r) => !existingSet.has(r.ride_key));
+
+      // Step 3: insert in safe batches with database-level uniqueness as a hard guard.
+      let inserted = 0;
+      const BATCH = 200;
+      for (let i = 0; i < toInsert.length; i += BATCH) {
+        const slice = toInsert.slice(i, i + BATCH);
+        const { data: ins, error } = await supabase
+          .from("rides")
+          .upsert(slice, { onConflict: "user_id,system,ride_key", ignoreDuplicates: true })
+          .select("id");
+        if (error) throw error;
+        inserted += ins?.length ?? 0;
+      }
+
+      const totalSkipped = inBatchDuplicates + dbDuplicates + (rows.length - toInsert.length - dbDuplicates);
       toast.success(
-        `Imported ${added} rides${skipped > 0 ? ` • Skipped ${skipped} duplicate${skipped === 1 ? "" : "s"}` : ""}.`
+        `Imported ${inserted} • Skipped ${totalSkipped} duplicate${totalSkipped === 1 ? "" : "s"}` +
+          (previewInvalid > 0 ? ` • ${previewInvalid} invalid row${previewInvalid === 1 ? "" : "s"}` : "")
       );
       setPreviewRows(null);
       setPreviewFile("");
+      setPreviewExtracted(0);
+      setPreviewInvalid(0);
       await load();
     } catch (e) {
       toast.error((e as Error).message);
@@ -997,7 +1039,10 @@ function DashboardInner() {
             <DialogTitle>Review extracted rides — {previewFile}</DialogTitle>
           </DialogHeader>
           <div className="text-sm text-muted-foreground">
-            {previewRows?.length ?? 0} rides found. Uncheck any that look wrong, then import. Duplicates from previous PDFs will be skipped automatically.
+            Extracted <span className="font-semibold text-foreground">{previewExtracted}</span> rows from PDF •{" "}
+            <span className="font-semibold text-foreground">{previewRows?.length ?? 0}</span> ready to import
+            {previewInvalid > 0 ? <> • <span className="text-amber-600">{previewInvalid} skipped (missing date)</span></> : null}.
+            Uncheck any that look wrong, then import. Duplicates already in the system will be skipped automatically.
           </div>
           <div className="max-h-[60vh] overflow-auto border rounded-md">
             <Table>
