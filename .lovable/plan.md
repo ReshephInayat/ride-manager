@@ -1,59 +1,60 @@
-I’ll recreate the import flow around a stricter, database-backed duplicate system and fix the missing ride count issue.
+# Real-time driver tracking
 
-Plan:
+Yes — we can add live driver location tracking. The driver's phone shares its GPS while a ride is active, and admins see a live moving pin on a map (and updated coordinates/last-seen time) in the dashboard.
 
-1. Replace fragile client-only import logic with a dedicated import function
-- Add a backend import function that receives the extracted PDF rides and inserts them in controlled batches.
-- The function will return exact counts: extracted, valid, inserted, skipped duplicates, skipped invalid.
-- The dashboard toast/preview will show those numbers clearly so you can verify the full PDF count.
+## How it works
 
-2. Make duplicate detection strict and consistent
-- Keep/store `ride_key` on every ride.
-- Generate `ride_key` from normalized values:
-  - ride date
-  - pickup time
-  - pickup location / pickup-from
-  - dropoff location / dropoff-to
-  - passenger name/email/phone
-  - flight number
-- Normalize before key creation:
-  - trim spaces
-  - lowercase text
-  - collapse repeated spaces
-  - normalize phone punctuation where possible
-  - normalize flight numbers like `AS 2270` / `ASA2270` consistently
-  - normalize pickup time to stable `HH:MM`
-- Enforce the unique rule in the database so duplicates cannot be inserted even if the UI fails.
+1. **Driver portal**: when a ride is in progress (status `arrived`), the driver's browser uses the browser Geolocation API to send their GPS coordinates every ~10 seconds. They see a clear "Sharing live location" indicator and can stop it at any time. Stops automatically when the ride is marked `completed`, `cancelled`, or `no_show`, or when they sign out / close the tab.
+2. **Database**: a new `driver_locations` table stores the latest known position per driver (lat, lng, accuracy, heading, speed, updated_at). Realtime is enabled on it.
+3. **Admin dashboard**:
+   - Each ride row gets a small "Live" badge + pickup-time-ago when the assigned driver is currently sharing.
+   - A new "Track" button on rides with a driver opens a modal with a live map (OpenStreetMap via Leaflet — free, no API key needed) showing the driver's pin moving in real time, plus last-updated time and accuracy.
+   - A new "Live drivers" panel at the top of the dashboard shows all currently-active drivers with their last update time.
 
-3. Fix the likely reason first import is missing rides
-- The current dashboard loads rides with no explicit range, so the backend can return only the default limited result set when ride volume grows.
-- Change ride loading to paged database reads or a high safe range so the dashboard total reflects all rides, not just a partial fetch.
-- Keep the visible table pagination so the screen does not become infinite scrolling.
+## What admin sees
 
-4. Improve PDF extraction reliability
-- Update the parser instructions to preserve every row and return a `row_number`/source marker when possible.
-- Stop silently dropping parsed rows with missing fields in the preview; instead show invalid rows separately/count them, so “177 extracted” does not become a smaller import with no explanation.
-- Validate only the minimum required fields for import, and report which rows are skipped.
+- Ride list: green pulsing dot next to driver name when location is live.
+- Track button -> map modal with live moving pin, pickup + dropoff markers, and last-seen timestamp.
+- "Live drivers" overview panel — counts and quick links.
 
-5. Add duplicate cleanup/backfill migration if needed
-- Backfill `ride_key` for existing rides using the new normalization logic.
-- Remove any duplicates already created, keeping the most important record first: completed/no-show/arrived, assigned rides, then oldest record.
-- Recreate/confirm the unique database constraint on `(user_id, system, ride_key)`.
+## Privacy & control
 
-6. Update dashboard import UI
-- Preview header will show:
-  - extracted rides from PDF
-  - importable rides
-  - already-existing duplicates
-  - invalid rows
-- Import button will insert only importable, non-duplicate rides.
-- Re-uploading the same PDF should show zero inserted and all valid rides skipped as duplicates.
+- Location is only shared while a ride is `arrived` (in progress). Never shared when off-duty.
+- Drivers see a clear banner and a "Stop sharing" button; they must grant browser permission first.
+- Coordinates are tied to the driver row and only readable by the workspace owner (RLS).
+- Old location rows are kept only as the latest position per driver (upsert), so no historical trail is stored unless you want one.
 
-Technical details:
-- I will not edit the generated backend client/types files manually.
-- Database changes will be done through a migration.
-- The duplicate protection will be enforced at database level, not only in JavaScript.
-- The final behavior target is:
-  - First upload of the April PDF imports all valid rides from the parser output.
-  - Second upload of the exact same PDF imports 0 rides.
-  - The dashboard total matches what is actually stored after import.
+## Technical details
+
+**Database (migration)**
+- New table `public.driver_locations`:
+  - `driver_id uuid PRIMARY KEY references drivers(id) on delete cascade`
+  - `user_id uuid not null` (workspace owner, for RLS)
+  - `ride_id uuid` (the active ride being tracked)
+  - `lat double precision`, `lng double precision`
+  - `accuracy double precision`, `heading double precision`, `speed double precision`
+  - `updated_at timestamptz default now()`
+- RLS: workspace owner can `SELECT` their drivers' rows (`auth.uid() = user_id`).
+- Add to `supabase_realtime` publication; `REPLICA IDENTITY FULL`.
+- New SECURITY DEFINER function `driver_update_location(_driver_id, _pin, _ride_id, _lat, _lng, _accuracy, _heading, _speed)` — verifies PIN, then upserts the row with the driver's `user_id` and `system` looked up server-side.
+- New SECURITY DEFINER function `driver_clear_location(_driver_id, _pin)` to delete the row when sharing stops.
+
+**Driver app (`src/routes/driver.tsx`)**
+- New `useLiveLocation(rideId)` hook: starts `navigator.geolocation.watchPosition`, throttles RPC calls to one per 10 s (or on >25 m movement), calls `driver_update_location`. Cleans up + calls `driver_clear_location` on unmount / status change.
+- Activated automatically when a ride's status becomes `arrived`. Banner shows "Sharing live location for ride X — Stop".
+- Handles permission denied / errors with a friendly toast.
+
+**Admin app (`src/routes/dashboard.tsx`)**
+- Subscribe to `driver_locations` realtime channel; keep a `Map<driverId, location>` in state.
+- Show pulsing green dot in the driver column when `driverId` has a fresh (<60 s) location.
+- New `<TrackRideDialog ride={...} />` component using `react-leaflet` + OpenStreetMap tiles (no API key). Renders driver pin + pickup/dropoff markers, auto-pans to driver, shows accuracy circle and last-updated.
+- "Live drivers" summary card showing count and list with last-updated.
+
+**Dependencies**
+- Add `leaflet` and `react-leaflet` (small, MIT, free OSM tiles).
+
+## Out of scope (can add later)
+
+- Historical breadcrumb trail / playback of past rides.
+- ETA computation against pickup/dropoff.
+- Native mobile app (this uses the browser, which works on iOS/Android Chrome/Safari while the driver tab is open).

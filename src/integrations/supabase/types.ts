@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      driver_locations: {
+        Row: {
+          accuracy: number | null
+          driver_id: string
+          heading: number | null
+          lat: number
+          lng: number
+          ride_id: string | null
+          speed: number | null
+          system: Database["public"]["Enums"]["workspace_system"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          driver_id: string
+          heading?: number | null
+          lat: number
+          lng: number
+          ride_id?: string | null
+          speed?: number | null
+          system?: Database["public"]["Enums"]["workspace_system"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          driver_id?: string
+          heading?: number | null
+          lat?: number
+          lng?: number
+          ride_id?: string | null
+          speed?: number | null
+          system?: Database["public"]["Enums"]["workspace_system"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_locations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_login_attempts: {
         Row: {
           attempted_at: string
@@ -446,6 +493,10 @@ export type Database = {
         }
         Returns: string
       }
+      driver_clear_location: {
+        Args: { _driver_id: string; _pin: string }
+        Returns: undefined
+      }
       driver_login:
         | {
             Args: {
@@ -532,6 +583,19 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      driver_update_location: {
+        Args: {
+          _accuracy?: number
+          _driver_id: string
+          _heading?: number
+          _lat: number
+          _lng: number
+          _pin: string
+          _ride_id: string
+          _speed?: number
+        }
+        Returns: undefined
       }
       driver_update_ride_status: {
         Args: {

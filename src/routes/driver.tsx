@@ -16,6 +16,8 @@ import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
 import driverHero from "@/assets/driver-hero.jpg";
 import { FlightTrackLink, FlightSearchButton } from "@/components/FlightTrackLink";
 import { DriverNotificationBell } from "@/components/DriverNotificationBell";
+import { useLiveLocation } from "@/hooks/useLiveLocation";
+import { Radio } from "lucide-react";
 
 export const Route = createFileRoute("/driver")({ component: DriverPortal });
 
@@ -324,6 +326,16 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
     completedToday: rides.filter((r) => r.ride_date === today && r.status === "completed").length,
   }), [rides, today]);
 
+  // Auto-share location while a ride is in progress (status = "arrived").
+  const activeRide = useMemo(() => rides.find((r) => r.status === "arrived") ?? null, [rides]);
+  const live = useLiveLocation({
+    enabled: !!activeRide,
+    driverId: session.driverId,
+    pin: session.pin,
+    rideId: activeRide?.id ?? null,
+    onError: (msg) => toast.error(msg, { id: "geo-err" }),
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
@@ -342,6 +354,19 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6">
+        {activeRide && (
+          <div className={`mb-4 flex items-center gap-3 rounded-lg border p-3 text-sm ${live.active ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-amber-300 bg-amber-50 text-amber-900"}`}>
+            <Radio className={`h-4 w-4 ${live.active ? "animate-pulse" : ""}`} />
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold">{live.active ? "Sharing live location" : "Starting location share…"}</div>
+              <div className="text-xs opacity-80 truncate">
+                Ride for {activeRide.passenger_name ?? "passenger"}
+                {live.lastSentAt ? ` • updated ${Math.max(0, Math.round((Date.now() - live.lastSentAt) / 1000))}s ago` : ""}
+              </div>
+            </div>
+            <span className="text-xs opacity-70 hidden sm:inline">Stops automatically when you mark the ride complete.</span>
+          </div>
+        )}
         {/* Summary tiles — no money/totals */}
         <div className="grid grid-cols-3 gap-3 mb-5">
           <Tile icon={<CalendarDays className="h-4 w-4" />} label="Today" value={counts.today} />
