@@ -1000,15 +1000,34 @@ function DashboardInner() {
                         <div className="text-muted-foreground">{r.dropoff_location}</div>
                       </TableCell>
                       <TableCell>
-                        <Select value={r.driver_id ?? "__none__"} onValueChange={(v) => setDriver(r, v)}>
-                          <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none__">— Unassigned —</SelectItem>
-                            {drivers.map((d) => (
-                              <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-1">
+                          <Select value={r.driver_id ?? "__none__"} onValueChange={(v) => setDriver(r, v)}>
+                            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">— Unassigned —</SelectItem>
+                              {drivers.map((d) => (
+                                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {(() => {
+                            const live = r.driver_id ? liveLocations[r.driver_id] : null;
+                            const fresh = live && Date.now() - new Date(live.updated_at).getTime() < 60_000;
+                            if (!r.driver_id) return null;
+                            return (
+                              <button
+                                onClick={() => setTrackRide(r)}
+                                title={fresh ? "Live — track driver" : "Open tracker"}
+                                className={`h-8 w-8 grid place-items-center rounded border text-xs transition-colors ${fresh ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "border-border text-muted-foreground hover:bg-muted"}`}
+                              >
+                                <span className="relative">
+                                  <MapPin className="h-4 w-4" />
+                                  {fresh && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                                </span>
+                              </button>
+                            );
+                          })()}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Select value={r.route_id ?? ""} onValueChange={(v) => setRoute(r, v)}>
