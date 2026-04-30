@@ -689,7 +689,7 @@ function DashboardInner() {
             <StatCard tone="teal" label="Net after commission" value={`$${(completedSum * 0.9).toFixed(2)}`} />
           </>
         )}
-        <StatCard tone="amber" label="Selected total" value={`$${selectedSum.toFixed(2)}`} />
+        <StatCard tone="amber" label={`Selected total (${selectedCount} ride${selectedCount === 1 ? "" : "s"})`} value={`$${selectedSum.toFixed(2)}`} />
       </div>
 
       <Card className="p-4 mb-4">
