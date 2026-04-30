@@ -423,20 +423,11 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
         </div>
       </div>
 
-      <div className="px-4 sm:px-5 pt-3">
-        <div className="grid grid-cols-2 gap-2 sm:gap-3">
-          <div className="relative overflow-hidden rounded-xl border border-primary/40 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm">
-            <div className="text-[10px] uppercase tracking-widest text-primary font-bold">Pickup</div>
-            <div className="text-2xl sm:text-3xl font-bold text-foreground leading-tight tabular-nums mt-1 break-words">{ride.pickup_time ?? "—"}</div>
-          </div>
-          <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-accent/60 via-accent/30 to-transparent px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Dropoff</div>
-            <div className="text-2xl sm:text-3xl font-bold text-foreground leading-tight tabular-nums mt-1 break-words">{dropoffTime ?? "—"}</div>
-          </div>
-        </div>
-      </div>
-
       <div className="px-4 sm:px-5 py-3 grid gap-2 text-sm">
+        <div className="flex items-center justify-between gap-2 text-sm font-bold tabular-nums">
+          <span>Pickup: {ride.pickup_time ?? "—"}</span>
+          <span className="text-muted-foreground">Dropoff: {dropoffTime ?? "—"}</span>
+        </div>
         <div className="flex items-center gap-2 flex-wrap">
           <User className="h-4 w-4 text-muted-foreground shrink-0" />
           <span className="font-medium truncate">{ride.passenger_name ?? "Passenger"}</span>
