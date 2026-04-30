@@ -230,18 +230,12 @@ function DashboardInner() {
     });
   }, [rides, filterStatus, filterDriver, range, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const pageStart = filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
-  const pageEnd = Math.min(safePage * pageSize, filtered.length);
-  const pagedRides = useMemo(
-    () => filtered.slice((safePage - 1) * pageSize, safePage * pageSize),
-    [filtered, safePage, pageSize]
-  );
+  // Pagination removed — show all filtered rides at once.
+  const pagedRides = filtered;
 
   useEffect(() => {
-    setPage(1);
-  }, [filterStatus, filterDriver, dateFilter, customMonth, customStart, customEnd, search, pageSize, system]);
+    setSelected(new Set());
+  }, [filterStatus, filterDriver, dateFilter, customMonth, customStart, customEnd, search, system]);
 
   const completedSum = useMemo(
     () => filtered.filter((r) => r.status === "completed" || r.status === "no_show").reduce((s, r) => s + Number(r.amount), 0),
