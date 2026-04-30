@@ -198,7 +198,7 @@ function DashboardInner() {
   const load = async () => {
     setLoading(true);
     const [rRes, routeRes, dRes] = await Promise.all([
-      supabase.from("rides").select("*").eq("system", system).order("ride_date", { ascending: true }).order("pickup_time", { ascending: true }),
+      supabase.from("rides").select("*").eq("system", system).order("ride_date", { ascending: true }).order("pickup_time", { ascending: true }).range(0, 9999),
       supabase.from("routes").select("*").eq("system", system).order("created_at"),
       supabase.from("drivers").select("*").eq("system", system).order("created_at"),
     ]);
