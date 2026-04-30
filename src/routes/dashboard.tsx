@@ -922,16 +922,19 @@ function DashboardInner() {
                         </button>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">{r.department}</TableCell>
-                      <TableCell>{r.riders}</TableCell>
+                      <TableCell className="font-bold">{r.riders}</TableCell>
                       <TableCell className="text-xs">
                         <div className="font-medium">{r.pickup_location}</div>
                         <div className="text-muted-foreground">{r.pickup_from}</div>
-                        <div className="text-muted-foreground">{r.pickup_time}</div>
+                        <div className="font-bold text-foreground">{r.pickup_time}</div>
+                        {r.flight_number && (
+                          <div className="font-bold text-foreground">{r.flight_number}</div>
+                        )}
                         <div className="mt-1"><FlightSearchButton ride={r} size="xs" /></div>
                       </TableCell>
                       <TableCell className="text-xs">
                         <div className="font-medium">{r.dropoff_location}</div>
-                        <div className="text-muted-foreground">{r.dropoff_to}</div>
+                        <div className="font-bold text-foreground">{r.dropoff_to}</div>
                       </TableCell>
                       <TableCell>
                         <Select value={r.driver_id ?? "__none__"} onValueChange={(v) => setDriver(r, v)}>
