@@ -924,17 +924,25 @@ function DashboardInner() {
                       <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">{r.department}</TableCell>
                       <TableCell className="font-bold">{r.riders}</TableCell>
                       <TableCell className="text-xs">
+                        {r.pickup_time && (
+                          <div className="inline-block mb-1 px-3 py-1.5 rounded-md bg-primary/10 border border-primary/30 text-base font-bold text-foreground tracking-wide">
+                            {r.pickup_time}
+                          </div>
+                        )}
                         <div className="font-medium">{r.pickup_location}</div>
                         <div className="text-muted-foreground">{r.pickup_from}</div>
-                        <div className="font-bold text-foreground">{r.pickup_time}</div>
                         {r.flight_number && (
                           <div className="font-bold text-foreground">{r.flight_number}</div>
                         )}
                         <div className="mt-1"><FlightSearchButton ride={r} size="xs" /></div>
                       </TableCell>
                       <TableCell className="text-xs">
+                        {r.dropoff_to && (
+                          <div className="inline-block mb-1 px-3 py-1.5 rounded-md bg-accent/40 border border-border text-base font-bold text-foreground tracking-wide">
+                            {r.dropoff_to}
+                          </div>
+                        )}
                         <div className="font-medium">{r.dropoff_location}</div>
-                        <div className="font-bold text-foreground">{r.dropoff_to}</div>
                       </TableCell>
                       <TableCell>
                         <Select value={r.driver_id ?? "__none__"} onValueChange={(v) => setDriver(r, v)}>
