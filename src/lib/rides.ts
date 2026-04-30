@@ -153,19 +153,6 @@ export function buildRideKey(
   ].join("|");
 }
 
-export function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => {
-      const result = r.result as string;
-      const base64 = result.split(",")[1] ?? "";
-      resolve(base64);
-    };
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
 interface PdfPageText {
   pageNumber: number;
   totalPages: number;
