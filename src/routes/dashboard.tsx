@@ -1287,16 +1287,8 @@ function ManualRideDialog({
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Department</Label>
-            <Input value={form.department} onChange={(e) => set({ department: e.target.value })} />
-          </div>
-          <div>
             <Label className="text-xs">Passenger name</Label>
             <Input value={form.passenger_name} onChange={(e) => set({ passenger_name: e.target.value })} />
-          </div>
-          <div>
-            <Label className="text-xs">Passenger email</Label>
-            <Input type="email" value={form.passenger_email} onChange={(e) => set({ passenger_email: e.target.value })} />
           </div>
           <div>
             <Label className="text-xs">Phone</Label>
