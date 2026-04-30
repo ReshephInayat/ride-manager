@@ -653,7 +653,6 @@ function DashboardInner() {
       pickup_time: form.pickup_time || null,
       dropoff_location: route?.dropoff_location ?? null,
       dropoff_to: null,
-      status: "pending",
       route_id: form.route_id || null,
       driver_id: form.driver_id || null,
       amount: form.price,
