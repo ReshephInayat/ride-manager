@@ -1080,6 +1080,15 @@ function DashboardInner() {
         </div>
       )}
 
+      {trackRide && (
+        <TrackRideDialog
+          ride={trackRide}
+          open={!!trackRide}
+          onOpenChange={(o) => !o && setTrackRide(null)}
+          driverName={drivers.find((d) => d.id === trackRide.driver_id)?.name}
+        />
+      )}
+
       {/* PDF Preview Modal */}
       <Dialog open={!!previewRows} onOpenChange={(o) => !o && setPreviewRows(null)}>
         <DialogContent className="max-w-5xl">
