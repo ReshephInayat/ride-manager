@@ -103,6 +103,26 @@ export function autoMatchRoute(
   return null;
 }
 
+// PDFs embed the dropoff time inside fields like "AS 2368-30 Apr 07:55" or
+// "AS 2279-01 Apr 21:50". Extract the trailing time portion (and optional date)
+// and return them split out for display.
+const TRAILING_TIME_RE = /-\s*((?:\d{1,2}\s+[A-Za-z]{3,9}\s+)?\d{1,2}:\d{2})\s*$/;
+
+export function extractDropoffTime(ride: Pick<Ride, "dropoff_to" | "flight_number">): string | null {
+  const sources = [ride.dropoff_to, ride.flight_number];
+  for (const src of sources) {
+    if (!src) continue;
+    const m = src.match(TRAILING_TIME_RE);
+    if (m) return m[1].trim();
+  }
+  return null;
+}
+
+export function stripTrailingTime(value: string | null | undefined): string {
+  if (!value) return "";
+  return value.replace(TRAILING_TIME_RE, "").trim();
+}
+
 export function normalizeRideKeyText(value: unknown): string {
   return String(value ?? "")
     .trim()
