@@ -1039,7 +1039,10 @@ function DashboardInner() {
             <DialogTitle>Review extracted rides — {previewFile}</DialogTitle>
           </DialogHeader>
           <div className="text-sm text-muted-foreground">
-            {previewRows?.length ?? 0} rides found. Uncheck any that look wrong, then import. Duplicates from previous PDFs will be skipped automatically.
+            Extracted <span className="font-semibold text-foreground">{previewExtracted}</span> rows from PDF •{" "}
+            <span className="font-semibold text-foreground">{previewRows?.length ?? 0}</span> ready to import
+            {previewInvalid > 0 ? <> • <span className="text-amber-600">{previewInvalid} skipped (missing date)</span></> : null}.
+            Uncheck any that look wrong, then import. Duplicates already in the system will be skipped automatically.
           </div>
           <div className="max-h-[60vh] overflow-auto border rounded-md">
             <Table>
