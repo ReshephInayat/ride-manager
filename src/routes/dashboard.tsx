@@ -207,7 +207,7 @@ function DashboardInner() {
 
   useEffect(() => { load(); }, [system]);
 
-  const range = useMemo(() => getDateRange(dateFilter, customMonth), [dateFilter, customMonth]);
+  const range = useMemo(() => getDateRange(dateFilter, customMonth, customStart, customEnd), [dateFilter, customMonth, customStart, customEnd]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
