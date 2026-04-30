@@ -411,15 +411,15 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarDays className="h-4 w-4" />
-            <span className="font-medium text-foreground">{ride.ride_date}</span>
+            <span className="font-bold text-foreground">{ride.ride_date}</span>
             <Clock className="h-4 w-4 ml-1" />
-            <span className="font-medium text-foreground">{ride.pickup_time ?? "—"}</span>
+            <span className="font-bold text-foreground text-base">{ride.pickup_time ?? "—"}</span>
           </div>
           <div className="mt-2 grid gap-1 text-sm">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium">{ride.passenger_name ?? "Passenger"}</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-bold">
                 {ride.riders ?? 1} {(ride.riders ?? 1) === 1 ? "passenger" : "passengers"}
               </span>
             </div>
@@ -427,13 +427,13 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
               <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> <a href={`tel:${ride.phone}`} className="text-primary hover:underline">{ride.phone}</a></div>
             )}
             {ride.flight_number && (
-              <div className="flex items-center gap-2"><Plane className="h-4 w-4 text-muted-foreground" /> <FlightTrackLink flightNumber={ride.flight_number} /></div>
+              <div className="flex items-center gap-2"><Plane className="h-4 w-4 text-muted-foreground" /> <span className="font-bold"><FlightTrackLink flightNumber={ride.flight_number} /></span></div>
             )}
             <div className="flex items-start gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
               <div className="min-w-0">
                 <div className="font-medium">{ride.pickup_location ?? "—"}{ride.pickup_from ? ` (${ride.pickup_from})` : ""}</div>
-                <div className="text-muted-foreground">→ {ride.dropoff_location ?? "—"}{ride.dropoff_to ? ` (${ride.dropoff_to})` : ""}</div>
+                <div>→ <span className="font-medium">{ride.dropoff_location ?? "—"}</span>{ride.dropoff_to ? <> (<span className="font-bold text-foreground">{ride.dropoff_to}</span>)</> : null}</div>
               </div>
             </div>
             {ride.notes && (

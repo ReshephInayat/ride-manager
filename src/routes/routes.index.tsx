@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AutocompleteInput } from "@/components/AutocompleteInput";
 import { PageLoader } from "@/components/Spinner";
 import { Plus, Trash2, Save, ExternalLink } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -36,16 +37,42 @@ function RoutesInner() {
   const { system, label } = useSystem();
   const [rows, setRows] = useState<RouteRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pickupSuggestions, setPickupSuggestions] = useState<string[]>([]);
+  const [dropoffSuggestions, setDropoffSuggestions] = useState<string[]>([]);
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("routes")
-      .select("*")
-      .eq("system", system)
-      .order("created_at", { ascending: true });
-    if (error) toast.error(error.message);
-    setRows((data as RouteRow[]) ?? []);
+    const [routesRes, ridesRes] = await Promise.all([
+      supabase
+        .from("routes")
+        .select("*")
+        .eq("system", system)
+        .order("created_at", { ascending: true }),
+      // Pull pickup/dropoff history from rides for autocomplete suggestions.
+      supabase
+        .from("rides")
+        .select("pickup_location,pickup_from,dropoff_location,dropoff_to")
+        .eq("system", system)
+        .limit(2000),
+    ]);
+    if (routesRes.error) toast.error(routesRes.error.message);
+    const routeRows = (routesRes.data as RouteRow[]) ?? [];
+    setRows(routeRows);
+
+    const pickups = new Set<string>();
+    const dropoffs = new Set<string>();
+    for (const r of routeRows) {
+      if (r.pickup_location) pickups.add(r.pickup_location);
+      if (r.dropoff_location) dropoffs.add(r.dropoff_location);
+    }
+    for (const r of (ridesRes.data ?? []) as Array<{ pickup_location: string | null; pickup_from: string | null; dropoff_location: string | null; dropoff_to: string | null }>) {
+      if (r.pickup_location) pickups.add(r.pickup_location);
+      if (r.pickup_from) pickups.add(r.pickup_from);
+      if (r.dropoff_location) dropoffs.add(r.dropoff_location);
+      if (r.dropoff_to) dropoffs.add(r.dropoff_to);
+    }
+    setPickupSuggestions(Array.from(pickups).sort());
+    setDropoffSuggestions(Array.from(dropoffs).sort());
     setLoading(false);
   };
 
@@ -132,16 +159,20 @@ function RoutesInner() {
                 </div>
                 <div className="md:col-span-3">
                   <Label className="text-xs">Pickup</Label>
-                  <Input
+                  <AutocompleteInput
                     value={r.pickup_location}
-                    onChange={(e) => update(r.id, { pickup_location: e.target.value })}
+                    onChange={(v) => update(r.id, { pickup_location: v })}
+                    suggestions={pickupSuggestions}
+                    placeholder="Start typing an address…"
                   />
                 </div>
                 <div className="md:col-span-3">
                   <Label className="text-xs">Dropoff</Label>
-                  <Input
+                  <AutocompleteInput
                     value={r.dropoff_location}
-                    onChange={(e) => update(r.id, { dropoff_location: e.target.value })}
+                    onChange={(v) => update(r.id, { dropoff_location: v })}
+                    suggestions={dropoffSuggestions}
+                    placeholder="Start typing an address…"
                   />
                 </div>
                 <div className="md:col-span-2">

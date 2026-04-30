@@ -42,8 +42,6 @@ import {
   Trash2,
   Search,
   Plus,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import {
@@ -80,8 +78,6 @@ const statusMeta: Record<RideStatus, { label: string; className: string; icon: t
 };
 
 type DateFilter = "all" | "today" | "tomorrow" | "yesterday" | "this_week" | "this_month" | "custom_month" | "custom_range";
-
-const PAGE_SIZE_OPTIONS = [25, 50, 100, 200];
 
 function ymd(d: Date) {
   const y = d.getFullYear();
@@ -184,8 +180,6 @@ function DashboardInner() {
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
   const [previewFile, setPreviewFile] = useState<string>("");
@@ -236,18 +230,12 @@ function DashboardInner() {
     });
   }, [rides, filterStatus, filterDriver, range, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const pageStart = filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
-  const pageEnd = Math.min(safePage * pageSize, filtered.length);
-  const pagedRides = useMemo(
-    () => filtered.slice((safePage - 1) * pageSize, safePage * pageSize),
-    [filtered, safePage, pageSize]
-  );
+  // Pagination removed — show all filtered rides at once.
+  const pagedRides = filtered;
 
   useEffect(() => {
-    setPage(1);
-  }, [filterStatus, filterDriver, dateFilter, customMonth, customStart, customEnd, search, pageSize, system]);
+    setSelected(new Set());
+  }, [filterStatus, filterDriver, dateFilter, customMonth, customStart, customEnd, search, system]);
 
   const completedSum = useMemo(
     () => filtered.filter((r) => r.status === "completed" || r.status === "no_show").reduce((s, r) => s + Number(r.amount), 0),
@@ -352,18 +340,13 @@ function DashboardInner() {
         return { ...row, ride_key, dedupe_key: ride_key };
       });
 
-      // Step 1: deduplicate within the current batch (same key in PDF only inserts once).
-      const seen = new Set<string>();
-      const rows: typeof allRows = [];
-      let inBatchDuplicates = 0;
-      for (const r of allRows) {
-        if (seen.has(r.ride_key)) { inBatchDuplicates++; continue; }
-        seen.add(r.ride_key);
-        rows.push(r);
-      }
+      // Step 1: per request, KEEP duplicates that appear inside the same PDF.
+      //         Only skip rides that already exist in the database.
+      const rows = allRows;
 
-      // Step 2: check which keys already exist in DB so we report accurate counts.
-      const keys = rows.map((r) => r.ride_key);
+      // Step 2: check which keys already exist in DB so we report accurate counts
+      //         and skip them on insert.
+      const keys = Array.from(new Set(rows.map((r) => r.ride_key)));
       const { data: existing, error: exErr } = await supabase
         .from("rides")
         .select("ride_key")
@@ -372,25 +355,26 @@ function DashboardInner() {
         .in("ride_key", keys);
       if (exErr) throw exErr;
       const existingSet = new Set((existing ?? []).map((e) => e.ride_key as string));
-      const dbDuplicates = existingSet.size;
       const toInsert = rows.filter((r) => !existingSet.has(r.ride_key));
+      const dbDuplicates = rows.length - toInsert.length;
 
-      // Step 3: insert in safe batches with database-level uniqueness as a hard guard.
+      // Step 3: plain insert in safe batches. Duplicate ride_keys within the
+      //         PDF are allowed because the unique constraint was removed.
       let inserted = 0;
       const BATCH = 200;
       for (let i = 0; i < toInsert.length; i += BATCH) {
         const slice = toInsert.slice(i, i + BATCH);
         const { data: ins, error } = await supabase
           .from("rides")
-          .upsert(slice, { onConflict: "user_id,system,ride_key", ignoreDuplicates: true })
+          .insert(slice)
           .select("id");
         if (error) throw error;
         inserted += ins?.length ?? 0;
       }
 
-      const totalSkipped = inBatchDuplicates + dbDuplicates + (rows.length - toInsert.length - dbDuplicates);
       toast.success(
-        `Imported ${inserted} • Skipped ${totalSkipped} duplicate${totalSkipped === 1 ? "" : "s"}` +
+        `Imported ${inserted}` +
+          (dbDuplicates > 0 ? ` • Skipped ${dbDuplicates} already in system` : "") +
           (previewInvalid > 0 ? ` • ${previewInvalid} invalid row${previewInvalid === 1 ? "" : "s"}` : "")
       );
       setPreviewRows(null);
@@ -938,16 +922,19 @@ function DashboardInner() {
                         </button>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">{r.department}</TableCell>
-                      <TableCell>{r.riders}</TableCell>
+                      <TableCell className="font-bold">{r.riders}</TableCell>
                       <TableCell className="text-xs">
                         <div className="font-medium">{r.pickup_location}</div>
                         <div className="text-muted-foreground">{r.pickup_from}</div>
-                        <div className="text-muted-foreground">{r.pickup_time}</div>
+                        <div className="font-bold text-foreground">{r.pickup_time}</div>
+                        {r.flight_number && (
+                          <div className="font-bold text-foreground">{r.flight_number}</div>
+                        )}
                         <div className="mt-1"><FlightSearchButton ride={r} size="xs" /></div>
                       </TableCell>
                       <TableCell className="text-xs">
                         <div className="font-medium">{r.dropoff_location}</div>
-                        <div className="text-muted-foreground">{r.dropoff_to}</div>
+                        <div className="font-bold text-foreground">{r.dropoff_to}</div>
                       </TableCell>
                       <TableCell>
                         <Select value={r.driver_id ?? "__none__"} onValueChange={(v) => setDriver(r, v)}>
@@ -1006,29 +993,8 @@ function DashboardInner() {
       </Card>
 
       {filtered.length > 0 && (
-        <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="text-sm text-muted-foreground">
-            Showing {pageStart}-{pageEnd} of {filtered.length} rides
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
-              <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {PAGE_SIZE_OPTIONS.map((size) => (
-                  <SelectItem key={size} value={String(size)}>{size} / page</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage <= 1}>
-              <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-            </Button>
-            <span className="min-w-24 text-center text-sm text-muted-foreground">
-              Page {safePage} of {totalPages}
-            </span>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
-              Next <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
+        <div className="mt-4 text-sm text-muted-foreground">
+          Showing all {filtered.length} ride{filtered.length === 1 ? "" : "s"}
         </div>
       )}
 
@@ -1321,16 +1287,8 @@ function ManualRideDialog({
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Department</Label>
-            <Input value={form.department} onChange={(e) => set({ department: e.target.value })} />
-          </div>
-          <div>
             <Label className="text-xs">Passenger name</Label>
             <Input value={form.passenger_name} onChange={(e) => set({ passenger_name: e.target.value })} />
-          </div>
-          <div>
-            <Label className="text-xs">Passenger email</Label>
-            <Input type="email" value={form.passenger_email} onChange={(e) => set({ passenger_email: e.target.value })} />
           </div>
           <div>
             <Label className="text-xs">Phone</Label>
