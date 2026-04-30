@@ -76,7 +76,7 @@ const statusMeta: Record<RideStatus, { label: string; className: string; icon: t
   no_show: { label: "No Show", className: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-100 dark:border-amber-700", icon: MinusCircle },
 };
 
-type DateFilter = "all" | "today" | "tomorrow" | "yesterday" | "this_week" | "this_month" | "custom_month";
+type DateFilter = "all" | "today" | "tomorrow" | "yesterday" | "this_week" | "this_month" | "custom_month" | "custom_range";
 
 function ymd(d: Date) {
   const y = d.getFullYear();
@@ -85,7 +85,12 @@ function ymd(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-function getDateRange(filter: DateFilter, customMonth: string): { start?: string; end?: string } {
+function getDateRange(
+  filter: DateFilter,
+  customMonth: string,
+  customStart: string,
+  customEnd: string,
+): { start?: string; end?: string } {
   const now = new Date();
   const today = ymd(now);
   if (filter === "today") return { start: today, end: today };
@@ -114,6 +119,12 @@ function getDateRange(filter: DateFilter, customMonth: string): { start?: string
     const first = new Date(y, m - 1, 1);
     const last = new Date(y, m, 0);
     return { start: ymd(first), end: ymd(last) };
+  }
+  if (filter === "custom_range") {
+    return {
+      start: customStart || undefined,
+      end: customEnd || undefined,
+    };
   }
   return {};
 }
@@ -165,6 +176,8 @@ function DashboardInner() {
   const [filterDriver, setFilterDriver] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [customMonth, setCustomMonth] = useState<string>("");
+  const [customStart, setCustomStart] = useState<string>("");
+  const [customEnd, setCustomEnd] = useState<string>("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
@@ -194,7 +207,7 @@ function DashboardInner() {
 
   useEffect(() => { load(); }, [system]);
 
-  const range = useMemo(() => getDateRange(dateFilter, customMonth), [dateFilter, customMonth]);
+  const range = useMemo(() => getDateRange(dateFilter, customMonth, customStart, customEnd), [dateFilter, customMonth, customStart, customEnd]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -224,6 +237,10 @@ function DashboardInner() {
       filtered
         .filter((r) => selected.has(r.id) && (r.status === "completed" || r.status === "no_show"))
         .reduce((s, r) => s + Number(r.amount), 0),
+    [filtered, selected]
+  );
+  const selectedCount = useMemo(
+    () => filtered.filter((r) => selected.has(r.id)).length,
     [filtered, selected]
   );
 
@@ -672,7 +689,7 @@ function DashboardInner() {
             <StatCard tone="teal" label="Net after commission" value={`$${(completedSum * 0.9).toFixed(2)}`} />
           </>
         )}
-        <StatCard tone="amber" label="Selected total" value={`$${selectedSum.toFixed(2)}`} />
+        <StatCard tone="amber" label={`Selected total (${selectedCount} ride${selectedCount === 1 ? "" : "s"})`} value={`$${selectedSum.toFixed(2)}`} />
       </div>
 
       <Card className="p-4 mb-4">
@@ -701,6 +718,7 @@ function DashboardInner() {
                 <SelectItem value="this_week">This week</SelectItem>
                 <SelectItem value="this_month">This month</SelectItem>
                 <SelectItem value="custom_month">Pick month…</SelectItem>
+                <SelectItem value="custom_range">Date range…</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -714,6 +732,28 @@ function DashboardInner() {
                 className="w-44"
               />
             </div>
+          )}
+          {dateFilter === "custom_range" && (
+            <>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">From</label>
+                <Input
+                  type="date"
+                  value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  className="w-40"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">To</label>
+                <Input
+                  type="date"
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  className="w-40"
+                />
+              </div>
+            </>
           )}
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Status</label>

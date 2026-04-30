@@ -416,9 +416,13 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
             <span className="font-medium text-foreground">{ride.pickup_time ?? "—"}</span>
           </div>
           <div className="mt-2 grid gap-1 text-sm">
-            {ride.passenger_name && (
-              <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /> {ride.passenger_name}{ride.riders > 1 ? ` (+${ride.riders - 1})` : ""}</div>
-            )}
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{ride.passenger_name ?? "Passenger"}</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
+                {ride.riders ?? 1} {(ride.riders ?? 1) === 1 ? "passenger" : "passengers"}
+              </span>
+            </div>
             {ride.phone && (
               <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> <a href={`tel:${ride.phone}`} className="text-primary hover:underline">{ride.phone}</a></div>
             )}
