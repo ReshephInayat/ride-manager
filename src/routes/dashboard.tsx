@@ -42,10 +42,13 @@ import {
   Trash2,
   Search,
   Plus,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import {
   autoMatchRoute,
+  buildRideKey,
   callParser,
   type Ride,
   type RideStatus,
@@ -77,6 +80,8 @@ const statusMeta: Record<RideStatus, { label: string; className: string; icon: t
 };
 
 type DateFilter = "all" | "today" | "tomorrow" | "yesterday" | "this_week" | "this_month" | "custom_month" | "custom_range";
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100, 200];
 
 function ymd(d: Date) {
   const y = d.getFullYear();
@@ -179,6 +184,8 @@ function DashboardInner() {
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
   const [previewFile, setPreviewFile] = useState<string>("");
@@ -221,12 +228,26 @@ function DashboardInner() {
         const hay = [
           r.department, r.pickup_from, r.dropoff_to,
           r.pickup_location, r.dropoff_location, r.pickup_time,
+          r.passenger_name, r.passenger_email, r.phone, r.flight_number,
         ].filter(Boolean).join(" ").toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
   }, [rides, filterStatus, filterDriver, range, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const pageEnd = Math.min(safePage * pageSize, filtered.length);
+  const pagedRides = useMemo(
+    () => filtered.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [filtered, safePage, pageSize]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterStatus, filterDriver, dateFilter, customMonth, customStart, customEnd, search, pageSize, system]);
 
   const completedSum = useMemo(
     () => filtered.filter((r) => r.status === "completed" || r.status === "no_show").reduce((s, r) => s + Number(r.amount), 0),
