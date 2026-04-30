@@ -239,6 +239,10 @@ function DashboardInner() {
         .reduce((s, r) => s + Number(r.amount), 0),
     [filtered, selected]
   );
+  const selectedCount = useMemo(
+    () => filtered.filter((r) => selected.has(r.id)).length,
+    [filtered, selected]
+  );
 
   const driverMap = useMemo(
     () => Object.fromEntries(drivers.map((d) => [d.id, d.name])),
