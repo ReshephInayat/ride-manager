@@ -413,14 +413,14 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
             <CalendarDays className="h-4 w-4" />
             <span className="font-bold text-foreground">{ride.ride_date}</span>
           </div>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <div className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-2">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Pickup</div>
-              <div className="text-2xl font-bold text-foreground leading-tight">{ride.pickup_time ?? "—"}</div>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="relative overflow-hidden rounded-xl border border-primary/40 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent px-4 py-3 shadow-sm">
+              <div className="text-[10px] uppercase tracking-widest text-primary font-bold">Pickup Time</div>
+              <div className="text-3xl font-bold text-foreground leading-tight tabular-nums mt-1">{ride.pickup_time ?? "—"}</div>
             </div>
-            <div className="rounded-lg border border-border bg-accent/40 px-3 py-2">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Dropoff</div>
-              <div className="text-2xl font-bold text-foreground leading-tight">{ride.dropoff_to ?? "—"}</div>
+            <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-accent/60 via-accent/30 to-transparent px-4 py-3 shadow-sm">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Dropoff Time</div>
+              <div className="text-3xl font-bold text-foreground leading-tight tabular-nums mt-1">—</div>
             </div>
           </div>
           <div className="mt-2 grid gap-1 text-sm">
