@@ -1,29 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Ride } from "@/lib/rides";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-
-// Default Leaflet marker icons via CDN (avoid bundler asset path issues).
-const defaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-L.Marker.prototype.options.icon = defaultIcon;
-
-const driverIcon = L.divIcon({
-  className: "",
-  html: `<div style="width:22px;height:22px;border-radius:50%;background:#10b981;border:3px solid white;box-shadow:0 0 0 3px rgba(16,185,129,0.4);"></div>`,
-  iconSize: [22, 22],
-  iconAnchor: [11, 11],
-});
+import { Loader2 } from "lucide-react";
 
 interface DriverLocation {
   driver_id: string;
@@ -32,14 +11,6 @@ interface DriverLocation {
   lng: number;
   accuracy: number | null;
   updated_at: string;
-}
-
-function FollowDriver({ pos }: { pos: [number, number] | null }) {
-  const map = useMap();
-  useEffect(() => {
-    if (pos) map.panTo(pos, { animate: true });
-  }, [pos, map]);
-  return null;
 }
 
 function formatAgo(iso: string) {
@@ -52,6 +23,9 @@ function formatAgo(iso: string) {
   const h = Math.round(m / 60);
   return `${h}h ago`;
 }
+
+// Lazy-load leaflet map only on the client side
+const LeafletMap = lazy(() => import("./TrackRideMap"));
 
 export function TrackRideDialog({
   ride,
@@ -103,7 +77,6 @@ export function TrackRideDialog({
     [loc],
   );
   const fresh = loc ? Date.now() - new Date(loc.updated_at).getTime() < 60_000 : false;
-  // tick is referenced so the "ago" label re-renders each second.
   void tick;
 
   return (
@@ -123,20 +96,12 @@ export function TrackRideDialog({
           </div>
           <div className="h-[420px] w-full rounded-lg overflow-hidden border">
             {pos ? (
-              <MapContainer center={pos} zoom={15} style={{ height: "100%", width: "100%" }}>
-                <TileLayer
-                  attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <Marker position={pos} icon={driverIcon}>
-                  <Popup>{driverName ?? "Driver"}</Popup>
-                </Marker>
-                {loc?.accuracy ? <Circle center={pos} radius={loc.accuracy} pathOptions={{ color: "#10b981", weight: 1, fillOpacity: 0.08 }} /> : null}
-                <FollowDriver pos={pos} />
-              </MapContainer>
+              <Suspense fallback={<div className="h-full grid place-items-center"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
+                <LeafletMap pos={pos} driverName={driverName} accuracy={loc?.accuracy ?? null} />
+              </Suspense>
             ) : (
               <div className="h-full grid place-items-center text-muted-foreground text-sm">
-                The driver is not sharing location yet. They share automatically once they mark the ride as “Arrived”.
+                The driver is not sharing location yet. They share automatically once they mark the ride as "Arrived".
               </div>
             )}
           </div>
