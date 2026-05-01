@@ -1034,8 +1034,8 @@ function DashboardInner() {
                 <TableHead>Department</TableHead>
                 <TableHead>Riders</TableHead>
                 <TableHead>Times</TableHead>
-                <TableHead>Pickup</TableHead>
                 <TableHead>Dropoff</TableHead>
+                <TableHead>Pickup</TableHead>
                 <TableHead>Driver</TableHead>
                 <TableHead>Route / Price</TableHead>
                 <TableHead>Status</TableHead>
