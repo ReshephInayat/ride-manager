@@ -5,33 +5,14 @@ import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   Upload,
   Loader2,
@@ -75,14 +56,45 @@ function Dashboard() {
 
 const statusMeta: Record<RideStatus, { label: string; className: string; icon: typeof CheckCircle2 }> = {
   pending: { label: "Pending", className: "bg-secondary text-secondary-foreground", icon: MinusCircle },
-  started: { label: "Started", className: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700", icon: CheckCircle2 },
-  arrived: { label: "Arrived", className: "bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/40 dark:text-sky-100 dark:border-sky-700", icon: CheckCircle2 },
-  completed: { label: "Completed", className: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700", icon: CheckCircle2 },
-  cancelled: { label: "Cancelled", className: "bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/40 dark:text-rose-100 dark:border-rose-700", icon: XCircle },
-  no_show: { label: "No Show", className: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-100 dark:border-amber-700", icon: MinusCircle },
+  started: {
+    label: "Started",
+    className:
+      "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700",
+    icon: CheckCircle2,
+  },
+  arrived: {
+    label: "Arrived",
+    className: "bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/40 dark:text-sky-100 dark:border-sky-700",
+    icon: CheckCircle2,
+  },
+  completed: {
+    label: "Completed",
+    className:
+      "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700",
+    icon: CheckCircle2,
+  },
+  cancelled: {
+    label: "Cancelled",
+    className: "bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/40 dark:text-rose-100 dark:border-rose-700",
+    icon: XCircle,
+  },
+  no_show: {
+    label: "No Show",
+    className:
+      "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-100 dark:border-amber-700",
+    icon: MinusCircle,
+  },
 };
 
-type DateFilter = "all" | "today" | "tomorrow" | "yesterday" | "this_week" | "this_month" | "custom_month" | "custom_range";
+type DateFilter =
+  | "all"
+  | "today"
+  | "tomorrow"
+  | "yesterday"
+  | "this_week"
+  | "this_month"
+  | "custom_month"
+  | "custom_range";
 
 function ymd(d: Date) {
   const y = d.getFullYear();
@@ -101,18 +113,22 @@ function getDateRange(
   const today = ymd(now);
   if (filter === "today") return { start: today, end: today };
   if (filter === "tomorrow") {
-    const t = new Date(now); t.setDate(t.getDate() + 1);
+    const t = new Date(now);
+    t.setDate(t.getDate() + 1);
     return { start: ymd(t), end: ymd(t) };
   }
   if (filter === "yesterday") {
-    const t = new Date(now); t.setDate(t.getDate() - 1);
+    const t = new Date(now);
+    t.setDate(t.getDate() - 1);
     return { start: ymd(t), end: ymd(t) };
   }
   if (filter === "this_week") {
     const day = now.getDay();
     const diffToMon = (day + 6) % 7;
-    const mon = new Date(now); mon.setDate(now.getDate() - diffToMon);
-    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - diffToMon);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
     return { start: ymd(mon), end: ymd(sun) };
   }
   if (filter === "this_month") {
@@ -176,7 +192,9 @@ function DashboardInner() {
   const [rides, setRides] = useState<Ride[]>([]);
   const [routes, setRoutes] = useState<RouteRow[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [liveLocations, setLiveLocations] = useState<Record<string, { lat: number; lng: number; updated_at: string; ride_id: string | null }>>({});
+  const [liveLocations, setLiveLocations] = useState<
+    Record<string, { lat: number; lng: number; updated_at: string; ride_id: string | null }>
+  >({});
   const [trackRide, setTrackRide] = useState<Ride | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -199,7 +217,13 @@ function DashboardInner() {
   const load = async () => {
     setLoading(true);
     const [rRes, routeRes, dRes] = await Promise.all([
-      supabase.from("rides").select("*").eq("system", system).order("ride_date", { ascending: true }).order("pickup_time", { ascending: true }).range(0, 9999),
+      supabase
+        .from("rides")
+        .select("*")
+        .eq("system", system)
+        .order("ride_date", { ascending: true })
+        .order("pickup_time", { ascending: true })
+        .range(0, 9999),
       supabase.from("routes").select("*").eq("system", system).order("created_at"),
       supabase.from("drivers").select("*").eq("system", system).order("created_at"),
     ]);
@@ -213,7 +237,9 @@ function DashboardInner() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [system]);
+  useEffect(() => {
+    load();
+  }, [system]);
 
   // Realtime: refresh whenever rides, routes, or drivers change in this workspace.
   useEffect(() => {
@@ -223,7 +249,9 @@ function DashboardInner() {
       .on("postgres_changes", { event: "*", schema: "public", table: "routes" }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, () => load())
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [system]);
 
@@ -236,7 +264,13 @@ function DashboardInner() {
         .eq("system", system);
       if (data) {
         const next: Record<string, { lat: number; lng: number; updated_at: string; ride_id: string | null }> = {};
-        for (const row of data as Array<{ driver_id: string; lat: number; lng: number; updated_at: string; ride_id: string | null }>) {
+        for (const row of data as Array<{
+          driver_id: string;
+          lat: number;
+          lng: number;
+          updated_at: string;
+          ride_id: string | null;
+        }>) {
           next[row.driver_id] = { lat: row.lat, lng: row.lng, updated_at: row.updated_at, ride_id: row.ride_id };
         }
         setLiveLocations(next);
@@ -248,19 +282,39 @@ function DashboardInner() {
       .on("postgres_changes", { event: "*", schema: "public", table: "driver_locations" }, (payload) => {
         if (payload.eventType === "DELETE") {
           const old = payload.old as { driver_id?: string };
-          if (old?.driver_id) setLiveLocations((m) => { const n = { ...m }; delete n[old.driver_id!]; return n; });
+          if (old?.driver_id)
+            setLiveLocations((m) => {
+              const n = { ...m };
+              delete n[old.driver_id!];
+              return n;
+            });
         } else {
-          const row = payload.new as { driver_id: string; lat: number; lng: number; updated_at: string; ride_id: string | null };
-          setLiveLocations((m) => ({ ...m, [row.driver_id]: { lat: row.lat, lng: row.lng, updated_at: row.updated_at, ride_id: row.ride_id } }));
+          const row = payload.new as {
+            driver_id: string;
+            lat: number;
+            lng: number;
+            updated_at: string;
+            ride_id: string | null;
+          };
+          setLiveLocations((m) => ({
+            ...m,
+            [row.driver_id]: { lat: row.lat, lng: row.lng, updated_at: row.updated_at, ride_id: row.ride_id },
+          }));
         }
       })
       .subscribe();
     // refresh ticker so "fresh" status decays after 60s
     const t = setInterval(() => setLiveLocations((m) => ({ ...m })), 30000);
-    return () => { supabase.removeChannel(ch); clearInterval(t); };
+    return () => {
+      supabase.removeChannel(ch);
+      clearInterval(t);
+    };
   }, [system]);
 
-  const range = useMemo(() => getDateRange(dateFilter, customMonth, customStart, customEnd), [dateFilter, customMonth, customStart, customEnd]);
+  const range = useMemo(
+    () => getDateRange(dateFilter, customMonth, customStart, customEnd),
+    [dateFilter, customMonth, customStart, customEnd],
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -272,10 +326,20 @@ function DashboardInner() {
       if (range.end && r.ride_date > range.end) return false;
       if (q) {
         const hay = [
-          r.department, r.pickup_from, r.dropoff_to,
-          r.pickup_location, r.dropoff_location, r.pickup_time,
-          r.passenger_name, r.passenger_email, r.phone, r.flight_number,
-        ].filter(Boolean).join(" ").toLowerCase();
+          r.department,
+          r.pickup_from,
+          r.dropoff_to,
+          r.pickup_location,
+          r.dropoff_location,
+          r.pickup_time,
+          r.passenger_name,
+          r.passenger_email,
+          r.phone,
+          r.flight_number,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -290,25 +354,22 @@ function DashboardInner() {
   }, [filterStatus, filterDriver, dateFilter, customMonth, customStart, customEnd, search, system]);
 
   const completedSum = useMemo(
-    () => filtered.filter((r) => r.status === "completed" || r.status === "no_show").reduce((s, r) => s + Number(r.amount), 0),
-    [filtered]
+    () =>
+      filtered
+        .filter((r) => r.status === "completed" || r.status === "no_show")
+        .reduce((s, r) => s + Number(r.amount), 0),
+    [filtered],
   );
   const selectedSum = useMemo(
     () =>
       filtered
         .filter((r) => selected.has(r.id) && (r.status === "completed" || r.status === "no_show"))
         .reduce((s, r) => s + Number(r.amount), 0),
-    [filtered, selected]
+    [filtered, selected],
   );
-  const selectedCount = useMemo(
-    () => filtered.filter((r) => selected.has(r.id)).length,
-    [filtered, selected]
-  );
+  const selectedCount = useMemo(() => filtered.filter((r) => selected.has(r.id)).length, [filtered, selected]);
 
-  const driverMap = useMemo(
-    () => Object.fromEntries(drivers.map((d) => [d.id, d.name])),
-    [drivers]
-  );
+  const driverMap = useMemo(() => Object.fromEntries(drivers.map((d) => [d.id, d.name])), [drivers]);
 
   // ---- PDF parse → preview modal ----
   const [previewExtracted, setPreviewExtracted] = useState(0);
@@ -327,9 +388,7 @@ function DashboardInner() {
       setPreviewFile(file.name);
       setPreviewExtracted(parsed.length);
       setPreviewInvalid(invalid);
-      setPreviewRows(
-        valid.map((p) => ({ selected: true, data: p as PreviewRow["data"] }))
-      );
+      setPreviewRows(valid.map((p) => ({ selected: true, data: p as PreviewRow["data"] })));
       if (invalid > 0) {
         toast(`Extracted ${parsed.length} rows • ${invalid} dropped (missing date).`);
       }
@@ -342,7 +401,7 @@ function DashboardInner() {
   };
 
   const togglePreview = (i: number) =>
-    setPreviewRows((rs) => rs ? rs.map((r, idx) => (idx === i ? { ...r, selected: !r.selected } : r)) : rs);
+    setPreviewRows((rs) => (rs ? rs.map((r, idx) => (idx === i ? { ...r, selected: !r.selected } : r)) : rs));
   const togglePreviewAll = () =>
     setPreviewRows((rs) => {
       if (!rs) return rs;
@@ -366,7 +425,7 @@ function DashboardInner() {
             pickup_location: p.pickup_location ?? null,
             dropoff_location: p.dropoff_location ?? null,
           },
-          routes
+          routes,
         );
         const row = {
           user_id: u.user!.id,
@@ -416,10 +475,7 @@ function DashboardInner() {
       const BATCH = 200;
       for (let i = 0; i < toInsert.length; i += BATCH) {
         const slice = toInsert.slice(i, i + BATCH);
-        const { data: ins, error } = await supabase
-          .from("rides")
-          .insert(slice)
-          .select("id");
+        const { data: ins, error } = await supabase.from("rides").insert(slice).select("id");
         if (error) throw error;
         inserted += ins?.length ?? 0;
       }
@@ -427,7 +483,7 @@ function DashboardInner() {
       toast.success(
         `Imported ${inserted}` +
           (dbDuplicates > 0 ? ` • Skipped ${dbDuplicates} already in system` : "") +
-          (previewInvalid > 0 ? ` • ${previewInvalid} invalid row${previewInvalid === 1 ? "" : "s"}` : "")
+          (previewInvalid > 0 ? ` • ${previewInvalid} invalid row${previewInvalid === 1 ? "" : "s"}` : ""),
       );
       setPreviewRows(null);
       setPreviewFile("");
@@ -445,7 +501,10 @@ function DashboardInner() {
   const setStatus = async (ride: Ride, status: RideStatus) => {
     setRides((rs) => rs.map((r) => (r.id === ride.id ? { ...r, status } : r)));
     const { error } = await supabase.from("rides").update({ status }).eq("id", ride.id);
-    if (error) { toast.error(error.message); load(); }
+    if (error) {
+      toast.error(error.message);
+      load();
+    }
   };
 
   const setRoute = async (ride: Ride, routeId: string) => {
@@ -453,7 +512,10 @@ function DashboardInner() {
     const amount = route?.price ?? 0;
     setRides((rs) => rs.map((r) => (r.id === ride.id ? { ...r, route_id: routeId, amount } : r)));
     const { error } = await supabase.from("rides").update({ route_id: routeId, amount }).eq("id", ride.id);
-    if (error) { toast.error(error.message); load(); }
+    if (error) {
+      toast.error(error.message);
+      load();
+    }
   };
 
   const setDriver = async (ride: Ride, driverIdRaw: string) => {
@@ -461,16 +523,25 @@ function DashboardInner() {
     const previous = ride.driver_id ?? null;
     setRides((rs) => rs.map((r) => (r.id === ride.id ? { ...r, driver_id } : r)));
     const { error } = await supabase.from("rides").update({ driver_id }).eq("id", ride.id);
-    if (error) { toast.error(error.message); load(); return; }
+    if (error) {
+      toast.error(error.message);
+      load();
+      return;
+    }
     if (driver_id && driver_id !== previous) {
       // Fire-and-forget SMS + admin notification for the assignment.
       fetch("/api/public/hooks/notify-assignment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ride_id: ride.id }),
-      }).then((r) => r.json()).then((j) => {
-        if (j?.sms?.sent) toast.success("Driver notified by SMS");
-      }).catch(() => { /* silent */ });
+      })
+        .then((r) => r.json())
+        .then((j) => {
+          if (j?.sms?.sent) toast.success("Driver notified by SMS");
+        })
+        .catch(() => {
+          /* silent */
+        });
     }
   };
 
@@ -479,7 +550,11 @@ function DashboardInner() {
     const { error } = await supabase.from("rides").delete().eq("id", id);
     if (error) return toast.error(error.message);
     setRides((rs) => rs.filter((r) => r.id !== id));
-    setSelected((s) => { const n = new Set(s); n.delete(id); return n; });
+    setSelected((s) => {
+      const n = new Set(s);
+      n.delete(id);
+      return n;
+    });
     toast.success("Ride deleted");
   };
 
@@ -519,7 +594,8 @@ function DashboardInner() {
   const toggleSelect = (id: string) => {
     setSelected((s) => {
       const n = new Set(s);
-      if (n.has(id)) n.delete(id); else n.add(id);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
       return n;
     });
   };
@@ -551,9 +627,12 @@ function DashboardInner() {
     const today = new Date();
     const day = today.getDay();
     const monDiff = (day + 6) % 7;
-    const mon = new Date(today); mon.setDate(today.getDate() - monDiff);
-    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-    const start = ymd(mon); const end = ymd(sun);
+    const mon = new Date(today);
+    mon.setDate(today.getDate() - monDiff);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    const start = ymd(mon);
+    const end = ymd(sun);
     const items = rides.filter((r) => isBillable(r.status) && r.ride_date >= start && r.ride_date <= end);
     if (!items.length) return toast.error("No billable rides this week.");
     await createInvoice(items, `Weekly invoice (${start} → ${end})`, true);
@@ -562,16 +641,14 @@ function DashboardInner() {
     const today = new Date();
     const first = new Date(today.getFullYear(), today.getMonth(), 1);
     const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    const start = ymd(first); const end = ymd(last);
+    const start = ymd(first);
+    const end = ymd(last);
     const items = rides.filter((r) => isBillable(r.status) && r.ride_date >= start && r.ride_date <= end);
     if (!items.length) return toast.error("No billable rides this month.");
     await createInvoice(items, `Monthly invoice (${start} → ${end})`);
   };
   const nextInvoiceNumber = async (): Promise<string> => {
-    const { count } = await supabase
-      .from("invoices")
-      .select("id", { count: "exact", head: true })
-      .eq("system", system);
+    const { count } = await supabase.from("invoices").select("id", { count: "exact", head: true }).eq("system", system);
     const next = (count ?? 0) + 1;
     return String(next).padStart(3, "0");
   };
@@ -581,7 +658,7 @@ function DashboardInner() {
     if (!u.user) return;
     const subtotal = items.reduce((s, r) => s + Number(r.amount), 0);
     const sales_tax_rate = 9.9;
-    const sales_tax_amount = +(subtotal * sales_tax_rate / 100).toFixed(2);
+    const sales_tax_amount = +((subtotal * sales_tax_rate) / 100).toFixed(2);
     const total = +(subtotal + sales_tax_amount).toFixed(2);
     const dates = items.map((r) => r.ride_date).sort();
     const invoice_number = await nextInvoiceNumber();
@@ -619,7 +696,7 @@ function DashboardInner() {
         invoice_id: inv!.id,
         ride_id: null,
         description: `${g.name} — Total rides: ${g.rides.length} × $${g.price.toFixed(2)}`,
-        amount: +(g.rides.reduce((s, r) => s + Number(r.amount), 0)).toFixed(2),
+        amount: +g.rides.reduce((s, r) => s + Number(r.amount), 0).toFixed(2),
       }));
     } else {
       itemRows = items.map((r) => ({
@@ -657,7 +734,7 @@ function DashboardInner() {
 
   const buildRouteLines = (start: string, end: string): InvoiceLine[] => {
     const items = rides.filter(
-      (r) => (r.status === "completed" || r.status === "no_show") && r.ride_date >= start && r.ride_date <= end
+      (r) => (r.status === "completed" || r.status === "no_show") && r.ride_date >= start && r.ride_date <= end,
     );
     const groups = new Map<string, { name: string; price: number; rides: Ride[] }>();
     for (const r of items) {
@@ -677,7 +754,7 @@ function DashboardInner() {
   };
 
   const recalcLinesForDates = (start: string, end: string) => {
-    setInvoicePreview((p) => p ? { ...p, start, end, lines: buildRouteLines(start, end) } : p);
+    setInvoicePreview((p) => (p ? { ...p, start, end, lines: buildRouteLines(start, end) } : p));
   };
 
   const saveInvoiceFromPreview = async () => {
@@ -688,7 +765,7 @@ function DashboardInner() {
     if (!lines.length) return toast.error("Add at least one line item.");
     const subtotal = lines.reduce((s, l) => s + Number(l.quantity) * Number(l.price), 0);
     const sales_tax_rate = 9.9;
-    const sales_tax_amount = +(subtotal * sales_tax_rate / 100).toFixed(2);
+    const sales_tax_amount = +((subtotal * sales_tax_rate) / 100).toFixed(2);
     const total = +(subtotal + sales_tax_amount).toFixed(2);
     const { data: inv, error } = await supabase
       .from("invoices")
@@ -794,7 +871,11 @@ function DashboardInner() {
 
       <div className={`grid grid-cols-2 ${system === "api" ? "md:grid-cols-6" : "md:grid-cols-4"} gap-4 mb-6`}>
         <StatCard tone="blue" label="Total rides (filtered)" value={filtered.length.toString()} />
-        <StatCard tone="violet" label="Completed" value={filtered.filter((r) => r.status === "completed").length.toString()} />
+        <StatCard
+          tone="violet"
+          label="Completed"
+          value={filtered.filter((r) => r.status === "completed").length.toString()}
+        />
         <StatCard tone="emerald" label="Completed total" value={`$${completedSum.toFixed(2)}`} />
         {system === "api" && (
           <>
@@ -802,7 +883,11 @@ function DashboardInner() {
             <StatCard tone="teal" label="Net after commission" value={`$${(completedSum * 0.9).toFixed(2)}`} />
           </>
         )}
-        <StatCard tone="amber" label={`Selected total (${selectedCount} ride${selectedCount === 1 ? "" : "s"})`} value={`$${selectedSum.toFixed(2)}`} />
+        <StatCard
+          tone="amber"
+          label={`Selected total (${selectedCount} ride${selectedCount === 1 ? "" : "s"})`}
+          value={`$${selectedSum.toFixed(2)}`}
+        />
       </div>
 
       <Card className="p-4 mb-4">
@@ -822,7 +907,9 @@ function DashboardInner() {
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Date</label>
             <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All time</SelectItem>
                 <SelectItem value="today">Today</SelectItem>
@@ -859,19 +946,16 @@ function DashboardInner() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">To</label>
-                <Input
-                  type="date"
-                  value={customEnd}
-                  onChange={(e) => setCustomEnd(e.target.value)}
-                  className="w-40"
-                />
+                <Input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="w-40" />
               </div>
             </>
           )}
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Status</label>
             <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as never)}>
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
@@ -885,12 +969,16 @@ function DashboardInner() {
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Driver</label>
             <Select value={filterDriver} onValueChange={setFilterDriver}>
-              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-44">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All drivers</SelectItem>
                 <SelectItem value="unassigned">Unassigned</SelectItem>
                 {drivers.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -901,10 +989,18 @@ function DashboardInner() {
                 <Trash2 className="h-4 w-4 mr-1" /> Delete ({selected.size})
               </Button>
             )}
-            <Button variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40" onClick={completeAllFiltered}>
+            <Button
+              variant="outline"
+              className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+              onClick={completeAllFiltered}
+            >
               <CheckCircle2 className="h-4 w-4 mr-1" /> Complete all
             </Button>
-            <Button variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40" onClick={deleteAllFiltered}>
+            <Button
+              variant="outline"
+              className="border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+              onClick={deleteAllFiltered}
+            >
               <Trash2 className="h-4 w-4 mr-1" /> Delete all
             </Button>
             <Button variant="outline" onClick={createInvoiceFromSelected}>
@@ -949,21 +1045,26 @@ function DashboardInner() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={12} className="text-center py-10"><div className="inline-flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading rides…</div></TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={12} className="text-center py-10">
+                    <div className="inline-flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Loading rides…
+                    </div>
+                  </TableCell>
+                </TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
-                  No rides match. Upload a PDF or change filters.
-                </TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
+                    No rides match. Upload a PDF or change filters.
+                  </TableCell>
+                </TableRow>
               ) : (
                 pagedRides.map((r) => {
                   const meta = statusMeta[r.status];
                   return (
                     <TableRow key={r.id} className={selected.has(r.id) ? "bg-secondary/40" : ""}>
                       <TableCell>
-                        <Checkbox
-                          checked={selected.has(r.id)}
-                          onCheckedChange={() => toggleSelect(r.id)}
-                        />
+                        <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleSelect(r.id)} />
                       </TableCell>
                       <TableCell className="font-medium whitespace-nowrap">
                         <button
@@ -974,7 +1075,9 @@ function DashboardInner() {
                           {r.ride_date}
                         </button>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">{r.department}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">
+                        {r.department}
+                      </TableCell>
                       <TableCell className="font-bold">{r.riders}</TableCell>
                       <TableCell className="whitespace-nowrap">
                         <div className="flex flex-col gap-1">
@@ -983,7 +1086,9 @@ function DashboardInner() {
                             <div className="text-xs font-bold tabular-nums">{r.pickup_time ?? "—"}</div>
                           </div>
                           <div className="rounded border border-border bg-muted/40 px-1.5 py-0.5 leading-tight">
-                            <div className="text-[8px] uppercase tracking-wider font-bold text-muted-foreground">Dropoff</div>
+                            <div className="text-[8px] uppercase tracking-wider font-bold text-muted-foreground">
+                              Dropoff
+                            </div>
                             <div className="text-xs font-bold tabular-nums">{extractDropoffTime(r) ?? "—"}</div>
                           </div>
                         </div>
@@ -992,9 +1097,13 @@ function DashboardInner() {
                         <div className="font-medium">{r.pickup_location}</div>
                         <div className="text-muted-foreground">{r.pickup_from}</div>
                         {r.flight_number && (
-                          <div className="font-bold text-foreground">{stripTrailingTime(r.flight_number) || r.flight_number}</div>
+                          <div className="font-bold text-foreground">
+                            {stripTrailingTime(r.flight_number) || r.flight_number}
+                          </div>
                         )}
-                        <div className="mt-1"><FlightSearchButton ride={r} size="xs" /></div>
+                        <div className="mt-1">
+                          <FlightSearchButton ride={r} size="xs" />
+                        </div>
                       </TableCell>
                       <TableCell className="text-xs">
                         <div className="font-medium">{r.dropoff_location}</div>
@@ -1003,11 +1112,15 @@ function DashboardInner() {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Select value={r.driver_id ?? "__none__"} onValueChange={(v) => setDriver(r, v)}>
-                            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectTrigger className="w-36 h-8 text-xs">
+                              <SelectValue placeholder="—" />
+                            </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="__none__">— Unassigned —</SelectItem>
                               {drivers.map((d) => (
-                                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                <SelectItem key={d.id} value={d.id}>
+                                  {d.name}
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -1035,7 +1148,9 @@ function DashboardInner() {
                       </TableCell>
                       <TableCell>
                         <Select value={r.route_id ?? ""} onValueChange={(v) => setRoute(r, v)}>
-                          <SelectTrigger className="w-44 h-8 text-xs"><SelectValue placeholder="Pick route" /></SelectTrigger>
+                          <SelectTrigger className="w-44 h-8 text-xs">
+                            <SelectValue placeholder="Pick route" />
+                          </SelectTrigger>
                           <SelectContent>
                             {routes.map((rt) => (
                               <SelectItem key={rt.id} value={rt.id}>
@@ -1047,17 +1162,34 @@ function DashboardInner() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <StatusBtn active={r.status === "completed"} onClick={() => setStatus(r, "completed")} title="Complete" tone="emerald">
+                          <StatusBtn
+                            active={r.status === "completed"}
+                            onClick={() => setStatus(r, "completed")}
+                            title="Complete"
+                            tone="emerald"
+                          >
                             <CheckCircle2 className="h-4 w-4" />
                           </StatusBtn>
-                          <StatusBtn active={r.status === "cancelled"} onClick={() => setStatus(r, "cancelled")} title="Cancel" tone="rose">
+                          <StatusBtn
+                            active={r.status === "cancelled"}
+                            onClick={() => setStatus(r, "cancelled")}
+                            title="Cancel"
+                            tone="rose"
+                          >
                             <XCircle className="h-4 w-4" />
                           </StatusBtn>
-                          <StatusBtn active={r.status === "no_show"} onClick={() => setStatus(r, "no_show")} title="No show" tone="amber">
+                          <StatusBtn
+                            active={r.status === "no_show"}
+                            onClick={() => setStatus(r, "no_show")}
+                            title="No show"
+                            tone="amber"
+                          >
                             <MinusCircle className="h-4 w-4" />
                           </StatusBtn>
                         </div>
-                        <Badge className={`mt-1 ${meta.className} border`} variant="outline">{meta.label}</Badge>
+                        <Badge className={`mt-1 ${meta.className} border`} variant="outline">
+                          {meta.label}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right font-semibold">${Number(r.amount).toFixed(2)}</TableCell>
                       <TableCell>
@@ -1084,14 +1216,18 @@ function DashboardInner() {
         </div>
       )}
 
-      {trackRide && trackRide.driver_id && liveLocations[trackRide.driver_id] && liveLocations[trackRide.driver_id].ride_id === trackRide.id && (Date.now() - new Date(liveLocations[trackRide.driver_id].updated_at).getTime() < 60_000) && (
-        <TrackRideDialog
-          ride={trackRide}
-          open={!!trackRide}
-          onOpenChange={(o) => !o && setTrackRide(null)}
-          driverName={drivers.find((d) => d.id === trackRide.driver_id)?.name}
-        />
-      )}
+      {trackRide &&
+        trackRide.driver_id &&
+        liveLocations[trackRide.driver_id] &&
+        liveLocations[trackRide.driver_id].ride_id === trackRide.id &&
+        Date.now() - new Date(liveLocations[trackRide.driver_id].updated_at).getTime() < 60_000 && (
+          <TrackRideDialog
+            ride={trackRide}
+            open={!!trackRide}
+            onOpenChange={(o) => !o && setTrackRide(null)}
+            driverName={drivers.find((d) => d.id === trackRide.driver_id)?.name}
+          />
+        )}
 
       {/* PDF Preview Modal */}
       <Dialog open={!!previewRows} onOpenChange={(o) => !o && setPreviewRows(null)}>
@@ -1102,8 +1238,13 @@ function DashboardInner() {
           <div className="text-sm text-muted-foreground">
             Extracted <span className="font-semibold text-foreground">{previewExtracted}</span> rows from PDF •{" "}
             <span className="font-semibold text-foreground">{previewRows?.length ?? 0}</span> ready to import
-            {previewInvalid > 0 ? <> • <span className="text-amber-600">{previewInvalid} skipped (missing date)</span></> : null}.
-            Uncheck any that look wrong, then import. Duplicates already in the system will be skipped automatically.
+            {previewInvalid > 0 ? (
+              <>
+                {" "}
+                • <span className="text-amber-600">{previewInvalid} skipped (missing date)</span>
+              </>
+            ) : null}
+            . Uncheck any that look wrong, then import. Duplicates already in the system will be skipped automatically.
           </div>
           <div className="max-h-[60vh] overflow-auto border rounded-md">
             <Table>
@@ -1118,8 +1259,8 @@ function DashboardInner() {
                   <TableHead>Date</TableHead>
                   <TableHead>Time</TableHead>
                   <TableHead>Department</TableHead>
-                  <TableHead>Pickup</TableHead>
                   <TableHead>Dropoff</TableHead>
+                  <TableHead>Pickup</TableHead>
                   <TableHead>Riders</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1147,7 +1288,9 @@ function DashboardInner() {
             </Table>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setPreviewRows(null)} disabled={importing}>Cancel</Button>
+            <Button variant="outline" onClick={() => setPreviewRows(null)} disabled={importing}>
+              Cancel
+            </Button>
             <Button onClick={importPreview} disabled={importing}>
               {importing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               Import {previewRows?.filter((r) => r.selected).length ?? 0} rides
@@ -1180,13 +1323,24 @@ function DashboardInner() {
   );
 }
 
-function StatCard({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "blue" | "emerald" | "amber" | "violet" | "rose" | "teal" }) {
+function StatCard({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "blue" | "emerald" | "amber" | "violet" | "rose" | "teal";
+}) {
   const toneMap = {
     default: "bg-card",
     blue: "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 text-blue-900 dark:from-blue-950/40 dark:to-blue-900/30 dark:border-blue-800 dark:text-blue-100",
-    emerald: "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-900 dark:from-emerald-950/40 dark:to-emerald-900/30 dark:border-emerald-800 dark:text-emerald-100",
-    amber: "bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 text-amber-900 dark:from-amber-950/40 dark:to-amber-900/30 dark:border-amber-800 dark:text-amber-100",
-    violet: "bg-gradient-to-br from-violet-50 to-violet-100 border-violet-200 text-violet-900 dark:from-violet-950/40 dark:to-violet-900/30 dark:border-violet-800 dark:text-violet-100",
+    emerald:
+      "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-900 dark:from-emerald-950/40 dark:to-emerald-900/30 dark:border-emerald-800 dark:text-emerald-100",
+    amber:
+      "bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 text-amber-900 dark:from-amber-950/40 dark:to-amber-900/30 dark:border-amber-800 dark:text-amber-100",
+    violet:
+      "bg-gradient-to-br from-violet-50 to-violet-100 border-violet-200 text-violet-900 dark:from-violet-950/40 dark:to-violet-900/30 dark:border-violet-800 dark:text-violet-100",
     rose: "bg-gradient-to-br from-rose-50 to-rose-100 border-rose-200 text-rose-900 dark:from-rose-950/40 dark:to-rose-900/30 dark:border-rose-800 dark:text-rose-100",
     teal: "bg-gradient-to-br from-teal-50 to-teal-100 border-teal-200 text-teal-900 dark:from-teal-950/40 dark:to-teal-900/30 dark:border-teal-800 dark:text-teal-100",
   };
@@ -1199,15 +1353,24 @@ function StatCard({ label, value, tone = "default" }: { label: string; value: st
 }
 
 function StatusBtn({
-  active, onClick, title, tone, children,
+  active,
+  onClick,
+  title,
+  tone,
+  children,
 }: {
-  active: boolean; onClick: () => void; title: string;
-  tone: "emerald" | "rose" | "amber"; children: React.ReactNode;
+  active: boolean;
+  onClick: () => void;
+  title: string;
+  tone: "emerald" | "rose" | "amber";
+  children: React.ReactNode;
 }) {
   const map = {
-    emerald: "border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 data-[active=true]:bg-emerald-600 data-[active=true]:text-white data-[active=true]:border-emerald-600",
+    emerald:
+      "border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 data-[active=true]:bg-emerald-600 data-[active=true]:text-white data-[active=true]:border-emerald-600",
     rose: "border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 data-[active=true]:bg-rose-600 data-[active=true]:text-white data-[active=true]:border-rose-600",
-    amber: "border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 data-[active=true]:bg-amber-500 data-[active=true]:text-white data-[active=true]:border-amber-500",
+    amber:
+      "border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 data-[active=true]:bg-amber-500 data-[active=true]:text-white data-[active=true]:border-amber-500",
   };
   return (
     <button
@@ -1222,7 +1385,13 @@ function StatusBtn({
 }
 
 function ManualRideDialog({
-  open, onOpenChange, routes, drivers, system, onRoutesChanged, onSave,
+  open,
+  onOpenChange,
+  routes,
+  drivers,
+  system,
+  onRoutesChanged,
+  onSave,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -1234,9 +1403,18 @@ function ManualRideDialog({
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState<ManualRideForm>({
-    ride_date: today, pickup_time: "", route_id: "", driver_id: "",
-    riders: 1, price: 0, passenger_name: "", passenger_email: "",
-    phone: "", flight_number: "", department: "", notes: "",
+    ride_date: today,
+    pickup_time: "",
+    route_id: "",
+    driver_id: "",
+    riders: 1,
+    price: 0,
+    passenger_name: "",
+    passenger_email: "",
+    phone: "",
+    flight_number: "",
+    department: "",
+    notes: "",
   });
   const [saving, setSaving] = useState(false);
   const [showNewRoute, setShowNewRoute] = useState(false);
@@ -1247,9 +1425,17 @@ function ManualRideDialog({
     if (open) {
       setForm({
         ride_date: new Date().toISOString().slice(0, 10),
-        pickup_time: "", route_id: "", driver_id: "",
-        riders: 1, price: 0, passenger_name: "", passenger_email: "",
-        phone: "", flight_number: "", department: "", notes: "",
+        pickup_time: "",
+        route_id: "",
+        driver_id: "",
+        riders: 1,
+        price: 0,
+        passenger_name: "",
+        passenger_email: "",
+        phone: "",
+        flight_number: "",
+        department: "",
+        notes: "",
       });
       setShowNewRoute(false);
       setNewRoute({ name: "", pickup_location: "", dropoff_location: "", price: 0 });
@@ -1305,13 +1491,19 @@ function ManualRideDialog({
     if (!form.ride_date) return toast.error("Date is required");
     if (!form.route_id) return toast.error("Route is required");
     setSaving(true);
-    try { await onSave(form); } finally { setSaving(false); }
+    try {
+      await onSave(form);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Add ride</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Add ride</DialogTitle>
+        </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label className="text-xs">Date *</Label>
@@ -1324,10 +1516,14 @@ function ManualRideDialog({
           <div className="col-span-2">
             <Label className="text-xs">Route *</Label>
             <Select value={form.route_id} onValueChange={onRouteChange}>
-              <SelectTrigger><SelectValue placeholder={routes.length ? "Pick a route" : "Add a route"} /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder={routes.length ? "Pick a route" : "Add a route"} />
+              </SelectTrigger>
               <SelectContent>
                 {routes.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>{r.name} — ${Number(r.price).toFixed(2)}</SelectItem>
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.name} — ${Number(r.price).toFixed(2)}
+                  </SelectItem>
                 ))}
                 <SelectItem value="__new__">+ New route…</SelectItem>
               </SelectContent>
@@ -1338,25 +1534,46 @@ function ManualRideDialog({
                 <div className="grid grid-cols-2 gap-2">
                   <div className="col-span-2">
                     <Label className="text-xs">Name</Label>
-                    <Input value={newRoute.name} onChange={(e) => setNewRoute((s) => ({ ...s, name: e.target.value }))} placeholder="e.g. Hotel ↔ SEA" />
+                    <Input
+                      value={newRoute.name}
+                      onChange={(e) => setNewRoute((s) => ({ ...s, name: e.target.value }))}
+                      placeholder="e.g. Hotel ↔ SEA"
+                    />
                   </div>
                   <div>
                     <Label className="text-xs">Pickup</Label>
-                    <Input value={newRoute.pickup_location} onChange={(e) => setNewRoute((s) => ({ ...s, pickup_location: e.target.value }))} />
+                    <Input
+                      value={newRoute.pickup_location}
+                      onChange={(e) => setNewRoute((s) => ({ ...s, pickup_location: e.target.value }))}
+                    />
                   </div>
                   <div>
                     <Label className="text-xs">Dropoff</Label>
-                    <Input value={newRoute.dropoff_location} onChange={(e) => setNewRoute((s) => ({ ...s, dropoff_location: e.target.value }))} />
+                    <Input
+                      value={newRoute.dropoff_location}
+                      onChange={(e) => setNewRoute((s) => ({ ...s, dropoff_location: e.target.value }))}
+                    />
                   </div>
                   <div>
                     <Label className="text-xs">Price ($)</Label>
-                    <Input type="number" step="0.01" value={newRoute.price} onChange={(e) => setNewRoute((s) => ({ ...s, price: parseFloat(e.target.value) || 0 }))} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={newRoute.price}
+                      onChange={(e) => setNewRoute((s) => ({ ...s, price: parseFloat(e.target.value) || 0 }))}
+                    />
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <Button size="sm" variant="ghost" onClick={() => setShowNewRoute(false)} disabled={creatingRoute}>Cancel</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowNewRoute(false)} disabled={creatingRoute}>
+                    Cancel
+                  </Button>
                   <Button size="sm" onClick={createRoute} disabled={creatingRoute}>
-                    {creatingRoute ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Plus className="h-3 w-3 mr-1" />}
+                    {creatingRoute ? (
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    ) : (
+                      <Plus className="h-3 w-3 mr-1" />
+                    )}
                     Create route
                   </Button>
                 </div>
@@ -1365,19 +1582,38 @@ function ManualRideDialog({
           </div>
           <div>
             <Label className="text-xs">Riders</Label>
-            <Input type="number" min={1} value={form.riders} onChange={(e) => set({ riders: parseInt(e.target.value) || 1 })} />
+            <Input
+              type="number"
+              min={1}
+              value={form.riders}
+              onChange={(e) => set({ riders: parseInt(e.target.value) || 1 })}
+            />
           </div>
           <div>
             <Label className="text-xs">Price ($)</Label>
-            <Input type="number" step="0.01" value={form.price} onChange={(e) => set({ price: parseFloat(e.target.value) || 0 })} />
+            <Input
+              type="number"
+              step="0.01"
+              value={form.price}
+              onChange={(e) => set({ price: parseFloat(e.target.value) || 0 })}
+            />
           </div>
           <div>
             <Label className="text-xs">Driver</Label>
-            <Select value={form.driver_id || "__none__"} onValueChange={(v) => set({ driver_id: v === "__none__" ? "" : v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select
+              value={form.driver_id || "__none__"}
+              onValueChange={(v) => set({ driver_id: v === "__none__" ? "" : v })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">— Unassigned —</SelectItem>
-                {drivers.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                {drivers.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -1396,7 +1632,9 @@ function ManualRideDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+            Cancel
+          </Button>
           <Button onClick={submit} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
             Add ride
@@ -1408,7 +1646,10 @@ function ManualRideDialog({
 }
 
 function InvoicePreviewDialog({
-  state, onChange, onRecalcDates, onSave,
+  state,
+  onChange,
+  onRecalcDates,
+  onSave,
 }: {
   state: InvoicePreviewState | null;
   onChange: (v: InvoicePreviewState | null) => void;
@@ -1418,25 +1659,33 @@ function InvoicePreviewDialog({
   const [saving, setSaving] = useState(false);
   if (!state) return null;
   const subtotal = state.lines.reduce((s, l) => s + Number(l.quantity || 0) * Number(l.price || 0), 0);
-  const tax = +(subtotal * 9.9 / 100).toFixed(2);
+  const tax = +((subtotal * 9.9) / 100).toFixed(2);
   const total = +(subtotal + tax).toFixed(2);
 
   const updateLine = (id: string, patch: Partial<InvoiceLine>) =>
-    onChange({ ...state, lines: state.lines.map((l) => l.id === id ? { ...l, ...patch } : l) });
-  const removeLine = (id: string) =>
-    onChange({ ...state, lines: state.lines.filter((l) => l.id !== id) });
+    onChange({ ...state, lines: state.lines.map((l) => (l.id === id ? { ...l, ...patch } : l)) });
+  const removeLine = (id: string) => onChange({ ...state, lines: state.lines.filter((l) => l.id !== id) });
   const addLine = () =>
-    onChange({ ...state, lines: [...state.lines, { id: `new-${Date.now()}-${Math.random()}`, description: "", quantity: 1, price: 0 }] });
+    onChange({
+      ...state,
+      lines: [...state.lines, { id: `new-${Date.now()}-${Math.random()}`, description: "", quantity: 1, price: 0 }],
+    });
 
   const submit = async () => {
     setSaving(true);
-    try { await onSave(); } finally { setSaving(false); }
+    try {
+      await onSave();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <Dialog open={!!state} onOpenChange={(o) => !o && onChange(null)}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Invoice preview — by route</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Invoice preview — by route</DialogTitle>
+        </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
@@ -1449,7 +1698,10 @@ function InvoicePreviewDialog({
           </div>
           <div>
             <Label className="text-xs">Invoice #</Label>
-            <Input value={state.invoiceNumber} onChange={(e) => onChange({ ...state, invoiceNumber: e.target.value })} />
+            <Input
+              value={state.invoiceNumber}
+              onChange={(e) => onChange({ ...state, invoiceNumber: e.target.value })}
+            />
           </div>
           <div>
             <Label className="text-xs">Bill to</Label>
@@ -1470,28 +1722,52 @@ function InvoicePreviewDialog({
             </TableHeader>
             <TableBody>
               {state.lines.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No completed rides in this date range. Add a manual line below.</TableCell></TableRow>
-              ) : state.lines.map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell>
-                    <Input value={l.description} onChange={(e) => updateLine(l.id, { description: e.target.value })} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Input type="number" min={1} value={l.quantity} onChange={(e) => updateLine(l.id, { quantity: parseInt(e.target.value) || 0 })} className="text-right" />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Input type="number" step="0.01" value={l.price} onChange={(e) => updateLine(l.id, { price: parseFloat(e.target.value) || 0 })} className="text-right" />
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">
-                    ${(Number(l.quantity || 0) * Number(l.price || 0)).toFixed(2)}
-                  </TableCell>
-                  <TableCell>
-                    <button onClick={() => removeLine(l.id)} className="h-7 w-7 grid place-items-center rounded text-rose-600 hover:bg-rose-50">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                    No completed rides in this date range. Add a manual line below.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                state.lines.map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell>
+                      <Input
+                        value={l.description}
+                        onChange={(e) => updateLine(l.id, { description: e.target.value })}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        min={1}
+                        value={l.quantity}
+                        onChange={(e) => updateLine(l.id, { quantity: parseInt(e.target.value) || 0 })}
+                        className="text-right"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={l.price}
+                        onChange={(e) => updateLine(l.id, { price: parseFloat(e.target.value) || 0 })}
+                        className="text-right"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">
+                      ${(Number(l.quantity || 0) * Number(l.price || 0)).toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <button
+                        onClick={() => removeLine(l.id)}
+                        className="h-7 w-7 grid place-items-center rounded text-rose-600 hover:bg-rose-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
@@ -1507,14 +1783,25 @@ function InvoicePreviewDialog({
 
         <div className="flex justify-end">
           <div className="w-64 text-sm space-y-1">
-            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Sales tax (9.9%)</span><span>${tax.toFixed(2)}</span></div>
-            <div className="flex justify-between text-base font-bold border-t pt-1"><span>Total</span><span>${total.toFixed(2)}</span></div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>${subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Sales tax (9.9%)</span>
+              <span>${tax.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-base font-bold border-t pt-1">
+              <span>Total</span>
+              <span>${total.toFixed(2)}</span>
+            </div>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onChange(null)} disabled={saving}>Cancel</Button>
+          <Button variant="outline" onClick={() => onChange(null)} disabled={saving}>
+            Cancel
+          </Button>
           <Button onClick={submit} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
             Create invoice
@@ -1524,4 +1811,3 @@ function InvoicePreviewDialog({
     </Dialog>
   );
 }
-
