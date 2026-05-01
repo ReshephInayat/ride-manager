@@ -1,60 +1,54 @@
-# Real-time driver tracking
 
-Yes — we can add live driver location tracking. The driver's phone shares its GPS while a ride is active, and admins see a live moving pin on a map (and updated coordinates/last-seen time) in the dashboard.
+## Issues and Solutions
 
-## How it works
+### 1. Fix Swapped Pickup/Dropoff Headers in Preview Table
 
-1. **Driver portal**: when a ride is in progress (status `arrived`), the driver's browser uses the browser Geolocation API to send their GPS coordinates every ~10 seconds. They see a clear "Sharing live location" indicator and can stop it at any time. Stops automatically when the ride is marked `completed`, `cancelled`, or `no_show`, or when they sign out / close the tab.
-2. **Database**: a new `driver_locations` table stores the latest known position per driver (lat, lng, accuracy, heading, speed, updated_at). Realtime is enabled on it.
-3. **Admin dashboard**:
-   - Each ride row gets a small "Live" badge + pickup-time-ago when the assigned driver is currently sharing.
-   - A new "Track" button on rides with a driver opens a modal with a live map (OpenStreetMap via Leaflet — free, no API key needed) showing the driver's pin moving in real time, plus last-updated time and accuracy.
-   - A new "Live drivers" panel at the top of the dashboard shows all currently-active drivers with their last update time.
+In `src/routes/dashboard.tsx` lines 1262-1263, the preview table headers say "Dropoff" then "Pickup" but render `pickup_location` then `dropoff_location` data. The headers are swapped — they need to be corrected to "Pickup" then "Dropoff".
 
-## What admin sees
+**Files:** `src/routes/dashboard.tsx`
 
-- Ride list: green pulsing dot next to driver name when location is live.
-- Track button -> map modal with live moving pin, pickup + dropoff markers, and last-seen timestamp.
-- "Live drivers" overview panel — counts and quick links.
+### 2. Strict Pickup/Dropoff Validation During PDF Parsing
 
-## Privacy & control
+Update the AI prompt in `supabase/functions/parse-rides-pdf/index.ts` to add explicit rules:
+- Reinforce that `pickup_location` must be where the rider is picked up (origin)
+- `dropoff_location` must be where the rider is dropped off (destination)
+- Add a post-parse validation step in the client (`src/lib/rides.ts`) that cross-checks known patterns (e.g. if pickup_from contains a hotel name, pickup_location should not be an airport code unless context indicates otherwise)
 
-- Location is only shared while a ride is `arrived` (in progress). Never shared when off-duty.
-- Drivers see a clear banner and a "Stop sharing" button; they must grant browser permission first.
-- Coordinates are tied to the driver row and only readable by the workspace owner (RLS).
-- Old location rows are kept only as the latest position per driver (upsert), so no historical trail is stored unless you want one.
+### 3. Optimize Ride Import Speed
 
-## Technical details
+Currently, pages are parsed sequentially with a 250ms delay between each. To speed this up:
+- Parse pages in parallel (batch of 3-4 concurrent requests instead of sequential)
+- Remove or reduce the artificial 250ms delay between page parses
+- This alone should cut import time significantly for multi-page PDFs
 
-**Database (migration)**
-- New table `public.driver_locations`:
-  - `driver_id uuid PRIMARY KEY references drivers(id) on delete cascade`
-  - `user_id uuid not null` (workspace owner, for RLS)
-  - `ride_id uuid` (the active ride being tracked)
-  - `lat double precision`, `lng double precision`
-  - `accuracy double precision`, `heading double precision`, `speed double precision`
-  - `updated_at timestamptz default now()`
-- RLS: workspace owner can `SELECT` their drivers' rows (`auth.uid() = user_id`).
-- Add to `supabase_realtime` publication; `REPLICA IDENTITY FULL`.
-- New SECURITY DEFINER function `driver_update_location(_driver_id, _pin, _ride_id, _lat, _lng, _accuracy, _heading, _speed)` — verifies PIN, then upserts the row with the driver's `user_id` and `system` looked up server-side.
-- New SECURITY DEFINER function `driver_clear_location(_driver_id, _pin)` to delete the row when sharing stops.
+**Files:** `src/lib/rides.ts` — refactor `callParser` to use `Promise.all` with batched concurrency
 
-**Driver app (`src/routes/driver.tsx`)**
-- New `useLiveLocation(rideId)` hook: starts `navigator.geolocation.watchPosition`, throttles RPC calls to one per 10 s (or on >25 m movement), calls `driver_update_location`. Cleans up + calls `driver_clear_location` on unmount / status change.
-- Activated automatically when a ride's status becomes `arrived`. Banner shows "Sharing live location for ride X — Stop".
-- Handles permission denied / errors with a friendly toast.
+### 4. Upgrade AI Bot to Perform Admin Actions
 
-**Admin app (`src/routes/dashboard.tsx`)**
-- Subscribe to `driver_locations` realtime channel; keep a `Map<driverId, location>` in state.
-- Show pulsing green dot in the driver column when `driverId` has a fresh (<60 s) location.
-- New `<TrackRideDialog ride={...} />` component using `react-leaflet` + OpenStreetMap tiles (no API key). Renders driver pin + pickup/dropoff markers, auto-pans to driver, shows accuracy circle and last-updated.
-- "Live drivers" summary card showing count and list with last-updated.
+Currently the chat assistant is read-only. Upgrade it to execute admin actions using tool calling:
 
-**Dependencies**
-- Add `leaflet` and `react-leaflet` (small, MIT, free OSM tiles).
+**Edge function changes (`supabase/functions/chat-assistant/index.ts`):**
+- Add tool definitions for: update ride status, assign driver, create ride, create route, create driver, delete ride
+- Use the AI model's tool-calling capability to let it decide when to execute actions
+- Execute the tool calls using the service role client on behalf of the authenticated user
+- Return confirmation messages after each action
 
-## Out of scope (can add later)
+**Tools to define:**
+- `update_ride_status` — change a ride's status (params: ride_id, new_status)
+- `assign_driver` — assign a driver to a ride (params: ride_id, driver_id or driver_name)
+- `create_ride` — create a new ride (params: date, pickup, dropoff, etc.)
+- `create_route` — add a new route (params: name, pickup_location, dropoff_location, price)
+- `create_driver` — add a new driver (params: name, phone, email)
+- `delete_ride` — remove a ride (params: ride_id)
+- `update_ride` — edit ride details (params: ride_id + fields to update)
 
-- Historical breadcrumb trail / playback of past rides.
-- ETA computation against pickup/dropoff.
-- Native mobile app (this uses the browser, which works on iOS/Android Chrome/Safari while the driver tab is open).
+The AI will receive the user's data context (as it does now) plus these tools. When the user says "change ride X status to completed", the AI will call `update_ride_status` and confirm the action.
+
+**Security:** All mutations are scoped to the authenticated user's ID and workspace system. The service role client performs the write but always filters by `user_id = authenticated_user.id`.
+
+### Technical Details
+
+- Preview header fix: swap lines 1262-1263 text
+- PDF parsing: add "CRITICAL: pickup_location = origin/start, dropoff_location = destination/end" to the AI prompt
+- Import optimization: use `Promise.allSettled` with concurrency limit of 3
+- Chat assistant: add ~7 tool definitions and a tool-call execution loop in the edge function
