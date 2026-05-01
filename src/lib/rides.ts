@@ -244,15 +244,22 @@ export async function callParser(file: File) {
     throw new Error("Could not read text from this PDF. Please upload a text-based schedule PDF.");
   }
 
-  const rides: Array<Partial<Ride>> = [];
   const documentContext = pages
     .map((page) => page.text)
     .join("\n")
     .slice(0, 4000);
-  for (let i = 0; i < readablePages.length; i += 1) {
-    const chunkRides = await callParserText(readablePages[i], file.name, documentContext);
-    rides.push(...chunkRides);
-    if (i < readablePages.length - 1) await new Promise((resolve) => setTimeout(resolve, 250));
+
+  // Parse pages in parallel batches of 4 for speed
+  const CONCURRENCY = 4;
+  const rides: Array<Partial<Ride>> = [];
+  for (let i = 0; i < readablePages.length; i += CONCURRENCY) {
+    const batch = readablePages.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(
+      batch.map((page) => callParserText(page, file.name, documentContext)),
+    );
+    for (const chunkRides of results) {
+      rides.push(...chunkRides);
+    }
   }
   return rides;
 }
