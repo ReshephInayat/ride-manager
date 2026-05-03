@@ -379,20 +379,24 @@ function DashboardInner() {
   const handleUpload = async (file: File) => {
     setUploading(true);
     try {
-      const parsed = await callParser(file);
+      const result = await callParser(file);
+      const { rides: parsed, method, totalExtracted, duplicatesRemoved } = result;
       if (!parsed?.length) {
         toast("No rides found in the PDF.");
         return;
       }
-      const valid = parsed.filter((p) => p.ride_date);
+      const valid = parsed.filter((p: Partial<Ride>) => p.ride_date);
       const invalid = parsed.length - valid.length;
       setPreviewFile(file.name);
       setPreviewExtracted(parsed.length);
       setPreviewInvalid(invalid);
-      setPreviewRows(valid.map((p) => ({ selected: true, data: p as PreviewRow["data"] })));
-      if (invalid > 0) {
-        toast(`Extracted ${parsed.length} rows • ${invalid} dropped (missing date).`);
-      }
+      setPreviewRows(valid.map((p: Partial<Ride>) => ({ selected: true, data: p as PreviewRow["data"] })));
+
+      const methodLabel = method === "deterministic" ? "📐 Coordinate parser" : "🤖 AI parser";
+      let msg = `${methodLabel} • ${parsed.length} rides`;
+      if (duplicatesRemoved > 0) msg += ` (${duplicatesRemoved} duplicates removed)`;
+      if (invalid > 0) msg += ` • ${invalid} dropped (missing date)`;
+      toast(msg, { duration: 5000 });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
