@@ -74,29 +74,37 @@ export interface Driver {
 
 // Find best matching route by checking if pickup/dropoff text contains the
 // route's pickup/dropoff strings (case-insensitive). Returns the first match.
+// IMPORTANT: strict match only checks pickup→pickup and dropoff→dropoff;
+// never accepts reversed matches so swapped data can't accidentally look correct.
 export function autoMatchRoute(
   ride: Pick<Ride, "pickup_from" | "dropoff_to" | "pickup_location" | "dropoff_location">,
   routes: RouteRow[],
 ): RouteRow | null {
   const pickHay = `${ride.pickup_from ?? ""} ${ride.pickup_location ?? ""}`.toLowerCase();
   const dropHay = `${ride.dropoff_to ?? ""} ${ride.dropoff_location ?? ""}`.toLowerCase();
-  // Try strict: both ends match
+  // Strict: pickup route matches pickup fields, dropoff route matches dropoff fields
   for (const r of routes) {
     const p = r.pickup_location.toLowerCase().trim();
     const d = r.dropoff_location.toLowerCase().trim();
     if (!p || !d) continue;
-    if (
-      (pickHay.includes(p) && dropHay.includes(d)) ||
-      (pickHay.includes(d) && dropHay.includes(p))
-    ) {
+    if (pickHay.includes(p) && dropHay.includes(d)) {
       return r;
     }
   }
-  // Loose: either end matches
+  // Reverse direction: maybe ride goes the other way on the same route
   for (const r of routes) {
     const p = r.pickup_location.toLowerCase().trim();
     const d = r.dropoff_location.toLowerCase().trim();
-    if (pickHay.includes(p) || dropHay.includes(d) || pickHay.includes(d) || dropHay.includes(p)) {
+    if (!p || !d) continue;
+    if (pickHay.includes(d) && dropHay.includes(p)) {
+      return r;
+    }
+  }
+  // Loose: either end matches (for pricing only)
+  for (const r of routes) {
+    const p = r.pickup_location.toLowerCase().trim();
+    const d = r.dropoff_location.toLowerCase().trim();
+    if (pickHay.includes(p) || dropHay.includes(d)) {
       return r;
     }
   }
