@@ -584,7 +584,7 @@ function CalendarView({ rides }: { rides: Ride[] }) {
               <div key={r.id} className="flex items-center gap-3 text-sm border rounded px-2 py-1.5">
                 <span className="font-mono text-xs w-14">{r.pickup_time ?? "—"}</span>
                 <span className="truncate flex-1">
-                  {(r.riders ?? 1)} pax • {r.pickup_location ?? "—"} → {r.dropoff_location ?? "—"}
+                  {(r.riders ?? 1)} pax • {r.dropoff_location ?? "—"} → {r.pickup_location ?? "—"}
                 </span>
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusTone[r.status]}`}>
                   {r.status.replace("_", " ")}
