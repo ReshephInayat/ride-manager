@@ -65,6 +65,7 @@ ${String(pageText).slice(0, 12000)}`;
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
+        temperature: 0,
         messages: [
           {
             role: "user",
