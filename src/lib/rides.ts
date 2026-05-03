@@ -579,37 +579,54 @@ async function callParserText(page: PdfPageItems, fileName: string, documentCont
   return (data?.rides ?? []) as Array<Partial<Ride>>;
 }
 
-export async function callParser(file: File) {
+export async function callParser(file: File): Promise<ParseResult> {
   const pages = await extractPdfPages(file);
   const readablePages = pages.filter((page) => page.text.length > 40);
   if (!readablePages.length) {
     throw new Error("Could not read text from this PDF. Please upload a text-based schedule PDF.");
   }
 
+  let rawRides: Array<Partial<Ride>>;
+  let method: "deterministic" | "ai";
+
   // Step 1: Try deterministic coordinate-based parsing (fast, reliable)
   const deterministicResult = tryDeterministicParse(readablePages);
   if (deterministicResult && deterministicResult.length > 0) {
     console.log(`[parser] Deterministic parse succeeded: ${deterministicResult.length} rides`);
-    return deterministicResult;
-  }
+    rawRides = deterministicResult;
+    method = "deterministic";
+  } else {
+    // Step 2: Fall back to AI parsing
+    console.log("[parser] Deterministic parse failed, falling back to AI…");
+    const documentContext = pages
+      .map((page) => page.text)
+      .join("\n")
+      .slice(0, 4000);
 
-  // Step 2: Fall back to AI parsing
-  console.log("[parser] Deterministic parse failed, falling back to AI…");
-  const documentContext = pages
-    .map((page) => page.text)
-    .join("\n")
-    .slice(0, 4000);
-
-  const CONCURRENCY = 4;
-  const rides: Array<Partial<Ride>> = [];
-  for (let i = 0; i < readablePages.length; i += CONCURRENCY) {
-    const batch = readablePages.slice(i, i + CONCURRENCY);
-    const results = await Promise.all(
-      batch.map((page) => callParserText(page, file.name, documentContext)),
-    );
-    for (const chunkRides of results) {
-      rides.push(...chunkRides);
+    const CONCURRENCY = 4;
+    rawRides = [];
+    for (let i = 0; i < readablePages.length; i += CONCURRENCY) {
+      const batch = readablePages.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        batch.map((page) => callParserText(page, file.name, documentContext)),
+      );
+      for (const chunkRides of results) {
+        rawRides.push(...chunkRides);
+      }
     }
+    method = "ai";
   }
-  return rides;
+
+  // Deduplicate
+  const totalExtracted = rawRides.length;
+  const { unique, dupeCount } = deduplicateRides(rawRides);
+
+  console.log(`[parser] Method: ${method}, extracted: ${totalExtracted}, duplicates removed: ${dupeCount}, final: ${unique.length}`);
+
+  return {
+    rides: unique,
+    method,
+    totalExtracted,
+    duplicatesRemoved: dupeCount,
+  };
 }
