@@ -248,7 +248,7 @@ async function extractPdfPages(file: File): Promise<PdfPageItems[]> {
 // Table columns L→R:
 //   DATE | DEPARTMENT | #RIDERS | PICKUP Location | PICKUP From | Pickup Date/Time | DROPOFF Location | DROPOFF To
 
-const Y_TOLERANCE = 4;
+const Y_TOLERANCE = 6;
 const MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
 function inferYear(items: CoordTextItem[]): number {
@@ -291,21 +291,55 @@ function groupItemsIntoRows(items: CoordTextItem[]): CoordTextItem[][] {
 }
 
 function detectTableColumns(rows: CoordTextItem[][]): number[] | null {
+  // Strategy 1: Look for the sub-header row with "Location", "From", "To"
   for (const row of rows) {
-    const texts = row.map((i) => i.str.toLowerCase());
+    const texts = row.map((i) => i.str.toLowerCase().trim());
     const hasLocation = texts.some((t) => t === "location");
     const hasFrom = texts.some((t) => t === "from");
     if (hasLocation && hasFrom) {
       const locationItems = row
-        .filter((i) => i.str.toLowerCase() === "location")
+        .filter((i) => i.str.toLowerCase().trim() === "location")
         .sort((a, b) => a.x - b.x);
-      const fromItem = row.find((i) => i.str.toLowerCase() === "from");
-      const toItem = row.find((i) => i.str.toLowerCase() === "to");
+      const fromItem = row.find((i) => i.str.toLowerCase().trim() === "from");
+      const toItem = row.find((i) => i.str.toLowerCase().trim() === "to");
       if (locationItems.length >= 2 && fromItem && toItem) {
         return [locationItems[0].x, fromItem.x, locationItems[1].x, toItem.x];
       }
     }
   }
+
+  // Strategy 2: Look for parent headers "PICK UP" and "DROP OFF"
+  for (const row of rows) {
+    const pickupItem = row.find((i) => /pick\s*up/i.test(i.str));
+    const dropoffItem = row.find((i) => /drop\s*off/i.test(i.str));
+    if (pickupItem && dropoffItem) {
+      // Estimate sub-columns from parent header positions
+      const pickX = pickupItem.x;
+      const dropX = dropoffItem.x;
+      const span = dropX - pickX;
+      // PICK UP spans: Location | From | Date/Time
+      // DROP OFF spans: Location | To
+      return [pickX, pickX + span * 0.25, dropX, dropX + (span * 0.25)];
+    }
+  }
+
+  // Strategy 3: Fallback using page width ratios based on known Horizon layout
+  // Columns as fraction of page: Date~0.05, Dept~0.12, Riders~0.18, PickLoc~0.24, From~0.35, Time~0.50, DropLoc~0.62, To~0.75
+  if (rows.length > 0) {
+    const allX = rows.flatMap((r) => r.map((i) => i.x));
+    const minX = Math.min(...allX);
+    const maxX = Math.max(...allX);
+    const pageWidth = maxX - minX;
+    if (pageWidth > 100) {
+      return [
+        minX + pageWidth * 0.24,  // pickup location
+        minX + pageWidth * 0.35,  // from
+        minX + pageWidth * 0.62,  // dropoff location
+        minX + pageWidth * 0.75,  // to
+      ];
+    }
+  }
+
   return null;
 }
 
@@ -332,9 +366,11 @@ function parseTablePage(items: CoordTextItem[], year: number): ParsedRow[] {
   let headerIdx = -1;
   for (let i = 0; i < rows.length; i++) {
     const texts = rows[i].map((it) => it.str.toLowerCase());
-    if (texts.some((t) => t === "from") && texts.some((t) => t === "location")) {
+    if (
+      (texts.some((t) => t === "from") && texts.some((t) => t === "location")) ||
+      texts.some((t) => /pick\s*up/i.test(t))
+    ) {
       headerIdx = i;
-      break;
     }
   }
   const startIdx = headerIdx >= 0 ? headerIdx + 1 : 2;
@@ -346,6 +382,10 @@ function parseTablePage(items: CoordTextItem[], year: number): ParsedRow[] {
     if (!row.length) continue;
     const rowText = row.map((it) => it.str).join(" ");
     if (/^(Created:|Page\s+\d|TOTAL|\*{3}|Copyright)/i.test(rowText.trim())) continue;
+    // Skip rows that look like headers repeated
+    if (/\bDATE\b.*\bDEPARTMENT\b/i.test(rowText)) continue;
+    if (/\bPICK\s*UP\b.*\bDROP\s*OFF\b/i.test(rowText)) continue;
+    if (/\bLocation\b.*\bFrom\b.*\bLocation\b/i.test(rowText)) continue;
 
     const leftItems: CoordTextItem[] = [];
     const pickLocItems: CoordTextItem[] = [];
@@ -421,6 +461,17 @@ function parseTablePage(items: CoordTextItem[], year: number): ParsedRow[] {
   return result;
 }
 
+// Build a unique key for deduplication
+function buildParseDedupeKey(r: Partial<Ride>): string {
+  return [
+    r.ride_date ?? "",
+    (r.pickup_time ?? "").replace(/\s+/g, ""),
+    (r.pickup_from ?? "").toLowerCase().trim(),
+    (r.dropoff_to ?? "").toLowerCase().trim(),
+    String(r.riders ?? 4),
+  ].join("|");
+}
+
 function convertParsedToRides(parsed: ParsedRow[]): Array<Partial<Ride>> {
   const rides: Array<Partial<Ride>> = [];
   let carryDate: string | null = null;
@@ -455,6 +506,30 @@ function convertParsedToRides(parsed: ParsedRow[]): Array<Partial<Ride>> {
   return rides;
 }
 
+// Deduplicate rides by composite key
+function deduplicateRides(rides: Array<Partial<Ride>>): { unique: Array<Partial<Ride>>; dupeCount: number } {
+  const seen = new Set<string>();
+  const unique: Array<Partial<Ride>> = [];
+  let dupeCount = 0;
+  for (const r of rides) {
+    const key = buildParseDedupeKey(r);
+    if (seen.has(key)) {
+      dupeCount++;
+      continue;
+    }
+    seen.add(key);
+    unique.push(r);
+  }
+  return { unique, dupeCount };
+}
+
+export interface ParseResult {
+  rides: Array<Partial<Ride>>;
+  method: "deterministic" | "ai";
+  totalExtracted: number;
+  duplicatesRemoved: number;
+}
+
 function tryDeterministicParse(pages: PdfPageItems[]): Array<Partial<Ride>> | null {
   const allItems = pages.flatMap((p) => p.items);
   const year = inferYear(allItems);
@@ -472,11 +547,8 @@ function tryDeterministicParse(pages: PdfPageItems[]): Array<Partial<Ride>> | nu
 
   if (successPages === 0 || allParsed.length === 0) return null;
 
-  const rides = convertParsedToRides(allParsed);
-  const valid = rides.filter((r) => r.ride_date && (r.pickup_location || r.pickup_from));
-  if (valid.length < allParsed.length * 0.5) return null;
-
-  return rides;
+  // Always return deterministic results if we found any — no 50% threshold
+  return convertParsedToRides(allParsed);
 }
 
 // ---- AI fallback ----
@@ -507,37 +579,54 @@ async function callParserText(page: PdfPageItems, fileName: string, documentCont
   return (data?.rides ?? []) as Array<Partial<Ride>>;
 }
 
-export async function callParser(file: File) {
+export async function callParser(file: File): Promise<ParseResult> {
   const pages = await extractPdfPages(file);
   const readablePages = pages.filter((page) => page.text.length > 40);
   if (!readablePages.length) {
     throw new Error("Could not read text from this PDF. Please upload a text-based schedule PDF.");
   }
 
+  let rawRides: Array<Partial<Ride>>;
+  let method: "deterministic" | "ai";
+
   // Step 1: Try deterministic coordinate-based parsing (fast, reliable)
   const deterministicResult = tryDeterministicParse(readablePages);
   if (deterministicResult && deterministicResult.length > 0) {
     console.log(`[parser] Deterministic parse succeeded: ${deterministicResult.length} rides`);
-    return deterministicResult;
-  }
+    rawRides = deterministicResult;
+    method = "deterministic";
+  } else {
+    // Step 2: Fall back to AI parsing
+    console.log("[parser] Deterministic parse failed, falling back to AI…");
+    const documentContext = pages
+      .map((page) => page.text)
+      .join("\n")
+      .slice(0, 4000);
 
-  // Step 2: Fall back to AI parsing
-  console.log("[parser] Deterministic parse failed, falling back to AI…");
-  const documentContext = pages
-    .map((page) => page.text)
-    .join("\n")
-    .slice(0, 4000);
-
-  const CONCURRENCY = 4;
-  const rides: Array<Partial<Ride>> = [];
-  for (let i = 0; i < readablePages.length; i += CONCURRENCY) {
-    const batch = readablePages.slice(i, i + CONCURRENCY);
-    const results = await Promise.all(
-      batch.map((page) => callParserText(page, file.name, documentContext)),
-    );
-    for (const chunkRides of results) {
-      rides.push(...chunkRides);
+    const CONCURRENCY = 4;
+    rawRides = [];
+    for (let i = 0; i < readablePages.length; i += CONCURRENCY) {
+      const batch = readablePages.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        batch.map((page) => callParserText(page, file.name, documentContext)),
+      );
+      for (const chunkRides of results) {
+        rawRides.push(...chunkRides);
+      }
     }
+    method = "ai";
   }
-  return rides;
+
+  // Deduplicate
+  const totalExtracted = rawRides.length;
+  const { unique, dupeCount } = deduplicateRides(rawRides);
+
+  console.log(`[parser] Method: ${method}, extracted: ${totalExtracted}, duplicates removed: ${dupeCount}, final: ${unique.length}`);
+
+  return {
+    rides: unique,
+    method,
+    totalExtracted,
+    duplicatesRemoved: dupeCount,
+  };
 }
