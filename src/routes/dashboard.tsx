@@ -469,13 +469,15 @@ function DashboardInner() {
       const toInsert = rows.filter((r) => !existingSet.has(r.ride_key));
       const dbDuplicates = rows.length - toInsert.length;
 
-      // Step 3: plain insert in safe batches. Duplicate ride_keys within the
-      //         PDF are allowed because the unique constraint was removed.
+      // Step 3: upsert in safe batches, skipping duplicates by ride_key
       let inserted = 0;
       const BATCH = 200;
       for (let i = 0; i < toInsert.length; i += BATCH) {
         const slice = toInsert.slice(i, i + BATCH);
-        const { data: ins, error } = await supabase.from("rides").insert(slice).select("id");
+        const { data: ins, error } = await supabase
+          .from("rides")
+          .upsert(slice, { onConflict: "ride_key", ignoreDuplicates: true })
+          .select("id");
         if (error) throw error;
         inserted += ins?.length ?? 0;
       }
