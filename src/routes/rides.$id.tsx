@@ -239,10 +239,10 @@ function Inner() {
             <div className="space-y-3 text-sm">
               <Field label="Date"><Input type="date" value={draft.ride_date ?? ""} onChange={(e) => setDraft({ ...draft, ride_date: e.target.value })} /></Field>
               <Field label="Pickup time"><Input value={draft.pickup_time ?? ""} onChange={(e) => setDraft({ ...draft, pickup_time: e.target.value })} placeholder="e.g. 14:30" /></Field>
-              <Field label="Pickup location"><Input value={draft.pickup_location ?? ""} onChange={(e) => setDraft({ ...draft, pickup_location: e.target.value })} /></Field>
-              <Field label="Pickup from (address)"><Input value={draft.pickup_from ?? ""} onChange={(e) => setDraft({ ...draft, pickup_from: e.target.value })} /></Field>
-              <Field label="Dropoff location"><Input value={draft.dropoff_location ?? ""} onChange={(e) => setDraft({ ...draft, dropoff_location: e.target.value })} /></Field>
-              <Field label="Dropoff to (address)"><Input value={draft.dropoff_to ?? ""} onChange={(e) => setDraft({ ...draft, dropoff_to: e.target.value })} /></Field>
+              <Field label="Pickup location"><Input value={draft.dropoff_location ?? ""} onChange={(e) => setDraft({ ...draft, dropoff_location: e.target.value })} /></Field>
+              <Field label="Pickup from (address)"><Input value={draft.dropoff_to ?? ""} onChange={(e) => setDraft({ ...draft, dropoff_to: e.target.value })} /></Field>
+              <Field label="Dropoff location"><Input value={draft.pickup_location ?? ""} onChange={(e) => setDraft({ ...draft, pickup_location: e.target.value })} /></Field>
+              <Field label="Dropoff to (address)"><Input value={draft.pickup_from ?? ""} onChange={(e) => setDraft({ ...draft, pickup_from: e.target.value })} /></Field>
               <Field label="Department"><Input value={draft.department ?? ""} onChange={(e) => setDraft({ ...draft, department: e.target.value })} /></Field>
               <Field label="Riders"><Input type="number" value={draft.riders ?? 1} onChange={(e) => setDraft({ ...draft, riders: Number(e.target.value) || 1 })} /></Field>
               <Field label="Route">
