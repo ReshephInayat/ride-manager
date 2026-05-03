@@ -490,14 +490,14 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
           <div className="rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5">
             <div className="text-[9px] uppercase tracking-wider font-bold text-primary/80">Pickup</div>
             <div className="text-sm font-bold tabular-nums leading-tight">{ride.pickup_time ?? "—"}</div>
-            <div className="text-xs text-foreground mt-0.5 truncate">{ride.pickup_location ?? "—"}</div>
-            {ride.pickup_from && <div className="text-[10px] text-muted-foreground truncate">{ride.pickup_from}</div>}
+            <div className="text-xs text-foreground mt-0.5 truncate">{ride.dropoff_location ?? "—"}</div>
+            {ride.dropoff_to && <div className="text-[10px] text-muted-foreground truncate">{ride.dropoff_to}</div>}
           </div>
           <div className="rounded-md border border-border bg-muted/40 px-2.5 py-1.5">
             <div className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Dropoff</div>
             <div className="text-sm font-bold tabular-nums leading-tight">{dropoffTime ?? "—"}</div>
-            <div className="text-xs text-foreground mt-0.5 truncate">{ride.dropoff_location ?? "—"}</div>
-            {cleanDropoffTo && <div className="text-[10px] text-muted-foreground truncate">{cleanDropoffTo}</div>}
+            <div className="text-xs text-foreground mt-0.5 truncate">{ride.pickup_location ?? "—"}</div>
+            {ride.pickup_from && <div className="text-[10px] text-muted-foreground truncate">{ride.pickup_from}</div>}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -584,7 +584,7 @@ function CalendarView({ rides }: { rides: Ride[] }) {
               <div key={r.id} className="flex items-center gap-3 text-sm border rounded px-2 py-1.5">
                 <span className="font-mono text-xs w-14">{r.pickup_time ?? "—"}</span>
                 <span className="truncate flex-1">
-                  {(r.riders ?? 1)} pax • {r.pickup_location ?? "—"} → {r.dropoff_location ?? "—"}
+                  {(r.riders ?? 1)} pax • {r.dropoff_location ?? "—"} → {r.pickup_location ?? "—"}
                 </span>
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusTone[r.status]}`}>
                   {r.status.replace("_", " ")}
