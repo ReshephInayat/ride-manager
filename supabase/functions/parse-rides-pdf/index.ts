@@ -1,116 +1,146 @@
-// Parses extracted Horizon Air schedule page text and returns ride rows.
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+You are a STRICT TABLE DATA EXTRACTION ENGINE.
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+Your only job is to convert PDF schedule table rows into structured JSON.
+You MUST NOT interpret meaning, only map structure.
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+------------------------------------------------------------
+CORE RULE
+------------------------------------------------------------
 
-  try {
-    const { fileName, pageNumber, totalPages, pageText, documentContext } = await req.json();
-    if (!pageText) {
-      return json({ error: "pageText required" }, 400);
+This is NOT a reasoning task.
+This is NOT a travel interpretation task.
+This is a column-mapping task only.
+
+You must extract values EXACTLY as they appear in the table structure.
+
+------------------------------------------------------------
+OUTPUT FORMAT (STRICT)
+------------------------------------------------------------
+
+Return ONLY valid JSON:
+
+{
+  "rides": [
+    {
+      "ride_date": "YYYY-MM-DD",
+      "department": string | null,
+      "riders": number | null,
+
+      "pickup_location": string | null,
+      "pickup_from": string | null,
+      "pickup_time": string | null,
+
+      "dropoff_location": string | null,
+      "dropoff_to": string | null,
+
+      "passenger_name": string | null,
+      "passenger_email": string | null,
+      "phone": string | null,
+
+      "flight_number": string | null
     }
+  ]
+}
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) return json({ error: "Missing LOVABLE_API_KEY" }, 500);
+No markdown.
+No explanation.
+No extra keys.
 
-    const prompt = `You are a strict data extractor. The input text is from page ${pageNumber ?? "?"} of ${totalPages ?? "?"} in a Horizon Air Ground Transportation Schedule named "${fileName ?? "schedule.pdf"}".
-Extract EVERY non-header data row from THIS PAGE TEXT — do not skip any row. The output count must equal the number of data rows in this page text.
+------------------------------------------------------------
+HIGHEST PRIORITY RULES (DO NOT BREAK)
+------------------------------------------------------------
 
-For each row return JSON with fields:
-- ride_date (YYYY-MM-DD; use the year shown in the document title). MANDATORY for every row.
-- department (e.g. "Flight (2)/ InFlight (2)")
-- riders (integer)
-- pickup_location — copy VERBATIM the short location code column (e.g. "PAE", "SEA") that appears in the table on the PICKUP/FROM side. Read it directly from the column; do NOT derive or guess it from the From text.
-- pickup_from — copy VERBATIM the "From" column text (e.g. "Delta Hotels Seattle Everett" or "GT BASE-01 Apr 15:05" or "AS 2279-01 Apr 21:50")
-- pickup_time — copy VERBATIM the Pickup Date/Time column (e.g. "01 Apr 05:55")
-- dropoff_location — copy VERBATIM the short location code column (e.g. "PAE", "SEA") that appears in the table on the DROPOFF/TO side. Read it directly from the column; do NOT derive or guess it from the To text.
-- dropoff_to — copy VERBATIM the "To" column text (e.g. "AS 2270-01 Apr 06:15" or "Delta Hotels Seattle Everett")
-- passenger_name, passenger_email, phone if present in the row/document; otherwise null
-- flight_number if present in pickup_from or dropoff_to (e.g. "AS 2270" or "ASA2270"); otherwise null
+1. COLUMN BINDING IS ABSOLUTE
 
-CRITICAL rules:
-- COLUMN ORDER IS FIXED: The table always has columns in this left-to-right order:
-    Date | Dept | Riders | [pickup_location code] | From | Pickup Time | [dropoff_location code] | To
-  Map each column value to its field by POSITION, not by content. Never swap pickup_location with dropoff_location.
-- pickup_location is ALWAYS the code in the column to the LEFT of the "From" column.
-- dropoff_location is ALWAYS the code in the column to the LEFT of the "To" column.
-- If a location code cell is blank due to rowspan, carry the value down from the row above, just like dates.
-- DATE CARRY-DOWN: when a row's DATE cell is blank because of rowspan, copy the date from the most recent row above that had a date. Use the document context only to infer the schedule year and carry-down date at the top of this page when needed. Never output a row with a missing ride_date.
-- Skip ONLY the table header row and rows rendered in BOLD (those are repeated from the previous month).
-- Do not collapse rows that look similar — output every distinct row.
-- Normalize missing optional values as null, not empty strings.
-- Return ONLY valid JSON: {"rides":[ ... ]}. No prose, no code fences.
+- "pickup_from" = EXACT content under "From" column
+- "dropoff_to" = EXACT content under "To" column
+- NEVER modify, reinterpret, or swap these values
+
+2. LOCATION MAPPING IS PURELY STRUCTURAL
+
+- pickup_location MUST come from the LEFT/ORIGIN side of the row
+- dropoff_location MUST come from the RIGHT/DESTINATION side of the row
+
+IMPORTANT:
+Do NOT infer direction from meaning, geography, or logic.
+Do NOT assume travel flow (hotel → airport, etc.)
+
+3. ZERO SEMANTIC REASONING
+
+You are NOT allowed to:
+- infer travel direction
+- correct perceived mistakes
+- interpret flight logic
+- “fix” the dataset
+
+You ONLY map table structure → JSON fields.
+
+------------------------------------------------------------
+ANTI-FLIP GUARANTEE RULE
+------------------------------------------------------------
+
+Under NO condition are you allowed to swap:
+
+- pickup_location ↔ dropoff_location
+- pickup_from ↔ dropoff_to
+
+Even if:
+- it seems logically wrong
+- it contradicts real-world travel flow
+- it looks reversed
+
+STRUCTURE ALWAYS WINS OVER MEANING.
+
+------------------------------------------------------------
+DATE HANDLING RULE (CRITICAL)
+------------------------------------------------------------
+
+- If a row has no date, copy the last seen valid date above it.
+- Never output null for ride_date.
+- Always normalize to YYYY-MM-DD using document year context.
+
+------------------------------------------------------------
+ROW FILTERING RULES
+------------------------------------------------------------
+
+Skip only:
+- header rows
+- repeated bold monthly summary rows
+
+Do NOT skip rows that look similar.
+
+Each row = one JSON object.
+
+------------------------------------------------------------
+FLIGHT NUMBER RULE
+------------------------------------------------------------
+
+Extract flight_number ONLY if explicitly present in:
+- pickup_from OR dropoff_to
+
+Otherwise null.
+
+------------------------------------------------------------
+NORMALIZATION RULES
+------------------------------------------------------------
+
+- Missing values = null (NOT empty string)
+- Do not merge rows
+- Do not deduplicate
+- Preserve every row independently
+
+------------------------------------------------------------
+INPUT DATA
+------------------------------------------------------------
 
 DOCUMENT CONTEXT:
 ${String(documentContext ?? "").slice(0, 4000)}
 
-PAGE TEXT TO EXTRACT:
-${String(pageText).slice(0, 12000)}`;
+PAGE TEXT:
+${String(pageText ?? "").slice(0, 12000)}
 
-    console.log(
-      `[parse-rides-pdf] Calling AI gateway, file: ${fileName}, page: ${pageNumber}/${totalPages}, text size: ${String(pageText).length} chars`,
-    );
+FILE:
+${fileName ?? "unknown"}
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      }),
-    });
-
-    if (!aiRes.ok) {
-      const t = await aiRes.text();
-      console.error(`[parse-rides-pdf] AI gateway error ${aiRes.status}: ${t}`);
-      if (aiRes.status === 429) {
-        return json({ error: "Rate limit exceeded. Please wait a moment and try again." }, 429);
-      }
-      if (aiRes.status === 402) {
-        return json({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }, 402);
-      }
-      return json({ error: `AI error ${aiRes.status}: ${t}` }, 502);
-    }
-    const data = await aiRes.json();
-    let content: string = data.choices?.[0]?.message?.content ?? "";
-    // Strip code fences if present
-    content = content
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/```\s*$/i, "")
-      .trim();
-
-    let parsed: { rides: unknown[] };
-    try {
-      parsed = JSON.parse(content);
-    } catch (e) {
-      console.error("[parse-rides-pdf] JSON parse failed:", e, "raw:", content.slice(0, 500));
-      return json({ error: "Failed to parse AI JSON", raw: content.slice(0, 500) }, 502);
-    }
-
-    console.log(`[parse-rides-pdf] Success: extracted ${parsed.rides?.length ?? 0} rides`);
-    return json({ rides: parsed.rides ?? [] });
-  } catch (err) {
-    console.error("[parse-rides-pdf] Unhandled error:", err);
-    return json({ error: String(err) }, 500);
-  }
-});
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
+PAGE:
+${pageNumber ?? "?"} / ${totalPages ?? "?"}
