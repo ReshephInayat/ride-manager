@@ -25,16 +25,21 @@ For each row return JSON with fields:
 - ride_date (YYYY-MM-DD; use the year shown in the document title). MANDATORY for every row.
 - department (e.g. "Flight (2)/ InFlight (2)")
 - riders (integer)
-- pickup_location — the ORIGIN location code where the rider is PICKED UP (e.g. "PAE", "SEA"). This is the starting point of the ride.
-- pickup_from (the "From" column, e.g. "Delta Hotels Seattle Everett" or "GT BASE-01 Apr 15:05" or "AS 2279-01 Apr 21:50")
-- pickup_time (the Pickup Date/Time column, e.g. "01 Apr 05:55")
-- dropoff_location — the DESTINATION location code where the rider is DROPPED OFF (e.g. "PAE", "SEA"). This is the ending point of the ride.
-- dropoff_to (the "To" column, e.g. "AS 2270-01 Apr 06:15" or "Delta Hotels Seattle Everett")
+- pickup_location — copy VERBATIM the short location code column (e.g. "PAE", "SEA") that appears in the table on the PICKUP/FROM side. Read it directly from the column; do NOT derive or guess it from the From text.
+- pickup_from — copy VERBATIM the "From" column text (e.g. "Delta Hotels Seattle Everett" or "GT BASE-01 Apr 15:05" or "AS 2279-01 Apr 21:50")
+- pickup_time — copy VERBATIM the Pickup Date/Time column (e.g. "01 Apr 05:55")
+- dropoff_location — copy VERBATIM the short location code column (e.g. "PAE", "SEA") that appears in the table on the DROPOFF/TO side. Read it directly from the column; do NOT derive or guess it from the To text.
+- dropoff_to — copy VERBATIM the "To" column text (e.g. "AS 2270-01 Apr 06:15" or "Delta Hotels Seattle Everett")
 - passenger_name, passenger_email, phone if present in the row/document; otherwise null
 - flight_number if present in pickup_from or dropoff_to (e.g. "AS 2270" or "ASA2270"); otherwise null
 
 CRITICAL rules:
-- PICKUP vs DROPOFF: pickup_location is where the journey STARTS (origin). dropoff_location is where the journey ENDS (destination). The "From" column aligns with pickup, the "To" column aligns with dropoff. If the rider goes FROM a hotel TO an airport, then pickup_location is the hotel area code and dropoff_location is the airport code. NEVER swap them.
+- COLUMN ORDER IS FIXED: The table always has columns in this left-to-right order:
+    Date | Dept | Riders | [pickup_location code] | From | Pickup Time | [dropoff_location code] | To
+  Map each column value to its field by POSITION, not by content. Never swap pickup_location with dropoff_location.
+- pickup_location is ALWAYS the code in the column to the LEFT of the "From" column.
+- dropoff_location is ALWAYS the code in the column to the LEFT of the "To" column.
+- If a location code cell is blank due to rowspan, carry the value down from the row above, just like dates.
 - DATE CARRY-DOWN: when a row's DATE cell is blank because of rowspan, copy the date from the most recent row above that had a date. Use the document context only to infer the schedule year and carry-down date at the top of this page when needed. Never output a row with a missing ride_date.
 - Skip ONLY the table header row and rows rendered in BOLD (those are repeated from the previous month).
 - Do not collapse rows that look similar — output every distinct row.
@@ -75,10 +80,7 @@ ${String(pageText).slice(0, 12000)}`;
         return json({ error: "Rate limit exceeded. Please wait a moment and try again." }, 429);
       }
       if (aiRes.status === 402) {
-        return json(
-          { error: "AI credits exhausted. Please add credits to your Lovable workspace." },
-          402,
-        );
+        return json({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }, 402);
       }
       return json({ error: `AI error ${aiRes.status}: ${t}` }, 502);
     }
