@@ -1273,6 +1273,7 @@ function DashboardInner() {
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{row.data.ride_date}</TableCell>
                     <TableCell className="text-xs">{row.data.pickup_time}</TableCell>
+                    <TableCell className="text-xs">{extractDropoffTime(row.data as Pick<Ride, "dropoff_to" | "flight_number">) ?? "—"}</TableCell>
                     <TableCell className="text-xs max-w-[160px] truncate">{row.data.department}</TableCell>
                     <TableCell className="text-xs">
                       <div className="font-medium">{row.data.pickup_location}</div>
