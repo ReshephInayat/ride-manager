@@ -1,54 +1,65 @@
+I found the May 2026 PDF structure clearly shows the correct table order:
 
-## Issues and Solutions
+```text
+DATE | DEPARTMENT | #RIDERS | PICK UP: Location | PICK UP: From | PICK UP: Pickup Date/Time | DROP OFF: Location | DROP OFF: To
+```
 
-### 1. Fix Swapped Pickup/Dropoff Headers in Preview Table
+So for each row:
+- `pickup_location` must come from the first Location column under PICK UP.
+- `pickup_from` must come from the From column under PICK UP.
+- `pickup_time` must come from Pickup Date/Time.
+- `dropoff_location` must come from the second Location column under DROP OFF.
+- `dropoff_to` must come from the To column under DROP OFF.
+- Dropoff time should be extracted from the trailing time inside `dropoff_to`, e.g. `AS 2368-01 May 07:55` means dropoff time is `01 May 07:55`.
+- For return rides where `pickup_from` is a flight like `AS 2189-02 May 20:53` and `dropoff_to` is `Delta Hotels Seattle Everett`, pickup is still the flight/airport side and dropoff is still the hotel side because that is exactly how the PDF columns define it.
 
-In `src/routes/dashboard.tsx` lines 1262-1263, the preview table headers say "Dropoff" then "Pickup" but render `pickup_location` then `dropoff_location` data. The headers are swapped — they need to be corrected to "Pickup" then "Dropoff".
+Plan to fix this properly:
 
-**Files:** `src/routes/dashboard.tsx`
+1. Replace the fragile AI-only table interpretation with deterministic PDF table extraction
+   - Update `src/lib/rides.ts` so PDF parsing preserves text coordinates from `pdfjs` instead of flattening the page into plain text only.
+   - Group text items into table rows by Y position and sort columns left-to-right by X position.
+   - Convert rows directly into ride objects using the known Horizon schedule column order.
+   - Carry down blank dates / rowspan dates from the previous row, including across pages.
+   - Use the schedule title to determine the year and normalize dates to `YYYY-MM-DD`.
 
-### 2. Strict Pickup/Dropoff Validation During PDF Parsing
+2. Keep AI as fallback, not the primary parser
+   - If coordinate parsing fails for a page, then call the existing `parse-rides-pdf` backend AI function as a fallback.
+   - Strengthen the AI prompt with examples from this May 2026 PDF.
+   - Make the prompt state that the app must respect the exact column order, not infer or swap origin/destination.
 
-Update the AI prompt in `supabase/functions/parse-rides-pdf/index.ts` to add explicit rules:
-- Reinforce that `pickup_location` must be where the rider is picked up (origin)
-- `dropoff_location` must be where the rider is dropped off (destination)
-- Add a post-parse validation step in the client (`src/lib/rides.ts`) that cross-checks known patterns (e.g. if pickup_from contains a hotel name, pickup_location should not be an airport code unless context indicates otherwise)
+3. Add strict validation before preview/import
+   - Validate every extracted row against the source row shape before it reaches the preview modal.
+   - Reject or flag rows where:
+     - pickup time is missing or not a time/date-time value,
+     - pickup/dropoff fields look shifted into the wrong columns,
+     - `pickup_from` / `dropoff_to` were swapped compared with the table columns,
+     - date carry-down failed.
+   - Add a visible warning in the import preview for any row that needs review instead of silently importing bad data.
 
-### 3. Optimize Ride Import Speed
+4. Fix pickup/dropoff route matching so it no longer hides parser mistakes
+   - Update `autoMatchRoute` so the strict route match only matches pickup route to pickup fields and dropoff route to dropoff fields.
+   - Remove the current strict behavior that accepts reversed pickup/dropoff as a match, because that can make swapped data look correct.
+   - Keep a separate loose fallback only for pricing, but it must not rewrite ride pickup/dropoff values.
 
-Currently, pages are parsed sequentially with a 250ms delay between each. To speed this up:
-- Parse pages in parallel (batch of 3-4 concurrent requests instead of sequential)
-- Remove or reduce the artificial 250ms delay between page parses
-- This alone should cut import time significantly for multi-page PDFs
+5. Improve dropoff time handling in the UI
+   - Continue storing the PDF's `dropoff_to` text exactly as shown.
+   - Extract and display dropoff time from `dropoff_to` consistently in admin dashboard, driver cards, and preview.
+   - In the preview table, show both pickup time and dropoff time so wrong rows are obvious before import.
 
-**Files:** `src/lib/rides.ts` — refactor `callParser` to use `Promise.all` with batched concurrency
+6. Add May 2026 parser reference checks
+   - Use the uploaded May 2026 schedule as the reference format.
+   - Add representative checks for rows like:
+     - `01-May-2026`: Pickup `PAE / Delta Hotels Seattle Everett / 01 May 07:35`, Dropoff `PAE / AS 2368-01 May 07:55`.
+     - `02-May-2026`: Pickup `PAE / AS 2189-02 May 20:53 / 02 May 20:53`, Dropoff `PAE / Delta Hotels Seattle Everett`.
+     - `31-May-2026`: Pickup `PAE / AS 2083-31 May 22:41 / 31 May 22:41`, Dropoff `PAE / Delta Hotels Seattle Everett`.
+   - This will make the parser enforce the same rules for future monthly Horizon PDFs.
 
-### 4. Upgrade AI Bot to Perform Admin Actions
+7. Optional data correction for already-imported bad rides
+   - I will not automatically modify existing imported rides unless you want that.
+   - After the parser is fixed, I can add a safe repair step for rides imported from the affected PDF/source file, but that should be done carefully so manually edited rides are not overwritten.
 
-Currently the chat assistant is read-only. Upgrade it to execute admin actions using tool calling:
-
-**Edge function changes (`supabase/functions/chat-assistant/index.ts`):**
-- Add tool definitions for: update ride status, assign driver, create ride, create route, create driver, delete ride
-- Use the AI model's tool-calling capability to let it decide when to execute actions
-- Execute the tool calls using the service role client on behalf of the authenticated user
-- Return confirmation messages after each action
-
-**Tools to define:**
-- `update_ride_status` — change a ride's status (params: ride_id, new_status)
-- `assign_driver` — assign a driver to a ride (params: ride_id, driver_id or driver_name)
-- `create_ride` — create a new ride (params: date, pickup, dropoff, etc.)
-- `create_route` — add a new route (params: name, pickup_location, dropoff_location, price)
-- `create_driver` — add a new driver (params: name, phone, email)
-- `delete_ride` — remove a ride (params: ride_id)
-- `update_ride` — edit ride details (params: ride_id + fields to update)
-
-The AI will receive the user's data context (as it does now) plus these tools. When the user says "change ride X status to completed", the AI will call `update_ride_status` and confirm the action.
-
-**Security:** All mutations are scoped to the authenticated user's ID and workspace system. The service role client performs the write but always filters by `user_id = authenticated_user.id`.
-
-### Technical Details
-
-- Preview header fix: swap lines 1262-1263 text
-- PDF parsing: add "CRITICAL: pickup_location = origin/start, dropoff_location = destination/end" to the AI prompt
-- Import optimization: use `Promise.allSettled` with concurrency limit of 3
-- Chat assistant: add ~7 tool definitions and a tool-call execution loop in the edge function
+Expected result:
+- New imports from this May 2026 PDF should create 80 rides, matching the PDF total.
+- Pickup and dropoff columns will follow the PDF table exactly.
+- Pickup time and dropoff time will display correctly.
+- The import should also be faster and more reliable because most pages will parse locally instead of waiting for AI on every page.
