@@ -36,7 +36,6 @@ import {
   type RideStatus,
   type RouteRow,
   type Driver,
-  type ParseResult,
 } from "@/lib/rides";
 import { useNavigate } from "@tanstack/react-router";
 import { useSystem } from "@/lib/system";
@@ -379,24 +378,20 @@ function DashboardInner() {
   const handleUpload = async (file: File) => {
     setUploading(true);
     try {
-      const result = await callParser(file);
-      const { rides: parsed, method, totalExtracted, duplicatesRemoved } = result;
+      const parsed = await callParser(file);
       if (!parsed?.length) {
         toast("No rides found in the PDF.");
         return;
       }
-      const valid = parsed.filter((p: Partial<Ride>) => p.ride_date);
+      const valid = parsed.filter((p) => p.ride_date);
       const invalid = parsed.length - valid.length;
       setPreviewFile(file.name);
       setPreviewExtracted(parsed.length);
       setPreviewInvalid(invalid);
-      setPreviewRows(valid.map((p: Partial<Ride>) => ({ selected: true, data: p as PreviewRow["data"] })));
-
-      const methodLabel = method === "deterministic" ? "📐 Coordinate parser" : "🤖 AI parser";
-      let msg = `${methodLabel} • ${parsed.length} rides`;
-      if (duplicatesRemoved > 0) msg += ` (${duplicatesRemoved} duplicates removed)`;
-      if (invalid > 0) msg += ` • ${invalid} dropped (missing date)`;
-      toast(msg, { duration: 5000 });
+      setPreviewRows(valid.map((p) => ({ selected: true, data: p as PreviewRow["data"] })));
+      if (invalid > 0) {
+        toast(`Extracted ${parsed.length} rows • ${invalid} dropped (missing date).`);
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -1262,8 +1257,7 @@ function DashboardInner() {
                     />
                   </TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Pickup Time</TableHead>
-                  <TableHead>Dropoff Time</TableHead>
+                  <TableHead>Time</TableHead>
                   <TableHead>Department</TableHead>
                   <TableHead>Pickup</TableHead>
                   <TableHead>Dropoff</TableHead>
@@ -1278,7 +1272,6 @@ function DashboardInner() {
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{row.data.ride_date}</TableCell>
                     <TableCell className="text-xs">{row.data.pickup_time}</TableCell>
-                    <TableCell className="text-xs">{extractDropoffTime(row.data as Pick<Ride, "dropoff_to" | "flight_number">) ?? "—"}</TableCell>
                     <TableCell className="text-xs max-w-[160px] truncate">{row.data.department}</TableCell>
                     <TableCell className="text-xs">
                       <div className="font-medium">{row.data.pickup_location}</div>

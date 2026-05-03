@@ -1,42 +1,54 @@
 
-## Problem
+## Issues and Solutions
 
-1. **Inconsistent ride counts** — each upload produces different numbers because the deterministic parser is fragile (Y_TOLERANCE grouping, header detection) and when it fails, the AI fallback is non-deterministic.
-2. **No unique ride identifier** from parsing — rides can't be tracked or deduplicated reliably.
-3. **Pickup/dropoff may still be flipped** in the data from earlier imports, showing wrong info to drivers.
+### 1. Fix Swapped Pickup/Dropoff Headers in Preview Table
 
-## Plan
+In `src/routes/dashboard.tsx` lines 1262-1263, the preview table headers say "Dropoff" then "Pickup" but render `pickup_location` then `dropoff_location` data. The headers are swapped — they need to be corrected to "Pickup" then "Dropoff".
 
-### 1. Stabilize the deterministic parser (`src/lib/rides.ts`)
+**Files:** `src/routes/dashboard.tsx`
 
-- **Increase Y_TOLERANCE** from 4 to 6 to prevent borderline row splitting.
-- **Improve header detection** — match partial/fuzzy text ("pick up", "drop off", "date") instead of requiring exact single words ("location", "from", "to"). Also try the parent header row that has "PICK UP" and "DROP OFF" spans.
-- **Add hardcoded fallback column ratios** — if header detection fails entirely, use the known Horizon Air column proportions (based on page width) so parsing never silently returns 0 rows.
-- **Remove the 50% validity threshold** that causes random switching between deterministic and AI paths. Instead, always prefer deterministic results if any rows were found.
+### 2. Strict Pickup/Dropoff Validation During PDF Parsing
 
-### 2. Add unique ride ID generation during parsing
+Update the AI prompt in `supabase/functions/parse-rides-pdf/index.ts` to add explicit rules:
+- Reinforce that `pickup_location` must be where the rider is picked up (origin)
+- `dropoff_location` must be where the rider is dropped off (destination)
+- Add a post-parse validation step in the client (`src/lib/rides.ts`) that cross-checks known patterns (e.g. if pickup_from contains a hotel name, pickup_location should not be an airport code unless context indicates otherwise)
 
-- Generate a `dedupe_key` for each parsed ride as a hash of: `ride_date + pickup_time + pickup_from + dropoff_to + riders`.
-- After parsing all pages, deduplicate rides by this key (removes duplicates from page boundary overlaps).
-- Show the dedupe key in the import preview so the admin can verify uniqueness.
+### 3. Optimize Ride Import Speed
 
-### 3. Make AI fallback deterministic (`supabase/functions/parse-rides-pdf/index.ts`)
+Currently, pages are parsed sequentially with a 250ms delay between each. To speed this up:
+- Parse pages in parallel (batch of 3-4 concurrent requests instead of sequential)
+- Remove or reduce the artificial 250ms delay between page parses
+- This alone should cut import time significantly for multi-page PDFs
 
-- Add `temperature: 0` to the AI gateway request body so the same input always produces the same output.
+**Files:** `src/lib/rides.ts` — refactor `callParser` to use `Promise.all` with batched concurrency
 
-### 4. Fix pickup/dropoff display for drivers (`src/routes/driver.tsx`)
+### 4. Upgrade AI Bot to Perform Admin Actions
 
-- The driver card already correctly maps `pickup_location`/`pickup_from` to the Pickup box and `dropoff_location`/`dropoff_to` to the Dropoff box (lines 490-501). The flip issue comes from **bad data in the database** from earlier flawed imports.
-- Add a data repair step: after the parser is fixed, provide a one-click "Re-parse and fix" option in the admin dashboard for rides imported from a specific PDF file, which will re-parse and update the pickup/dropoff fields on existing rides (matching by date + time).
+Currently the chat assistant is read-only. Upgrade it to execute admin actions using tool calling:
 
-### 5. Add parse result logging in the UI
+**Edge function changes (`supabase/functions/chat-assistant/index.ts`):**
+- Add tool definitions for: update ride status, assign driver, create ride, create route, create driver, delete ride
+- Use the AI model's tool-calling capability to let it decide when to execute actions
+- Execute the tool calls using the service role client on behalf of the authenticated user
+- Return confirmation messages after each action
 
-- Show a toast after parsing indicating: method used (deterministic vs AI), number of rides found, and number of duplicates removed. This makes inconsistencies immediately visible.
+**Tools to define:**
+- `update_ride_status` — change a ride's status (params: ride_id, new_status)
+- `assign_driver` — assign a driver to a ride (params: ride_id, driver_id or driver_name)
+- `create_ride` — create a new ride (params: date, pickup, dropoff, etc.)
+- `create_route` — add a new route (params: name, pickup_location, dropoff_location, price)
+- `create_driver` — add a new driver (params: name, phone, email)
+- `delete_ride` — remove a ride (params: ride_id)
+- `update_ride` — edit ride details (params: ride_id + fields to update)
 
-## Files to modify
+The AI will receive the user's data context (as it does now) plus these tools. When the user says "change ride X status to completed", the AI will call `update_ride_status` and confirm the action.
 
-| File | Change |
-|------|--------|
-| `src/lib/rides.ts` | Stabilize Y_TOLERANCE, header detection, add deduplication, unique IDs |
-| `supabase/functions/parse-rides-pdf/index.ts` | Add `temperature: 0` to AI call |
-| `src/routes/dashboard.tsx` | Show parse method + dedup count in toast, add dedupe_key to preview |
+**Security:** All mutations are scoped to the authenticated user's ID and workspace system. The service role client performs the write but always filters by `user_id = authenticated_user.id`.
+
+### Technical Details
+
+- Preview header fix: swap lines 1262-1263 text
+- PDF parsing: add "CRITICAL: pickup_location = origin/start, dropoff_location = destination/end" to the AI prompt
+- Import optimization: use `Promise.allSettled` with concurrency limit of 3
+- Chat assistant: add ~7 tool definitions and a tool-call execution loop in the edge function
