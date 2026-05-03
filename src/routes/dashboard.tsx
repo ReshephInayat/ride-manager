@@ -1274,12 +1274,12 @@ function DashboardInner() {
                     <TableCell className="text-xs">{row.data.pickup_time}</TableCell>
                     <TableCell className="text-xs max-w-[160px] truncate">{row.data.department}</TableCell>
                     <TableCell className="text-xs">
-                      <div className="font-medium">{row.data.dropoff_location}</div>
-                      <div className="text-muted-foreground">{row.data.dropoff_to}</div>
-                    </TableCell>
-                    <TableCell className="text-xs">
                       <div className="font-medium">{row.data.pickup_location}</div>
                       <div className="text-muted-foreground">{row.data.pickup_from}</div>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      <div className="font-medium">{row.data.dropoff_location}</div>
+                      <div className="text-muted-foreground">{row.data.dropoff_to}</div>
                     </TableCell>
                     <TableCell>{row.data.riders ?? 1}</TableCell>
                   </TableRow>
