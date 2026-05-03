@@ -1094,8 +1094,8 @@ function DashboardInner() {
                         </div>
                       </TableCell>
                       <TableCell className="text-xs">
-                        <div className="font-medium">{r.pickup_location}</div>
-                        <div className="text-muted-foreground">{r.pickup_from}</div>
+                        <div className="font-medium">{r.dropoff_location}</div>
+                        <div className="text-muted-foreground">{r.dropoff_to}</div>
                         {r.flight_number && (
                           <div className="font-bold text-foreground">
                             {stripTrailingTime(r.flight_number) || r.flight_number}
@@ -1106,8 +1106,8 @@ function DashboardInner() {
                         </div>
                       </TableCell>
                       <TableCell className="text-xs">
-                        <div className="font-medium">{r.dropoff_location}</div>
-                        <div className="text-muted-foreground">{stripTrailingTime(r.dropoff_to) || r.dropoff_to}</div>
+                        <div className="font-medium">{r.pickup_location}</div>
+                        <div className="text-muted-foreground">{stripTrailingTime(r.pickup_from) || r.pickup_from}</div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
