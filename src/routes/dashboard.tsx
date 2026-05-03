@@ -36,6 +36,7 @@ import {
   type RideStatus,
   type RouteRow,
   type Driver,
+  type ParseResult,
 } from "@/lib/rides";
 import { useNavigate } from "@tanstack/react-router";
 import { useSystem } from "@/lib/system";
