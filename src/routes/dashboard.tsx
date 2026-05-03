@@ -702,7 +702,7 @@ function DashboardInner() {
       itemRows = items.map((r) => ({
         invoice_id: inv!.id,
         ride_id: r.id,
-        description: `${r.ride_date} • ${r.pickup_from ?? r.pickup_location} → ${r.dropoff_to ?? r.dropoff_location}`,
+        description: `${r.ride_date} • ${r.dropoff_to ?? r.dropoff_location} → ${r.pickup_from ?? r.pickup_location}`,
         amount: r.amount,
       }));
     }

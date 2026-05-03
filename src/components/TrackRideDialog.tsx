@@ -106,8 +106,8 @@ export function TrackRideDialog({
             )}
           </div>
           <div className="text-xs text-muted-foreground space-y-1">
-            <div><span className="font-medium text-foreground">Pickup:</span> {ride.pickup_location ?? "—"}{ride.pickup_from ? ` (${ride.pickup_from})` : ""}</div>
-            <div><span className="font-medium text-foreground">Dropoff:</span> {ride.dropoff_location ?? "—"}</div>
+            <div><span className="font-medium text-foreground">Pickup:</span> {ride.dropoff_location ?? "—"}{ride.dropoff_to ? ` (${ride.dropoff_to})` : ""}</div>
+            <div><span className="font-medium text-foreground">Dropoff:</span> {ride.pickup_location ?? "—"}</div>
           </div>
         </div>
       </DialogContent>
