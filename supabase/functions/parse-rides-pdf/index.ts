@@ -21,24 +21,20 @@ Deno.serve(async (req) => {
     const prompt = `You are a strict data extractor. The input text is from page ${pageNumber ?? "?"} of ${totalPages ?? "?"} in a Horizon Air Ground Transportation Schedule named "${fileName ?? "schedule.pdf"}".
 Extract EVERY non-header data row from THIS PAGE TEXT — do not skip any row. The output count must equal the number of data rows in this page text.
 
-The Horizon schedule columns are always in this left-to-right order:
-DATE | DEPARTMENT | #RIDERS | PICK UP Location | PICK UP From | Pickup Date/Time | DROP OFF Location | DROP OFF To
-
 For each row return JSON with fields:
 - ride_date (YYYY-MM-DD; use the year shown in the document title). MANDATORY for every row.
 - department (e.g. "Flight (2)/ InFlight (2)")
 - riders (integer)
-- pickup_location — EXACTLY the 4th column: "PICK UP Location".
-- pickup_from — EXACTLY the 5th column: "PICK UP From" (e.g. "Delta Hotels Seattle Everett" or "GT BASE-01 Apr 15:05" or "AS 2279-01 Apr 21:50").
-- pickup_time — EXACTLY the 6th column: "Pickup Date/Time" (e.g. "01 Apr 05:55").
-- dropoff_location — EXACTLY the 7th column: "DROP OFF Location".
-- dropoff_to — EXACTLY the 8th column: "DROP OFF To" (e.g. "AS 2270-01 Apr 06:15" or "Delta Hotels Seattle Everett").
+- pickup_location — the ORIGIN location code where the rider is PICKED UP (e.g. "PAE", "SEA"). This is the starting point of the ride.
+- pickup_from (the "From" column, e.g. "Delta Hotels Seattle Everett" or "GT BASE-01 Apr 15:05" or "AS 2279-01 Apr 21:50")
+- pickup_time (the Pickup Date/Time column, e.g. "01 Apr 05:55")
+- dropoff_location — the DESTINATION location code where the rider is DROPPED OFF (e.g. "PAE", "SEA"). This is the ending point of the ride.
+- dropoff_to (the "To" column, e.g. "AS 2270-01 Apr 06:15" or "Delta Hotels Seattle Everett")
 - passenger_name, passenger_email, phone if present in the row/document; otherwise null
 - flight_number if present in pickup_from or dropoff_to (e.g. "AS 2270" or "ASA2270"); otherwise null
 
 CRITICAL rules:
-- COLUMN ORDER IS LAW: pickup_from must come from the 5th column only. dropoff_to must come from the 8th column only. NEVER swap pickup_from and dropoff_to based on meaning, flight numbers, hotel names, airport codes, or route direction.
-- PICKUP vs DROPOFF: "PICK UP From" aligns with pickup_from. "DROP OFF To" aligns with dropoff_to. Do not infer or correct these fields semantically; copy the table cells by column order.
+- PICKUP vs DROPOFF: pickup_location is where the journey STARTS (origin). dropoff_location is where the journey ENDS (destination). The "From" column aligns with pickup, the "To" column aligns with dropoff. If the rider goes FROM a hotel TO an airport, then pickup_location is the hotel area code and dropoff_location is the airport code. NEVER swap them.
 - DATE CARRY-DOWN: when a row's DATE cell is blank because of rowspan, copy the date from the most recent row above that had a date. Use the document context only to infer the schedule year and carry-down date at the top of this page when needed. Never output a row with a missing ride_date.
 - Skip ONLY the table header row and rows rendered in BOLD (those are repeated from the previous month).
 - Do not collapse rows that look similar — output every distinct row.

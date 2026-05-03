@@ -497,7 +497,7 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
             <div className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Dropoff</div>
             <div className="text-sm font-bold tabular-nums leading-tight">{dropoffTime ?? "—"}</div>
             <div className="text-xs text-foreground mt-0.5 truncate">{ride.dropoff_location ?? "—"}</div>
-            {ride.dropoff_to && <div className="text-[10px] text-muted-foreground truncate">{ride.dropoff_to}</div>}
+            {cleanDropoffTo && <div className="text-[10px] text-muted-foreground truncate">{cleanDropoffTo}</div>}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

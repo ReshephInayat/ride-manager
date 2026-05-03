@@ -469,15 +469,13 @@ function DashboardInner() {
       const toInsert = rows.filter((r) => !existingSet.has(r.ride_key));
       const dbDuplicates = rows.length - toInsert.length;
 
-      // Step 3: upsert in safe batches, skipping duplicates by ride_key
+      // Step 3: plain insert in safe batches. Duplicate ride_keys within the
+      //         PDF are allowed because the unique constraint was removed.
       let inserted = 0;
       const BATCH = 200;
       for (let i = 0; i < toInsert.length; i += BATCH) {
         const slice = toInsert.slice(i, i + BATCH);
-        const { data: ins, error } = await supabase
-          .from("rides")
-          .upsert(slice, { onConflict: "ride_key", ignoreDuplicates: true })
-          .select("id");
+        const { data: ins, error } = await supabase.from("rides").insert(slice).select("id");
         if (error) throw error;
         inserted += ins?.length ?? 0;
       }
@@ -1097,7 +1095,7 @@ function DashboardInner() {
                       </TableCell>
                       <TableCell className="text-xs">
                         <div className="font-medium">{r.pickup_location}</div>
-                        <div className="text-muted-foreground">{stripTrailingTime(r.pickup_from) || r.pickup_from}</div>
+                        <div className="text-muted-foreground">{r.pickup_from}</div>
                         {r.flight_number && (
                           <div className="font-bold text-foreground">
                             {stripTrailingTime(r.flight_number) || r.flight_number}
@@ -1109,7 +1107,7 @@ function DashboardInner() {
                       </TableCell>
                       <TableCell className="text-xs">
                         <div className="font-medium">{r.dropoff_location}</div>
-                        <div className="text-muted-foreground">{r.dropoff_to}</div>
+                        <div className="text-muted-foreground">{stripTrailingTime(r.dropoff_to) || r.dropoff_to}</div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
