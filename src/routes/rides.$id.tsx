@@ -193,7 +193,7 @@ function Inner() {
           <div>
             <div className="text-xs uppercase tracking-wide text-muted-foreground">Ride</div>
             <h1 className="text-3xl font-bold mt-1">
-              {ride.dropoff_location ?? "?"} → {ride.pickup_location ?? "?"}
+              {ride.pickup_location ?? "?"} → {ride.dropoff_location ?? "?"}
             </h1>
             <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
               <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {ride.ride_date} {ride.pickup_time && `• ${ride.pickup_time}`}</span>
@@ -228,8 +228,8 @@ function Inner() {
             <dl className="space-y-2 text-sm">
               <Row label="Date">{ride.ride_date}</Row>
               <Row label="Pickup time">{ride.pickup_time ?? "—"}</Row>
-              <Row label="Pickup">{ride.dropoff_location ?? "—"} {ride.dropoff_to && <span className="text-muted-foreground">({ride.dropoff_to})</span>}</Row>
-              <Row label="Dropoff">{ride.pickup_location ?? "—"} {ride.pickup_from && <span className="text-muted-foreground">({ride.pickup_from})</span>}</Row>
+              <Row label="Pickup">{ride.pickup_location ?? "—"} {ride.pickup_from && <span className="text-muted-foreground">({ride.pickup_from})</span>}</Row>
+              <Row label="Dropoff">{ride.dropoff_location ?? "—"} {ride.dropoff_to && <span className="text-muted-foreground">({ride.dropoff_to})</span>}</Row>
               <Row label="Department">{ride.department ?? "—"}</Row>
               <Row label="Riders">{ride.riders}</Row>
               <Row label="Route">{route ? `${route.name} • $${route.price}` : "—"}</Row>
@@ -239,10 +239,10 @@ function Inner() {
             <div className="space-y-3 text-sm">
               <Field label="Date"><Input type="date" value={draft.ride_date ?? ""} onChange={(e) => setDraft({ ...draft, ride_date: e.target.value })} /></Field>
               <Field label="Pickup time"><Input value={draft.pickup_time ?? ""} onChange={(e) => setDraft({ ...draft, pickup_time: e.target.value })} placeholder="e.g. 14:30" /></Field>
-              <Field label="Pickup location"><Input value={draft.dropoff_location ?? ""} onChange={(e) => setDraft({ ...draft, dropoff_location: e.target.value })} /></Field>
-              <Field label="Pickup from (address)"><Input value={draft.dropoff_to ?? ""} onChange={(e) => setDraft({ ...draft, dropoff_to: e.target.value })} /></Field>
-              <Field label="Dropoff location"><Input value={draft.pickup_location ?? ""} onChange={(e) => setDraft({ ...draft, pickup_location: e.target.value })} /></Field>
-              <Field label="Dropoff to (address)"><Input value={draft.pickup_from ?? ""} onChange={(e) => setDraft({ ...draft, pickup_from: e.target.value })} /></Field>
+              <Field label="Pickup location"><Input value={draft.pickup_location ?? ""} onChange={(e) => setDraft({ ...draft, pickup_location: e.target.value })} /></Field>
+              <Field label="Pickup from (address)"><Input value={draft.pickup_from ?? ""} onChange={(e) => setDraft({ ...draft, pickup_from: e.target.value })} /></Field>
+              <Field label="Dropoff location"><Input value={draft.dropoff_location ?? ""} onChange={(e) => setDraft({ ...draft, dropoff_location: e.target.value })} /></Field>
+              <Field label="Dropoff to (address)"><Input value={draft.dropoff_to ?? ""} onChange={(e) => setDraft({ ...draft, dropoff_to: e.target.value })} /></Field>
               <Field label="Department"><Input value={draft.department ?? ""} onChange={(e) => setDraft({ ...draft, department: e.target.value })} /></Field>
               <Field label="Riders"><Input type="number" value={draft.riders ?? 1} onChange={(e) => setDraft({ ...draft, riders: Number(e.target.value) || 1 })} /></Field>
               <Field label="Route">

@@ -702,7 +702,7 @@ function DashboardInner() {
       itemRows = items.map((r) => ({
         invoice_id: inv!.id,
         ride_id: r.id,
-        description: `${r.ride_date} • ${r.dropoff_to ?? r.dropoff_location} → ${r.pickup_from ?? r.pickup_location}`,
+        description: `${r.ride_date} • ${r.pickup_from ?? r.pickup_location} → ${r.dropoff_to ?? r.dropoff_location}`,
         amount: r.amount,
       }));
     }
@@ -1094,8 +1094,8 @@ function DashboardInner() {
                         </div>
                       </TableCell>
                       <TableCell className="text-xs">
-                        <div className="font-medium">{r.dropoff_location}</div>
-                        <div className="text-muted-foreground">{r.dropoff_to}</div>
+                        <div className="font-medium">{r.pickup_location}</div>
+                        <div className="text-muted-foreground">{stripTrailingTime(r.pickup_from) || r.pickup_from}</div>
                         {r.flight_number && (
                           <div className="font-bold text-foreground">
                             {stripTrailingTime(r.flight_number) || r.flight_number}
@@ -1106,8 +1106,8 @@ function DashboardInner() {
                         </div>
                       </TableCell>
                       <TableCell className="text-xs">
-                        <div className="font-medium">{r.pickup_location}</div>
-                        <div className="text-muted-foreground">{stripTrailingTime(r.pickup_from) || r.pickup_from}</div>
+                        <div className="font-medium">{r.dropoff_location}</div>
+                        <div className="text-muted-foreground">{r.dropoff_to}</div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -1274,12 +1274,12 @@ function DashboardInner() {
                     <TableCell className="text-xs">{row.data.pickup_time}</TableCell>
                     <TableCell className="text-xs max-w-[160px] truncate">{row.data.department}</TableCell>
                     <TableCell className="text-xs">
-                      <div className="font-medium">{row.data.dropoff_location}</div>
-                      <div className="text-muted-foreground">{row.data.dropoff_to}</div>
-                    </TableCell>
-                    <TableCell className="text-xs">
                       <div className="font-medium">{row.data.pickup_location}</div>
                       <div className="text-muted-foreground">{row.data.pickup_from}</div>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      <div className="font-medium">{row.data.dropoff_location}</div>
+                      <div className="text-muted-foreground">{row.data.dropoff_to}</div>
                     </TableCell>
                     <TableCell>{row.data.riders ?? 1}</TableCell>
                   </TableRow>
