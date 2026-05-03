@@ -237,6 +237,25 @@ async function callParserText(page: PdfPageText, fileName: string, documentConte
   return (data?.rides ?? []) as Array<Partial<Ride>>;
 }
 
+const FLIGHT_CELL_RE = /\b(?:AS|ASA|QX|QXE|HA|DL|AA|UA|WN|B6|F9|NK|AC|WS)\s*\d{2,5}\b/i;
+const BASE_CELL_RE = /\b(?:GT\s*BASE|BASE)\b/i;
+const HOTEL_CELL_RE = /\b(?:hotel|hotels|inn|suites|marriott|hilton|hyatt|delta|courtyard|residence|hampton|holiday)\b/i;
+
+function normalizeParsedRideFields(ride: Partial<Ride>): Partial<Ride> {
+  const pickupFrom = ride.pickup_from?.trim() ?? null;
+  const dropoffTo = ride.dropoff_to?.trim() ?? null;
+  if (!pickupFrom || !dropoffTo) return ride;
+
+  const pickupLooksLikeDropoff = FLIGHT_CELL_RE.test(pickupFrom) && !BASE_CELL_RE.test(pickupFrom);
+  const dropoffLooksLikePickup = HOTEL_CELL_RE.test(dropoffTo) || BASE_CELL_RE.test(dropoffTo);
+
+  if (pickupLooksLikeDropoff && dropoffLooksLikePickup) {
+    return { ...ride, pickup_from: dropoffTo, dropoff_to: pickupFrom };
+  }
+
+  return ride;
+}
+
 export async function callParser(file: File) {
   const pages = await extractPdfPagesText(file);
   const readablePages = pages.filter((page) => page.text.length > 40);
@@ -261,5 +280,5 @@ export async function callParser(file: File) {
       rides.push(...chunkRides);
     }
   }
-  return rides;
+  return rides.map(normalizeParsedRideFields);
 }
