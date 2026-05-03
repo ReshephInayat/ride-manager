@@ -1257,7 +1257,8 @@ function DashboardInner() {
                     />
                   </TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Time</TableHead>
+                  <TableHead>Pickup Time</TableHead>
+                  <TableHead>Dropoff Time</TableHead>
                   <TableHead>Department</TableHead>
                   <TableHead>Pickup</TableHead>
                   <TableHead>Dropoff</TableHead>
