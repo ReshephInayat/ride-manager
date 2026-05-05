@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Bell, Check } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -12,6 +12,7 @@ import { playNotificationSound } from "@/lib/sound";
 
 export function NotificationBell() {
   const { system } = useSystem();
+  const instanceId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const [items, setItems] = useState<AppNotification[]>([]);
   const [open, setOpen] = useState(false);
   const knownIdsRef = useRef<Set<string>>(new Set());
@@ -41,7 +42,7 @@ export function NotificationBell() {
     primedRef.current = false;
     load();
     const ch = supabase
-      .channel(`notif-bell-${system}`)
+      .channel(`notif-bell-${system}-${instanceId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications", filter: `system=eq.${system}` },
@@ -51,7 +52,7 @@ export function NotificationBell() {
     const t = setInterval(load, 60_000);
     return () => { supabase.removeChannel(ch); clearInterval(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [system]);
+  }, [system, instanceId]);
 
   const unread = items.filter((i) => !i.read).length;
 
