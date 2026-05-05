@@ -41,21 +41,16 @@ export function DriverNotificationBell({ driverId, pin }: Props) {
     knownIdsRef.current = new Set();
     primedRef.current = false;
     load();
-    let ch: ReturnType<typeof supabase.channel> | null = null;
-    try {
-      ch = supabase
-        .channel(`driver-notif-${driverId}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "notifications", filter: `driver_id=eq.${driverId}` },
-          () => load(),
-        )
-        .subscribe();
-    } catch (e) {
-      console.warn("Realtime subscription failed:", e);
-    }
+    const ch = supabase
+      .channel(`driver-notif-${driverId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `driver_id=eq.${driverId}` },
+        () => load(),
+      )
+      .subscribe();
     const t = setInterval(load, 60_000);
-    return () => { if (ch) supabase.removeChannel(ch); clearInterval(t); };
+    return () => { supabase.removeChannel(ch); clearInterval(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [driverId, pin]);
 

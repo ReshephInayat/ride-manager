@@ -45,12 +45,7 @@ export const Route = createRootRoute({
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/225a6823-ac2c-46cd-a10c-aa4ff0643ce1" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" } as any,
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" },
-      { rel: "stylesheet", href: appCss },
-    ],
+    links: [{ rel: "stylesheet", href: appCss }],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -79,7 +74,7 @@ function RootComponent() {
       <SystemProvider>
         <AuthProvider>
           <Outlet />
-          {mounted && <Toaster position="bottom-right" toastOptions={{ duration: 3500, style: { background: '#10101C', color: '#E2E2F0', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px' } }} />}
+          {mounted && <Toaster position="top-right" toastOptions={{ duration: 3500 }} />}
         </AuthProvider>
       </SystemProvider>
     </ThemeProvider>

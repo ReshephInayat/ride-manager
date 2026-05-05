@@ -88,16 +88,11 @@ function LogsInner() {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [system]);
 
   useEffect(() => {
-    let ch: ReturnType<typeof supabase.channel> | null = null;
-    try {
-      ch = supabase
-        .channel(`logs-${system}`)
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_logs" }, () => load())
-        .subscribe();
-    } catch (e) {
-      console.warn("Realtime subscription failed:", e);
-    }
-    return () => { if (ch) supabase.removeChannel(ch); };
+    const ch = supabase
+      .channel(`logs-${system}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_logs" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line
   }, [system]);
 

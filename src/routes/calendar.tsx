@@ -23,12 +23,12 @@ function CalendarPage() {
 }
 
 const statusColor: Record<RideStatus, string> = {
-  pending: "pill-pending border-[#F59E0B]/20",
-  started: "pill-started border-[#6C63FF]/20",
-  arrived: "pill-in-progress border-[#6C63FF]/20",
-  completed: "pill-completed border-[#10B981]/20",
-  cancelled: "pill-cancelled border-[#EF4444]/20",
-  no_show: "pill-no-show border-[#EF4444]/20",
+  pending: "bg-slate-200 text-slate-900 border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600",
+  started: "bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700",
+  arrived: "bg-sky-100 text-sky-900 border-sky-300 dark:bg-sky-900/40 dark:text-sky-100 dark:border-sky-700",
+  completed: "bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700",
+  cancelled: "bg-rose-100 text-rose-900 border-rose-300 dark:bg-rose-900/40 dark:text-rose-100 dark:border-rose-700",
+  no_show: "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-900/40 dark:text-amber-100 dark:border-amber-700",
 };
 
 function ymd(d: Date) {
