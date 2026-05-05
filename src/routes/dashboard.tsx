@@ -220,14 +220,19 @@ function DashboardInner() {
 
   // Realtime: refresh whenever rides, routes, or drivers change in this workspace.
   useEffect(() => {
-    const ch = supabase
-      .channel(`dashboard-${system}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "routes" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, () => load())
-      .subscribe();
+    let ch: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      ch = supabase
+        .channel(`dashboard-${system}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => load())
+        .on("postgres_changes", { event: "*", schema: "public", table: "routes" }, () => load())
+        .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, () => load())
+        .subscribe();
+    } catch (e) {
+      console.warn("Realtime subscription failed:", e);
+    }
     return () => {
-      supabase.removeChannel(ch);
+      if (ch) supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [system]);
