@@ -1114,7 +1114,7 @@ function DashboardInner() {
                               <button
                                 onClick={() => setTrackRide(r)}
                                 title="Live — track driver"
-                                className="h-8 w-8 grid place-items-center rounded border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs transition-colors"
+                                className="h-8 w-8 grid place-items-center rounded-lg border border-[#10B981]/30 bg-[#10B981]/10 text-[#10B981] hover:bg-[#10B981]/20 text-xs transition-colors"
                               >
                                 <span className="relative">
                                   <MapPin className="h-4 w-4" />
