@@ -127,6 +127,7 @@ export function normalizeRideKeyText(value: unknown): string {
   return String(value ?? "")
     .trim()
     .toLowerCase()
+    .replace(/\s*-\s*/g, "-")
     .replace(/\s+/g, " ");
 }
 
@@ -163,13 +164,13 @@ export function buildRideKey(
     normalizeRideKeyText(ride.ride_date),
     normalizeRideKeyTime(ride.pickup_time),
     normalizeRideKeyText(ride.pickup_location),
-    normalizeRideKeyText(ride.pickup_from),
+    normalizeRideKeyText(stripTrailingTime(ride.pickup_from)),
     normalizeRideKeyText(ride.dropoff_location),
-    normalizeRideKeyText(ride.dropoff_to),
+    normalizeRideKeyText(stripTrailingTime(ride.dropoff_to)),
     normalizeRideKeyText(ride.passenger_name),
     normalizeRideKeyText(ride.passenger_email),
     normalizeRideKeyText(ride.phone),
-    normalizeRideKeyText(ride.flight_number),
+    normalizeRideKeyText(stripTrailingTime(ride.flight_number)),
   ].join("|");
 }
 

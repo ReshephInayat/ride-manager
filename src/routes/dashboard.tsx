@@ -1070,7 +1070,12 @@ function DashboardInner() {
                           </div>
                         </div>
                       </TableCell>
-                      {/* SWAPPED: Pickup column now shows dropoff data */}
+                      {/* Pickup column — shows pickup data */}
+                      <TableCell className="text-xs">
+                        <div className="font-medium">{r.pickup_location}</div>
+                        <div className="text-muted-foreground">{stripTrailingTime(r.pickup_from) || r.pickup_from}</div>
+                      </TableCell>
+                      {/* Dropoff column — shows dropoff data */}
                       <TableCell className="text-xs">
                         <div className="font-medium">{r.dropoff_location}</div>
                         <div className="text-muted-foreground">{r.dropoff_to}</div>
@@ -1082,11 +1087,6 @@ function DashboardInner() {
                         <div className="mt-1">
                           <FlightSearchButton ride={r} size="xs" />
                         </div>
-                      </TableCell>
-                      {/* SWAPPED: Dropoff column now shows pickup data */}
-                      <TableCell className="text-xs">
-                        <div className="font-medium">{r.pickup_location}</div>
-                        <div className="text-muted-foreground">{stripTrailingTime(r.pickup_from) || r.pickup_from}</div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
