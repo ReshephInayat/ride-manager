@@ -239,12 +239,17 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
 
   useEffect(() => {
     load();
-    const ch = supabase
-      .channel(`driver-rides-${session.driverId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => load(true))
-      .subscribe();
+    let ch: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      ch = supabase
+        .channel(`driver-rides-${session.driverId}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => load(true))
+        .subscribe();
+    } catch (e) {
+      console.warn("Realtime subscription failed:", e);
+    }
     const t = setInterval(() => load(true), 60_000);
-    return () => { supabase.removeChannel(ch); clearInterval(t); };
+    return () => { if (ch) supabase.removeChannel(ch); clearInterval(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.driverId]);
 
