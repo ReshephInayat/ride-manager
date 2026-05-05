@@ -55,35 +55,12 @@ function Dashboard() {
 }
 
 const statusMeta: Record<RideStatus, { label: string; className: string; icon: typeof CheckCircle2 }> = {
-  pending: { label: "Pending", className: "bg-secondary text-secondary-foreground", icon: MinusCircle },
-  started: {
-    label: "Started",
-    className:
-      "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700",
-    icon: CheckCircle2,
-  },
-  arrived: {
-    label: "Arrived",
-    className: "bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/40 dark:text-sky-100 dark:border-sky-700",
-    icon: CheckCircle2,
-  },
-  completed: {
-    label: "Completed",
-    className:
-      "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700",
-    icon: CheckCircle2,
-  },
-  cancelled: {
-    label: "Cancelled",
-    className: "bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/40 dark:text-rose-100 dark:border-rose-700",
-    icon: XCircle,
-  },
-  no_show: {
-    label: "No Show",
-    className:
-      "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-100 dark:border-amber-700",
-    icon: MinusCircle,
-  },
+  pending: { label: "Pending", className: "pill-pending", icon: MinusCircle },
+  started: { label: "Started", className: "pill-started", icon: CheckCircle2 },
+  arrived: { label: "Arrived", className: "pill-in-progress", icon: CheckCircle2 },
+  completed: { label: "Completed", className: "pill-completed", icon: CheckCircle2 },
+  cancelled: { label: "Cancelled", className: "pill-cancelled", icon: XCircle },
+  no_show: { label: "No Show", className: "pill-no-show", icon: MinusCircle },
 };
 
 type DateFilter =
@@ -991,14 +968,14 @@ function DashboardInner() {
             )}
             <Button
               variant="outline"
-              className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+              className="border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/10"
               onClick={completeAllFiltered}
             >
               <CheckCircle2 className="h-4 w-4 mr-1" /> Complete all
             </Button>
             <Button
               variant="outline"
-              className="border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+              className="border-[#EF4444]/30 text-[#EF4444] hover:bg-[#EF4444]/10"
               onClick={deleteAllFiltered}
             >
               <Trash2 className="h-4 w-4 mr-1" /> Delete all
@@ -1137,7 +1114,7 @@ function DashboardInner() {
                               <button
                                 onClick={() => setTrackRide(r)}
                                 title="Live — track driver"
-                                className="h-8 w-8 grid place-items-center rounded border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs transition-colors"
+                                className="h-8 w-8 grid place-items-center rounded-lg border border-[#10B981]/30 bg-[#10B981]/10 text-[#10B981] hover:bg-[#10B981]/20 text-xs transition-colors"
                               >
                                 <span className="relative">
                                   <MapPin className="h-4 w-4" />
@@ -1198,7 +1175,7 @@ function DashboardInner() {
                         <button
                           onClick={() => deleteRide(r.id)}
                           title="Delete ride"
-                          className="h-7 w-7 grid place-items-center rounded border border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                          className="h-7 w-7 grid place-items-center rounded-lg border border-[#EF4444]/30 text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -1334,23 +1311,20 @@ function StatCard({
   value: string;
   tone?: "default" | "blue" | "emerald" | "amber" | "violet" | "rose" | "teal";
 }) {
-  const toneMap = {
-    default: "bg-card",
-    blue: "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 text-blue-900 dark:from-blue-950/40 dark:to-blue-900/30 dark:border-blue-800 dark:text-blue-100",
-    emerald:
-      "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-900 dark:from-emerald-950/40 dark:to-emerald-900/30 dark:border-emerald-800 dark:text-emerald-100",
-    amber:
-      "bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 text-amber-900 dark:from-amber-950/40 dark:to-amber-900/30 dark:border-amber-800 dark:text-amber-100",
-    violet:
-      "bg-gradient-to-br from-violet-50 to-violet-100 border-violet-200 text-violet-900 dark:from-violet-950/40 dark:to-violet-900/30 dark:border-violet-800 dark:text-violet-100",
-    rose: "bg-gradient-to-br from-rose-50 to-rose-100 border-rose-200 text-rose-900 dark:from-rose-950/40 dark:to-rose-900/30 dark:border-rose-800 dark:text-rose-100",
-    teal: "bg-gradient-to-br from-teal-50 to-teal-100 border-teal-200 text-teal-900 dark:from-teal-950/40 dark:to-teal-900/30 dark:border-teal-800 dark:text-teal-100",
+  const borderColors: Record<string, string> = {
+    default: "border-l-[#6C63FF]",
+    blue: "border-l-[#6C63FF]",
+    emerald: "border-l-[#10B981]",
+    amber: "border-l-[#F5A623]",
+    violet: "border-l-[#9B59B6]",
+    rose: "border-l-[#EF4444]",
+    teal: "border-l-[#10B981]",
   };
   return (
-    <Card className={`p-4 border ${toneMap[tone]}`}>
-      <div className="text-xs uppercase tracking-wide opacity-80">{label}</div>
-      <div className="text-2xl font-bold mt-1">{value}</div>
-    </Card>
+    <div className={`luxury-card p-4 border-l-2 ${borderColors[tone] ?? borderColors.default}`}>
+      <div className="text-xs uppercase tracking-wide text-[#7A7A9A]">{label}</div>
+      <div className="text-2xl font-bold text-white mt-1">{value}</div>
+    </div>
   );
 }
 
@@ -1368,18 +1342,15 @@ function StatusBtn({
   children: React.ReactNode;
 }) {
   const map = {
-    emerald:
-      "border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 data-[active=true]:bg-emerald-600 data-[active=true]:text-white data-[active=true]:border-emerald-600",
-    rose: "border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 data-[active=true]:bg-rose-600 data-[active=true]:text-white data-[active=true]:border-rose-600",
-    amber:
-      "border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 data-[active=true]:bg-amber-500 data-[active=true]:text-white data-[active=true]:border-amber-500",
+    emerald: `border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/10 ${active ? "bg-[#10B981] text-white border-[#10B981]" : ""}`,
+    rose: `border-[#EF4444]/30 text-[#EF4444] hover:bg-[#EF4444]/10 ${active ? "bg-[#EF4444] text-white border-[#EF4444]" : ""}`,
+    amber: `border-[#F5A623]/30 text-[#F5A623] hover:bg-[#F5A623]/10 ${active ? "bg-[#F5A623] text-white border-[#F5A623]" : ""}`,
   };
   return (
     <button
       title={title}
-      data-active={active}
       onClick={onClick}
-      className={`h-7 w-7 grid place-items-center rounded border transition-colors ${map[tone]}`}
+      className={`h-7 w-7 grid place-items-center rounded-lg border transition-colors ${map[tone]}`}
     >
       {children}
     </button>
