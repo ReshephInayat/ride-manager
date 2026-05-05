@@ -220,14 +220,19 @@ function DashboardInner() {
 
   // Realtime: refresh whenever rides, routes, or drivers change in this workspace.
   useEffect(() => {
-    const ch = supabase
-      .channel(`dashboard-${system}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "routes" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, () => load())
-      .subscribe();
+    let ch: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      ch = supabase
+        .channel(`dashboard-${system}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => load())
+        .on("postgres_changes", { event: "*", schema: "public", table: "routes" }, () => load())
+        .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, () => load())
+        .subscribe();
+    } catch (e) {
+      console.warn("Realtime subscription failed:", e);
+    }
     return () => {
-      supabase.removeChannel(ch);
+      if (ch) supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [system]);
@@ -254,36 +259,40 @@ function DashboardInner() {
       }
     };
     void fetchAll();
-    const ch = supabase
-      .channel(`live-locations-${system}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "driver_locations" }, (payload) => {
-        if (payload.eventType === "DELETE") {
-          const old = payload.old as { driver_id?: string };
-          if (old?.driver_id)
-            setLiveLocations((m) => {
-              const n = { ...m };
-              delete n[old.driver_id!];
-              return n;
-            });
-        } else {
-          const row = payload.new as {
-            driver_id: string;
-            lat: number;
-            lng: number;
-            updated_at: string;
-            ride_id: string | null;
-          };
-          setLiveLocations((m) => ({
-            ...m,
-            [row.driver_id]: { lat: row.lat, lng: row.lng, updated_at: row.updated_at, ride_id: row.ride_id },
-          }));
-        }
-      })
-      .subscribe();
-    // refresh ticker so "fresh" status decays after 60s
+    let ch: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      ch = supabase
+        .channel(`live-locations-${system}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "driver_locations" }, (payload) => {
+          if (payload.eventType === "DELETE") {
+            const old = payload.old as { driver_id?: string };
+            if (old?.driver_id)
+              setLiveLocations((m) => {
+                const n = { ...m };
+                delete n[old.driver_id!];
+                return n;
+              });
+          } else {
+            const row = payload.new as {
+              driver_id: string;
+              lat: number;
+              lng: number;
+              updated_at: string;
+              ride_id: string | null;
+            };
+            setLiveLocations((m) => ({
+              ...m,
+              [row.driver_id]: { lat: row.lat, lng: row.lng, updated_at: row.updated_at, ride_id: row.ride_id },
+            }));
+          }
+        })
+        .subscribe();
+    } catch (e) {
+      console.warn("Realtime location subscription failed:", e);
+    }
     const t = setInterval(() => setLiveLocations((m) => ({ ...m })), 30000);
     return () => {
-      supabase.removeChannel(ch);
+      if (ch) supabase.removeChannel(ch);
       clearInterval(t);
     };
   }, [system]);

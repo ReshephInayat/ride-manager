@@ -53,21 +53,26 @@ export function TrackRideDialog({
     };
     void fetchOne();
 
-    const ch = supabase
-      .channel(`track-${ride.driver_id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "driver_locations", filter: `driver_id=eq.${ride.driver_id}` },
-        (payload) => {
-          if (payload.eventType === "DELETE") setLoc(null);
-          else setLoc(payload.new as DriverLocation);
-        },
-      )
-      .subscribe();
+    let ch: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      ch = supabase
+        .channel(`track-${ride.driver_id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "driver_locations", filter: `driver_id=eq.${ride.driver_id}` },
+          (payload) => {
+            if (payload.eventType === "DELETE") setLoc(null);
+            else setLoc(payload.new as DriverLocation);
+          },
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn("Realtime subscription failed:", e);
+    }
 
     const t = setInterval(() => setTick((x) => x + 1), 1000);
     return () => {
-      supabase.removeChannel(ch);
+      if (ch) supabase.removeChannel(ch);
       clearInterval(t);
     };
   }, [open, ride.driver_id]);
