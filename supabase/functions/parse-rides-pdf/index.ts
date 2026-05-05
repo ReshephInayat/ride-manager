@@ -42,35 +42,33 @@ Each ride object must have these fields:
   flight_number    — string or null  (see Section 4 for exact extraction rules)
 
 ════════════════════════════════════════════════════════
-SECTION 2 — PICKUP vs DROPOFF (READ THIS CAREFULLY)
+SECTION 2 — PICKUP vs DROPOFF (CRITICAL: COPY, DO NOT INTERPRET)
 ════════════════════════════════════════════════════════
-These schedules are GROUND TRANSPORTATION schedules, not airline schedules.
-pickup_location and dropoff_location refer to where the VEHICLE picks up and drops off.
+The PDF table has these exact column headers:
+  PICK UP  → Location | From | Pickup Date/Time
+  DROP OFF → Location | To
 
-The "From" column tells you where the PASSENGER is coming from RIGHT NOW.
-The "To" column tells you where the PASSENGER needs to GO.
+Your ONLY job is to COPY each column value into the matching field:
+  pickup_location  ← the value in the PICK UP "Location" column (e.g. "PAE", "SEA")
+  pickup_from      ← the value in the PICK UP "From" column (verbatim)
+  pickup_time      ← the value in the "Pickup Date/Time" column
+  dropoff_location ← the value in the DROP OFF "Location" column (e.g. "PAE", "SEA")
+  dropoff_to       ← the value in the DROP OFF "To" column (verbatim)
 
-Use this decision tree for every single row:
+NEVER swap, reorder, or second-guess these assignments.
+NEVER look at whether From contains a flight code or a hotel name to decide which is pickup.
+The PDF has already decided. You just copy.
 
-  IF the "From" cell contains a flight code (e.g. "AS 2270", "AS 2279", "QX 123"):
-    → The passenger is ARRIVING by plane.
-    → The vehicle goes to the AIRPORT to pick them up.
-    → pickup_location  = the AIRPORT code for this schedule (e.g. "SEA", "PAE")
-    → dropoff_location = the DESTINATION area code (hotel side, e.g. "PAE", "SEA")
-    → pickup_from  = the "From" cell verbatim (contains the flight code + date/time)
-    → dropoff_to   = the "To" cell verbatim (hotel name or base name)
+Concrete examples from a real schedule page:
+  PICK UP Location=PAE  From="Delta Hotels Seattle Everett"  Time="05 May 05:55"
+  DROP OFF Location=PAE  To="AS 2270-05 May 06:15"
+  → pickup_location="PAE"  pickup_from="Delta Hotels Seattle Everett"
+  → dropoff_location="PAE"  dropoff_to="AS 2270-05 May 06:15"   ✓ CORRECT
 
-  IF the "From" cell contains a hotel, base, or place name (e.g. "Delta Hotels Seattle Everett", "GT BASE"):
-    → The passenger is DEPARTING and needs a ride TO the airport.
-    → The vehicle goes to the HOTEL/BASE to pick them up.
-    → pickup_location  = the HOTEL/BASE area code (e.g. "PAE")
-    → dropoff_location = the AIRPORT code (e.g. "SEA", "PAE")
-    → pickup_from  = the "From" cell verbatim (hotel or base name)
-    → dropoff_to   = the "To" cell verbatim (flight code + date/time)
-
-NEVER swap pickup and dropoff.
-NEVER set pickup_location = dropoff_location unless the schedule explicitly shows same-location.
-If you are unsure, look at whether "From" contains a flight code or a place name — that is always the deciding signal.
+  PICK UP Location=PAE  From="AS 2191-05 May 19:44"  Time="05 May 19:44"
+  DROP OFF Location=PAE  To="Delta Hotels Seattle Everett"
+  → pickup_location="PAE"  pickup_from="AS 2191-05 May 19:44"
+  → dropoff_location="PAE"  dropoff_to="Delta Hotels Seattle Everett"   ✓ CORRECT
 
 ════════════════════════════════════════════════════════
 SECTION 3 — DATE RULES
