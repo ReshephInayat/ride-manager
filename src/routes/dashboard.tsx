@@ -975,7 +975,7 @@ function DashboardInner() {
             </Button>
             <Button
               variant="outline"
-              className="border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+              className="border-[#EF4444]/30 text-[#EF4444] hover:bg-[#EF4444]/10"
               onClick={deleteAllFiltered}
             >
               <Trash2 className="h-4 w-4 mr-1" /> Delete all
