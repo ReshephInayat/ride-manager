@@ -1342,18 +1342,15 @@ function StatusBtn({
   children: React.ReactNode;
 }) {
   const map = {
-    emerald:
-      "border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 data-[active=true]:bg-emerald-600 data-[active=true]:text-white data-[active=true]:border-emerald-600",
-    rose: "border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 data-[active=true]:bg-rose-600 data-[active=true]:text-white data-[active=true]:border-rose-600",
-    amber:
-      "border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 data-[active=true]:bg-amber-500 data-[active=true]:text-white data-[active=true]:border-amber-500",
+    emerald: `border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/10 ${active ? "bg-[#10B981] text-white border-[#10B981]" : ""}`,
+    rose: `border-[#EF4444]/30 text-[#EF4444] hover:bg-[#EF4444]/10 ${active ? "bg-[#EF4444] text-white border-[#EF4444]" : ""}`,
+    amber: `border-[#F5A623]/30 text-[#F5A623] hover:bg-[#F5A623]/10 ${active ? "bg-[#F5A623] text-white border-[#F5A623]" : ""}`,
   };
   return (
     <button
       title={title}
-      data-active={active}
       onClick={onClick}
-      className={`h-7 w-7 grid place-items-center rounded border transition-colors ${map[tone]}`}
+      className={`h-7 w-7 grid place-items-center rounded-lg border transition-colors ${map[tone]}`}
     >
       {children}
     </button>
