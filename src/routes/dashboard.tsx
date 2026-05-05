@@ -968,7 +968,7 @@ function DashboardInner() {
             )}
             <Button
               variant="outline"
-              className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+              className="border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/10"
               onClick={completeAllFiltered}
             >
               <CheckCircle2 className="h-4 w-4 mr-1" /> Complete all
