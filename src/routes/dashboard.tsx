@@ -452,7 +452,7 @@ function DashboardInner() {
       const BATCH = 200;
       for (let i = 0; i < toInsert.length; i += BATCH) {
         const slice = toInsert.slice(i, i + BATCH);
-        const { data: ins, error } = await supabase.from("rides").insert(slice).select("id");
+        const { data: ins, error } = await supabase.from("rides").upsert(slice, { onConflict: "ride_key", ignoreDuplicates: true }).select("id");
         if (error) throw error;
         inserted += ins?.length ?? 0;
       }
