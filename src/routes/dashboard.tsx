@@ -1175,7 +1175,7 @@ function DashboardInner() {
                         <button
                           onClick={() => deleteRide(r.id)}
                           title="Delete ride"
-                          className="h-7 w-7 grid place-items-center rounded border border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                          className="h-7 w-7 grid place-items-center rounded-lg border border-[#EF4444]/30 text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
