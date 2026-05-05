@@ -1311,23 +1311,20 @@ function StatCard({
   value: string;
   tone?: "default" | "blue" | "emerald" | "amber" | "violet" | "rose" | "teal";
 }) {
-  const toneMap = {
-    default: "bg-card",
-    blue: "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 text-blue-900 dark:from-blue-950/40 dark:to-blue-900/30 dark:border-blue-800 dark:text-blue-100",
-    emerald:
-      "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-900 dark:from-emerald-950/40 dark:to-emerald-900/30 dark:border-emerald-800 dark:text-emerald-100",
-    amber:
-      "bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 text-amber-900 dark:from-amber-950/40 dark:to-amber-900/30 dark:border-amber-800 dark:text-amber-100",
-    violet:
-      "bg-gradient-to-br from-violet-50 to-violet-100 border-violet-200 text-violet-900 dark:from-violet-950/40 dark:to-violet-900/30 dark:border-violet-800 dark:text-violet-100",
-    rose: "bg-gradient-to-br from-rose-50 to-rose-100 border-rose-200 text-rose-900 dark:from-rose-950/40 dark:to-rose-900/30 dark:border-rose-800 dark:text-rose-100",
-    teal: "bg-gradient-to-br from-teal-50 to-teal-100 border-teal-200 text-teal-900 dark:from-teal-950/40 dark:to-teal-900/30 dark:border-teal-800 dark:text-teal-100",
+  const borderColors: Record<string, string> = {
+    default: "border-l-[#6C63FF]",
+    blue: "border-l-[#6C63FF]",
+    emerald: "border-l-[#10B981]",
+    amber: "border-l-[#F5A623]",
+    violet: "border-l-[#9B59B6]",
+    rose: "border-l-[#EF4444]",
+    teal: "border-l-[#10B981]",
   };
   return (
-    <Card className={`p-4 border ${toneMap[tone]}`}>
-      <div className="text-xs uppercase tracking-wide opacity-80">{label}</div>
-      <div className="text-2xl font-bold mt-1">{value}</div>
-    </Card>
+    <div className={`luxury-card p-4 border-l-2 ${borderColors[tone] ?? borderColors.default}`}>
+      <div className="text-xs uppercase tracking-wide text-[#7A7A9A]">{label}</div>
+      <div className="text-2xl font-bold text-white mt-1">{value}</div>
+    </div>
   );
 }
 
