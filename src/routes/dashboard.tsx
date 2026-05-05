@@ -428,38 +428,22 @@ function DashboardInner() {
         return { ...row, ride_key, dedupe_key: ride_key };
       });
 
-      // Step 1: per request, KEEP duplicates that appear inside the same PDF.
-      //         Only skip rides that already exist in the database.
-      const rows = allRows;
+      const toInsert = allRows;
 
-      // Step 2: check which keys already exist in DB so we report accurate counts
-      //         and skip them on insert.
-      const keys = Array.from(new Set(rows.map((r) => r.ride_key)));
-      const { data: existing, error: exErr } = await supabase
-        .from("rides")
-        .select("ride_key")
-        .eq("user_id", u.user!.id)
-        .eq("system", system)
-        .in("ride_key", keys);
-      if (exErr) throw exErr;
-      const existingSet = new Set((existing ?? []).map((e) => e.ride_key as string));
-      const toInsert = rows.filter((r) => !existingSet.has(r.ride_key));
-      const dbDuplicates = rows.length - toInsert.length;
-
-      // Step 3: plain insert in safe batches. Duplicate ride_keys within the
-      //         PDF are allowed because the unique constraint was removed.
       let inserted = 0;
       const BATCH = 200;
       for (let i = 0; i < toInsert.length; i += BATCH) {
         const slice = toInsert.slice(i, i + BATCH);
-        const { data: ins, error } = await supabase.from("rides").upsert(slice, { onConflict: "ride_key", ignoreDuplicates: true }).select("id");
+        const { data: ins, error } = await supabase
+          .from("rides")
+          .upsert(slice, { onConflict: "user_id,system,ride_key", ignoreDuplicates: true })
+          .select("id");
         if (error) throw error;
         inserted += ins?.length ?? 0;
       }
 
       toast.success(
-        `Imported ${inserted}` +
-          (dbDuplicates > 0 ? ` • Skipped ${dbDuplicates} already in system` : "") +
+        `Imported ${inserted} new ride${inserted === 1 ? "" : "s"}` +
           (previewInvalid > 0 ? ` • ${previewInvalid} invalid row${previewInvalid === 1 ? "" : "s"}` : ""),
       );
       setPreviewRows(null);
