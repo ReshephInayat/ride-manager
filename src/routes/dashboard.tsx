@@ -1192,14 +1192,14 @@ function DashboardInner() {
           />
         )}
 
-      {/* PDF Preview Modal */}
+      {/* Schedule Preview Modal */}
       <Dialog open={!!previewRows} onOpenChange={(o) => !o && setPreviewRows(null)}>
         <DialogContent className="max-w-5xl">
           <DialogHeader>
             <DialogTitle>Review extracted rides — {previewFile}</DialogTitle>
           </DialogHeader>
           <div className="text-sm text-muted-foreground">
-            Extracted <span className="font-semibold text-foreground">{previewExtracted}</span> rows from PDF •{" "}
+            Extracted <span className="font-semibold text-foreground">{previewExtracted}</span> rows from spreadsheet •{" "}
             <span className="font-semibold text-foreground">{previewRows?.length ?? 0}</span> ready to import
             {previewInvalid > 0 ? (
               <>
