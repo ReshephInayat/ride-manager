@@ -482,16 +482,16 @@ Deno.serve(async (req) => {
       break;
     }
 
-    return json({ reply: finalReply || "(no response)" });
+    return jsonRes({ reply: finalReply || "(no response)" }, 200, cors);
   } catch (e) {
     console.error("chat-assistant error", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return jsonRes({ error: "An internal error occurred" }, 500, getCorsHeaders(req));
   }
 });
 
-function json(body: unknown, status = 200) {
+function jsonRes(body: unknown, status = 200, headers: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...headers, "Content-Type": "application/json" },
   });
 }
