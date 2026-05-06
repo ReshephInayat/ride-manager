@@ -21,11 +21,11 @@ Deno.serve(async (req) => {
   try {
     const { fileName, pageNumber, totalPages, pageText, documentContext } = await req.json();
     if (!pageText) {
-      return json({ error: "pageText required" }, 400);
+      return jsonRes({ error: "pageText required" }, 400, cors);
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) return json({ error: "Missing LOVABLE_API_KEY" }, 500);
+    if (!LOVABLE_API_KEY) return jsonRes({ error: "Missing LOVABLE_API_KEY" }, 500, cors);
 
     const prompt = `You are a strict data extractor for Horizon Air Ground Transportation Schedules.
 You are processing page ${pageNumber ?? "?"} of ${totalPages ?? "?"} from a file named "${fileName ?? "schedule.pdf"}".
@@ -170,12 +170,12 @@ ${String(pageText).slice(0, 12000)}`;
       const t = await aiRes.text();
       console.error(`[parse-rides-pdf] AI gateway error ${aiRes.status}: ${t}`);
       if (aiRes.status === 429) {
-        return json({ error: "Rate limit exceeded. Please wait a moment and try again." }, 429);
+        return jsonRes({ error: "Rate limit exceeded. Please wait a moment and try again." }, 429, cors);
       }
       if (aiRes.status === 402) {
-        return json({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }, 402);
+        return jsonRes({ error: "AI credits exhausted. Please add credits to your Lovable workspace." }, 402, cors);
       }
-      return json({ error: `AI error ${aiRes.status}: ${t}` }, 502);
+      return jsonRes({ error: `AI error ${aiRes.status}: ${t}` }, 502, cors);
     }
     const data = await aiRes.json();
     let content: string = data.choices?.[0]?.message?.content ?? "";
@@ -190,7 +190,7 @@ ${String(pageText).slice(0, 12000)}`;
       parsed = JSON.parse(content);
     } catch (e) {
       console.error("[parse-rides-pdf] JSON parse failed:", e, "raw:", content.slice(0, 500));
-      return json({ error: "Failed to parse AI JSON", raw: content.slice(0, 500) }, 502);
+      return jsonRes({ error: "Failed to parse AI JSON", raw: content.slice(0, 500) }, 502, cors);
     }
 
     console.log(`[parse-rides-pdf] Success: extracted ${parsed.rides?.length ?? 0} rides`);
