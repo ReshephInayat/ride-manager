@@ -154,10 +154,10 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #2A2A3F;
+    background: var(--color-muted);
   }
   ::-webkit-scrollbar-thumb {
-    background: #6C63FF;
+    background: var(--color-primary);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
