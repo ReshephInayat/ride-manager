@@ -222,36 +222,80 @@ export async function callParser(file: File): Promise<Array<Partial<Ride>>> {
     let currentDate: string | null = null;
     let dataStarted = false;
 
-    for (const row of rows) {
-      if (!row || row.length < 15) continue;
+    // Dynamic column indices — detected from header rows
+    let colDate = -1;
+    let colDept = -1;
+    let colRiders = -1;
+    let colPickupLoc = -1;
+    let colPickupFrom = -1;
+    let colPickupDateTime = -1;
+    let colDropoffLoc = -1;
+    let colDropoffTo = -1;
 
-      // Detect header row to know data section started
-      const col2 = row[2] != null ? String(row[2]).trim() : "";
-      if (col2 === "DATE") {
-        dataStarted = true;
+    for (const row of rows) {
+      if (!row || row.length < 5) continue;
+
+      // Scan for the header row containing "DATE" to detect column positions
+      if (!dataStarted) {
+        const dateIdx = row.findIndex(
+          (c) => c != null && String(c).trim().toUpperCase() === "DATE",
+        );
+        if (dateIdx >= 0) {
+          colDate = dateIdx;
+          // Scan same row + next row for other headers
+          for (let ci = 0; ci < row.length; ci++) {
+            const val = row[ci] != null ? String(row[ci]).trim().toUpperCase() : "";
+            if (val === "DEPARTMENT") colDept = ci;
+            if (val === "#RIDERS" || val === "RIDERS") colRiders = ci;
+            if (val === "PICK UP" || val === "PICKUP") colPickupLoc = ci;
+            if (val === "DROP OFF" || val === "DROPOFF") colDropoffLoc = ci;
+          }
+          dataStarted = true;
+          // The next row usually has sub-headers (Location, From, To, Pickup Date/Time)
+          // We'll detect those in the next iteration
+          continue;
+        }
         continue;
       }
-      if (!dataStarted) continue;
+
+      // Detect sub-header row (Location / From / To / Pickup Date/Time)
+      if (colPickupFrom < 0) {
+        for (let ci = 0; ci < row.length; ci++) {
+          const val = row[ci] != null ? String(row[ci]).trim().toUpperCase() : "";
+          if (val === "LOCATION" && colPickupLoc >= 0 && ci >= colPickupLoc && ci < colPickupLoc + 5) {
+            colPickupLoc = ci; // exact location column under PICK UP
+          }
+          if (val === "FROM") colPickupFrom = ci;
+          if (val === "PICKUP DATE/TIME" || val === "PICKUP DATE / TIME") colPickupDateTime = ci;
+          if (val === "TO") colDropoffTo = ci;
+          // Second "Location" column (under DROP OFF)
+          if (val === "LOCATION" && colDropoffLoc >= 0 && ci >= colDropoffLoc && ci < colDropoffLoc + 5) {
+            colDropoffLoc = ci;
+          }
+        }
+        continue;
+      }
 
       // Stop at end marker
-      if (col2.startsWith("***")) break;
+      const dateCell = colDate >= 0 && row[colDate] != null ? String(row[colDate]).trim() : "";
+      if (dateCell.startsWith("***")) break;
 
       // Date carry-down
-      const parsedDate = parseDateCell(col2);
+      const parsedDate = parseDateCell(dateCell);
       if (parsedDate) currentDate = parsedDate;
       if (!currentDate) continue;
 
       // Must have riders column
-      const ridersRaw = row[10];
+      const ridersRaw = colRiders >= 0 ? row[colRiders] : null;
       if (ridersRaw == null || ridersRaw === "") continue;
       const riders = parseInt(String(ridersRaw), 10) || 1;
 
-      const pickupLocation = row[12] != null ? String(row[12]).trim() : null;
-      const pickupFrom = row[14] != null ? String(row[14]).trim() : null;
-      const pickupDateTime = row[24] != null ? String(row[24]).trim() : null;
-      const dropoffLocation = row[28] != null ? String(row[28]).trim() : null;
-      const dropoffTo = row[32] != null ? String(row[32]).trim() : null;
-      const department = row[7] != null ? String(row[7]).trim() : null;
+      const pickupLocation = colPickupLoc >= 0 && row[colPickupLoc] != null ? String(row[colPickupLoc]).trim() : null;
+      const pickupFrom = colPickupFrom >= 0 && row[colPickupFrom] != null ? String(row[colPickupFrom]).trim() : null;
+      const pickupDateTime = colPickupDateTime >= 0 && row[colPickupDateTime] != null ? String(row[colPickupDateTime]).trim() : null;
+      const dropoffLocation = colDropoffLoc >= 0 && row[colDropoffLoc] != null ? String(row[colDropoffLoc]).trim() : null;
+      const dropoffTo = colDropoffTo >= 0 && row[colDropoffTo] != null ? String(row[colDropoffTo]).trim() : null;
+      const department = colDept >= 0 && row[colDept] != null ? String(row[colDept]).trim() : null;
 
       const pickupTime = parsePickupTime(pickupDateTime);
 
@@ -259,8 +303,6 @@ export async function callParser(file: File): Promise<Array<Partial<Ride>>> {
       const flightNumber = extractFlight(pickupFrom) || extractFlight(dropoffTo);
 
       // Determine which field is the hotel/location name vs flight info
-      // If pickupFrom starts with a flight code, it's an arrival (hotel is dropoffTo)
-      // Otherwise pickupFrom is the hotel name
       const pickupFromIsFlight = pickupFrom ? FLIGHT_RE.test(pickupFrom) : false;
       const dropoffToIsFlight = dropoffTo ? FLIGHT_RE.test(dropoffTo) : false;
 
