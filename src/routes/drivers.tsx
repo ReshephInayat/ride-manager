@@ -191,34 +191,20 @@ function DriversInner() {
                 </div>
                 <div className="md:col-span-2">
                   <Label className="text-xs flex items-center gap-1">
-                    <KeyRound className="h-3 w-3" /> {d.login_pin ? "Saved PIN" : d.pin_hash ? "PIN (hashed — reset to view)" : "Set PIN"}
+                    <KeyRound className="h-3 w-3" /> {d.pin_hash ? "PIN (hashed)" : "Set PIN"}
                   </Label>
                   <div className="flex gap-1 items-center">
-                    {d.login_pin ? (
-                      <code className="flex-1 h-9 px-3 grid items-center rounded-md border bg-muted font-mono text-base tracking-widest">
-                        {d.login_pin}
-                      </code>
-                    ) : (
-                      <Input
-                        placeholder={d.pin_hash ? "Enter new PIN to replace" : "4–8 digits"}
-                        value={d._pinDraft ?? ""}
-                        onChange={(e) => update(d.id, { _pinDraft: e.target.value.replace(/\D/g, "").slice(0, 8) })}
-                      />
-                    )}
-                    {(d.pin_hash || d.login_pin) && (
+                    <Input
+                      placeholder={d.pin_hash ? "Enter new PIN to replace" : "4–8 digits"}
+                      value={d._pinDraft ?? ""}
+                      onChange={(e) => update(d.id, { _pinDraft: e.target.value.replace(/\D/g, "").slice(0, 8) })}
+                    />
+                    {d.pin_hash && (
                       <Button size="sm" variant="outline" onClick={() => clearPin(d)} title="Clear PIN">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
-                  {d.login_pin && (
-                    <Input
-                      placeholder="Type to change PIN"
-                      value={d._pinDraft ?? ""}
-                      onChange={(e) => update(d.id, { _pinDraft: e.target.value.replace(/\D/g, "").slice(0, 8) })}
-                      className="mt-1 h-8 text-xs"
-                    />
-                  )}
                 </div>
                 <div className="md:col-span-1">
                   <Label className="text-xs">Notes</Label>
