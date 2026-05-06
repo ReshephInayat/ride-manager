@@ -348,7 +348,7 @@ function DashboardInner() {
 
   const driverMap = useMemo(() => Object.fromEntries(drivers.map((d) => [d.id, d.name])), [drivers]);
 
-  // ---- PDF parse → preview modal ----
+  // ---- XLSX parse → preview modal ----
   const [previewExtracted, setPreviewExtracted] = useState(0);
   const [previewInvalid, setPreviewInvalid] = useState(0);
 
@@ -357,7 +357,7 @@ function DashboardInner() {
     try {
       const parsed = await callParser(file);
       if (!parsed?.length) {
-        toast("No rides found in the PDF.");
+        toast("No rides found in the spreadsheet.");
         return;
       }
       const valid = parsed.filter((p) => p.ride_date);
