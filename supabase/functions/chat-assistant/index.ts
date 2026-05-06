@@ -271,11 +271,18 @@ async function executeToolCall(
           name: args.name,
           phone: args.phone ?? null,
           email: args.email ?? null,
-          login_pin: args.login_pin ?? null,
         };
+        // Hash PIN if provided instead of storing plaintext
+        if (args.login_pin && typeof args.login_pin === "string" && args.login_pin.length >= 4) {
+          const encoder = new TextEncoder();
+          const data = encoder.encode(String(args.login_pin));
+          const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          row.pin_hash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+        }
         const { data, error } = await admin.from("drivers").insert(row).select("id").single();
         if (error) return `Error: ${error.message}`;
-        return `✅ Driver "${args.name}" added (ID: ${data.id}).${args.login_pin ? ` Login PIN set.` : ""}`;
+        return `✅ Driver "${args.name}" added (ID: ${data.id}).${args.login_pin ? ` Login PIN set (securely hashed).` : ""}`;
       }
 
       case "delete_ride": {
