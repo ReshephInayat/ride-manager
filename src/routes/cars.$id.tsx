@@ -87,7 +87,7 @@ function CarDetailInner() {
     if (!user) return;
     const { error } = await supabase.from("car_maintenance").insert({
       user_id: user.id, system, car_id: id,
-      type: mForm.type, description: mForm.description || null,
+      type: mForm.type as any, description: mForm.description || null,
       mileage_at_service: parseInt(mForm.mileage_at_service) || null,
       cost: parseFloat(mForm.cost) || 0,
       service_date: mForm.service_date,
