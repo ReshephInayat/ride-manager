@@ -1016,7 +1016,7 @@ function DashboardInner() {
               ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
-                    No rides match. Upload a PDF or change filters.
+                    No rides match. Upload a schedule or change filters.
                   </TableCell>
                 </TableRow>
               ) : (
