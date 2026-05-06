@@ -4,7 +4,17 @@ import { createClient } from "@supabase/supabase-js";
 export const Route = createFileRoute("/api/public/hooks/process-reminders")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
+        // Verify cron secret to prevent unauthenticated access
+        const cronSecret = process.env.CRON_SECRET;
+        const providedSecret = request.headers.get("x-cron-secret");
+        if (!cronSecret || providedSecret !== cronSecret) {
+          return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
         const url = process.env.SUPABASE_URL!;
         const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
         const sb = createClient(url, key);

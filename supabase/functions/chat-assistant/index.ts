@@ -1,11 +1,19 @@
 // Chat assistant: answers questions AND performs admin actions using the user's rides/routes/drivers/invoices data.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+const ALLOWED_ORIGINS = [
+  "https://pugetsoundlimo-ridemanager.lovable.app",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("Origin") ?? "";
+  const allowed = ALLOWED_ORIGINS.includes(origin) || origin.endsWith(".lovable.app");
+  return {
+    "Access-Control-Allow-Origin": allowed ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
 
 const adminTools = [
   {
@@ -90,7 +98,7 @@ const adminTools = [
           name: { type: "string", description: "Driver's full name" },
           phone: { type: "string", description: "Phone number" },
           email: { type: "string", description: "Email address" },
-          login_pin: { type: "string", description: "Login PIN for the driver portal (min 4 digits)" },
+          login_pin: { type: "string", description: "Login PIN for the driver portal (min 4 digits). Will be securely hashed." },
         },
         required: ["name"],
       },
@@ -263,11 +271,18 @@ async function executeToolCall(
           name: args.name,
           phone: args.phone ?? null,
           email: args.email ?? null,
-          login_pin: args.login_pin ?? null,
         };
+        // Hash PIN if provided instead of storing plaintext
+        if (args.login_pin && typeof args.login_pin === "string" && args.login_pin.length >= 4) {
+          const encoder = new TextEncoder();
+          const data = encoder.encode(String(args.login_pin));
+          const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          row.pin_hash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+        }
         const { data, error } = await admin.from("drivers").insert(row).select("id").single();
         if (error) return `Error: ${error.message}`;
-        return `✅ Driver "${args.name}" added (ID: ${data.id}).${args.login_pin ? ` Login PIN set.` : ""}`;
+        return `✅ Driver "${args.name}" added (ID: ${data.id}).${args.login_pin ? ` Login PIN set (securely hashed).` : ""}`;
       }
 
       case "delete_ride": {
@@ -313,7 +328,8 @@ async function executeToolCall(
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const cors = getCorsHeaders(req);
+  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -328,7 +344,7 @@ Deno.serve(async (req) => {
     });
     const { data: userData } = await userClient.auth.getUser(token);
     const user = userData?.user;
-    if (!user) return json({ error: "Unauthorized" }, 401);
+    if (!user) return jsonRes({ error: "Unauthorized" }, 401, cors);
 
     const { messages, system } = await req.json();
     const sys = system === "llc" ? "llc" : "api";
@@ -404,12 +420,12 @@ Deno.serve(async (req) => {
         }),
       });
 
-      if (resp.status === 429) return json({ error: "Rate limited, please wait a moment." }, 429);
-      if (resp.status === 402) return json({ error: "AI credits exhausted. Add credits in Settings → Workspace → Usage." }, 402);
+      if (resp.status === 429) return jsonRes({ error: "Rate limited, please wait a moment." }, 429, cors);
+      if (resp.status === 402) return jsonRes({ error: "AI credits exhausted. Add credits in Settings → Workspace → Usage." }, 402, cors);
       if (!resp.ok) {
         const t = await resp.text();
         console.error("AI error", resp.status, t);
-        return json({ error: "AI gateway error" }, 500);
+        return jsonRes({ error: "AI gateway error" }, 500, cors);
       }
 
       const data = await resp.json();
@@ -466,16 +482,16 @@ Deno.serve(async (req) => {
       break;
     }
 
-    return json({ reply: finalReply || "(no response)" });
+    return jsonRes({ reply: finalReply || "(no response)" }, 200, cors);
   } catch (e) {
     console.error("chat-assistant error", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return jsonRes({ error: "An internal error occurred" }, 500, getCorsHeaders(req));
   }
 });
 
-function json(body: unknown, status = 200) {
+function jsonRes(body: unknown, status = 200, headers: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...headers, "Content-Type": "application/json" },
   });
 }
