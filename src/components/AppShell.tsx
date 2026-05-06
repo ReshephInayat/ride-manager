@@ -31,12 +31,8 @@ const mgmtNav = [
   { to: "/drivers", label: "Drivers", icon: Users, group: "Management" },
   { to: "/routes", label: "Routes", icon: MapPin, group: "Management" },
 ];
-const billingNav = [
-  { to: "/invoices", label: "Invoices", icon: FileText, group: "Billing" },
-];
-const systemNav = [
-  { to: "/logs", label: "Logs", icon: ScrollText, group: "System" },
-];
+const billingNav = [{ to: "/invoices", label: "Invoices", icon: FileText, group: "Billing" }];
+const systemNav = [{ to: "/logs", label: "Logs", icon: ScrollText, group: "System" }];
 
 const allNav = [...mainNav, ...mgmtNav, ...billingNav, ...systemNav];
 
@@ -57,12 +53,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const isActive = (to: string) => loc.pathname === to || loc.pathname.startsWith(to + "/") || (to === "/dashboard" && loc.pathname.startsWith("/rides"));
+  const isActive = (to: string) =>
+    loc.pathname === to ||
+    loc.pathname.startsWith(to + "/") ||
+    (to === "/dashboard" && loc.pathname.startsWith("/rides"));
 
   return (
     <div className="min-h-screen flex bg-[#080810]">
       {/* ─── SIDEBAR (Desktop/Tablet) ─── */}
-      <aside className={`hidden md:flex flex-col fixed top-0 left-0 h-screen bg-[#08080F] border-r border-white/[0.07] z-40 transition-all duration-200 ${collapsed ? "w-16" : "w-60"}`}>
+      <aside
+        className={`hidden md:flex flex-col fixed top-0 left-0 h-screen bg-[#08080F] border-r border-white/[0.07] z-40 transition-all duration-200 ${collapsed ? "w-16" : "w-60"}`}
+      >
         {/* Logo */}
         <div className={`px-4 py-5 border-b border-white/[0.07] ${collapsed ? "flex justify-center" : ""}`}>
           {collapsed ? (
@@ -122,7 +123,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                         : "text-[#7A7A9A] hover:text-[#E2E2F0] hover:bg-white/[0.04]"
                     } ${collapsed ? "justify-center px-0" : ""}`}
                   >
-                    {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[#6C63FF]" />}
+                    {active && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[#6C63FF]" />
+                    )}
                     <I className={`h-[18px] w-[18px] shrink-0 ${collapsed ? "" : ""}`} />
                     {!collapsed && <span>{n.label}</span>}
                   </Link>
@@ -143,7 +146,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             {!collapsed && <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>}
           </button>
           <div className={`flex items-center gap-3 px-3 py-2 ${collapsed ? "justify-center px-0" : ""}`}>
-            <NotificationBell />
+            <NotificationBell /> Notification
           </div>
           {!collapsed && user && (
             <div className="px-3 py-2 flex items-center gap-2 min-w-0">
@@ -154,7 +157,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           )}
           <button
-            onClick={async () => { await signOut(); navigate({ to: "/login" }); }}
+            onClick={async () => {
+              await signOut();
+              navigate({ to: "/login" });
+            }}
             className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-[#7A7A9A] hover:text-[#EF4444] hover:bg-[#EF4444]/10 w-full transition-colors ${collapsed ? "justify-center px-0" : ""}`}
           >
             <LogOut className="h-[18px] w-[18px]" />
@@ -171,7 +177,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* ─── MAIN CONTENT ─── */}
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-200 ${collapsed ? "md:ml-16" : "md:ml-60"}`}>
+      <div
+        className={`flex-1 flex flex-col min-h-screen transition-all duration-200 ${collapsed ? "md:ml-16" : "md:ml-60"}`}
+      >
         {/* Mobile workspace switcher header */}
         <div className="md:hidden border-b border-white/[0.07] bg-[#10101C] px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -188,7 +196,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2">
             <NotificationBell />
             <button
-              onClick={async () => { await signOut(); navigate({ to: "/login" }); }}
+              onClick={async () => {
+                await signOut();
+                navigate({ to: "/login" });
+              }}
               className="p-2 rounded-lg text-[#7A7A9A] hover:text-[#EF4444] transition-colors"
             >
               <LogOut className="h-4 w-4" />
@@ -196,13 +207,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-6 page-enter">
-          {children}
-        </main>
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-6 page-enter">{children}</main>
       </div>
 
       {/* ─── BOTTOM TAB BAR (Mobile) ─── */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#08080F] border-t border-white/[0.07] z-50" style={{ height: 60 }}>
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 bg-[#08080F] border-t border-white/[0.07] z-50"
+        style={{ height: 60 }}
+      >
         <div className="flex items-center justify-around h-full px-2">
           {bottomTabs.map((tab) => {
             const active = isActive(tab.to);
@@ -217,7 +229,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 <I className="h-5 w-5" />
                 <span className="text-[10px] font-medium">{tab.label}</span>
-                {active && <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full bg-[#F5A623]" />}
+                {active && (
+                  <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full bg-[#F5A623]" />
+                )}
               </Link>
             );
           })}
@@ -241,10 +255,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-semibold text-white">More</span>
-              <button onClick={() => setMoreOpen(false)} className="p-1 text-[#7A7A9A]"><X className="h-5 w-5" /></button>
+              <button onClick={() => setMoreOpen(false)} className="p-1 text-[#7A7A9A]">
+                <X className="h-5 w-5" />
+              </button>
             </div>
             <div className="space-y-1">
-              {[...mgmtNav.filter(n => n.to !== "/drivers"), ...billingNav.filter(n => n.to !== "/invoices"), ...systemNav].map((n) => {
+              {[
+                ...mgmtNav.filter((n) => n.to !== "/drivers"),
+                ...billingNav.filter((n) => n.to !== "/invoices"),
+                ...systemNav,
+              ].map((n) => {
                 const I = n.icon;
                 const active = isActive(n.to);
                 return (
