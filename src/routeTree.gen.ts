@@ -9,8 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PayoutsRouteImport } from './routes/payouts'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as FlightsRouteImport } from './routes/flights'
 import { Route as DriversRouteImport } from './routes/drivers'
 import { Route as DriverRouteImport } from './routes/driver'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -18,13 +20,20 @@ import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RoutesIndexRouteImport } from './routes/routes.index'
 import { Route as InvoicesIndexRouteImport } from './routes/invoices.index'
+import { Route as CarsIndexRouteImport } from './routes/cars.index'
 import { Route as RoutesIdRouteImport } from './routes/routes.$id'
 import { Route as RidesIdRouteImport } from './routes/rides.$id'
 import { Route as InvoicesIdRouteImport } from './routes/invoices.$id'
+import { Route as CarsIdRouteImport } from './routes/cars.$id'
 import { Route as InvoicePublicTokenRouteImport } from './routes/invoice.public.$token'
 import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
 import { Route as ApiPublicHooksNotifyAssignmentRouteImport } from './routes/api/public/hooks/notify-assignment'
 
+const PayoutsRoute = PayoutsRouteImport.update({
+  id: '/payouts',
+  path: '/payouts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LogsRoute = LogsRouteImport.update({
   id: '/logs',
   path: '/logs',
@@ -33,6 +42,11 @@ const LogsRoute = LogsRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FlightsRoute = FlightsRouteImport.update({
+  id: '/flights',
+  path: '/flights',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DriversRoute = DriversRouteImport.update({
@@ -70,6 +84,11 @@ const InvoicesIndexRoute = InvoicesIndexRouteImport.update({
   path: '/invoices/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CarsIndexRoute = CarsIndexRouteImport.update({
+  id: '/cars/',
+  path: '/cars/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoutesIdRoute = RoutesIdRouteImport.update({
   id: '/routes/$id',
   path: '/routes/$id',
@@ -83,6 +102,11 @@ const RidesIdRoute = RidesIdRouteImport.update({
 const InvoicesIdRoute = InvoicesIdRouteImport.update({
   id: '/invoices/$id',
   path: '/invoices/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CarsIdRoute = CarsIdRouteImport.update({
+  id: '/cars/$id',
+  path: '/cars/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InvoicePublicTokenRoute = InvoicePublicTokenRouteImport.update({
@@ -109,11 +133,15 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/driver': typeof DriverRoute
   '/drivers': typeof DriversRoute
+  '/flights': typeof FlightsRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
+  '/payouts': typeof PayoutsRoute
+  '/cars/$id': typeof CarsIdRoute
   '/invoices/$id': typeof InvoicesIdRoute
   '/rides/$id': typeof RidesIdRoute
   '/routes/$id': typeof RoutesIdRoute
+  '/cars/': typeof CarsIndexRoute
   '/invoices/': typeof InvoicesIndexRoute
   '/routes/': typeof RoutesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
@@ -126,11 +154,15 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/driver': typeof DriverRoute
   '/drivers': typeof DriversRoute
+  '/flights': typeof FlightsRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
+  '/payouts': typeof PayoutsRoute
+  '/cars/$id': typeof CarsIdRoute
   '/invoices/$id': typeof InvoicesIdRoute
   '/rides/$id': typeof RidesIdRoute
   '/routes/$id': typeof RoutesIdRoute
+  '/cars': typeof CarsIndexRoute
   '/invoices': typeof InvoicesIndexRoute
   '/routes': typeof RoutesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
@@ -144,11 +176,15 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/driver': typeof DriverRoute
   '/drivers': typeof DriversRoute
+  '/flights': typeof FlightsRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
+  '/payouts': typeof PayoutsRoute
+  '/cars/$id': typeof CarsIdRoute
   '/invoices/$id': typeof InvoicesIdRoute
   '/rides/$id': typeof RidesIdRoute
   '/routes/$id': typeof RoutesIdRoute
+  '/cars/': typeof CarsIndexRoute
   '/invoices/': typeof InvoicesIndexRoute
   '/routes/': typeof RoutesIndexRoute
   '/invoice/public/$token': typeof InvoicePublicTokenRoute
@@ -163,11 +199,15 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/driver'
     | '/drivers'
+    | '/flights'
     | '/login'
     | '/logs'
+    | '/payouts'
+    | '/cars/$id'
     | '/invoices/$id'
     | '/rides/$id'
     | '/routes/$id'
+    | '/cars/'
     | '/invoices/'
     | '/routes/'
     | '/invoice/public/$token'
@@ -180,11 +220,15 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/driver'
     | '/drivers'
+    | '/flights'
     | '/login'
     | '/logs'
+    | '/payouts'
+    | '/cars/$id'
     | '/invoices/$id'
     | '/rides/$id'
     | '/routes/$id'
+    | '/cars'
     | '/invoices'
     | '/routes'
     | '/invoice/public/$token'
@@ -197,11 +241,15 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/driver'
     | '/drivers'
+    | '/flights'
     | '/login'
     | '/logs'
+    | '/payouts'
+    | '/cars/$id'
     | '/invoices/$id'
     | '/rides/$id'
     | '/routes/$id'
+    | '/cars/'
     | '/invoices/'
     | '/routes/'
     | '/invoice/public/$token'
@@ -215,11 +263,15 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   DriverRoute: typeof DriverRoute
   DriversRoute: typeof DriversRoute
+  FlightsRoute: typeof FlightsRoute
   LoginRoute: typeof LoginRoute
   LogsRoute: typeof LogsRoute
+  PayoutsRoute: typeof PayoutsRoute
+  CarsIdRoute: typeof CarsIdRoute
   InvoicesIdRoute: typeof InvoicesIdRoute
   RidesIdRoute: typeof RidesIdRoute
   RoutesIdRoute: typeof RoutesIdRoute
+  CarsIndexRoute: typeof CarsIndexRoute
   InvoicesIndexRoute: typeof InvoicesIndexRoute
   RoutesIndexRoute: typeof RoutesIndexRoute
   InvoicePublicTokenRoute: typeof InvoicePublicTokenRoute
@@ -229,6 +281,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/payouts': {
+      id: '/payouts'
+      path: '/payouts'
+      fullPath: '/payouts'
+      preLoaderRoute: typeof PayoutsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/logs': {
       id: '/logs'
       path: '/logs'
@@ -241,6 +300,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/flights': {
+      id: '/flights'
+      path: '/flights'
+      fullPath: '/flights'
+      preLoaderRoute: typeof FlightsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/drivers': {
@@ -292,6 +358,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvoicesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cars/': {
+      id: '/cars/'
+      path: '/cars'
+      fullPath: '/cars/'
+      preLoaderRoute: typeof CarsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/routes/$id': {
       id: '/routes/$id'
       path: '/routes/$id'
@@ -311,6 +384,13 @@ declare module '@tanstack/react-router' {
       path: '/invoices/$id'
       fullPath: '/invoices/$id'
       preLoaderRoute: typeof InvoicesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cars/$id': {
+      id: '/cars/$id'
+      path: '/cars/$id'
+      fullPath: '/cars/$id'
+      preLoaderRoute: typeof CarsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/invoice/public/$token': {
@@ -343,11 +423,15 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   DriverRoute: DriverRoute,
   DriversRoute: DriversRoute,
+  FlightsRoute: FlightsRoute,
   LoginRoute: LoginRoute,
   LogsRoute: LogsRoute,
+  PayoutsRoute: PayoutsRoute,
+  CarsIdRoute: CarsIdRoute,
   InvoicesIdRoute: InvoicesIdRoute,
   RidesIdRoute: RidesIdRoute,
   RoutesIdRoute: RoutesIdRoute,
+  CarsIndexRoute: CarsIndexRoute,
   InvoicesIndexRoute: InvoicesIndexRoute,
   RoutesIndexRoute: RoutesIndexRoute,
   InvoicePublicTokenRoute: InvoicePublicTokenRoute,
