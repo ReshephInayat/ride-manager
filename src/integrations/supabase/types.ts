@@ -543,32 +543,19 @@ export type Database = {
         Args: { _driver_id: string; _pin: string }
         Returns: undefined
       }
-      driver_login:
-        | {
-            Args: {
-              _pin: string
-              _system: Database["public"]["Enums"]["workspace_system"]
-            }
-            Returns: {
-              id: string
-              name: string
-              system: Database["public"]["Enums"]["workspace_system"]
-              user_id: string
-            }[]
-          }
-        | {
-            Args: {
-              _client_key?: string
-              _pin: string
-              _system: Database["public"]["Enums"]["workspace_system"]
-            }
-            Returns: {
-              id: string
-              name: string
-              system: Database["public"]["Enums"]["workspace_system"]
-              user_id: string
-            }[]
-          }
+      driver_login: {
+        Args: {
+          _client_key?: string
+          _pin: string
+          _system: Database["public"]["Enums"]["workspace_system"]
+        }
+        Returns: {
+          id: string
+          name: string
+          system: Database["public"]["Enums"]["workspace_system"]
+          user_id: string
+        }[]
+      }
       driver_mark_notifications_read: {
         Args: { _driver_id: string; _pin: string }
         Returns: undefined
@@ -682,6 +669,48 @@ export type Database = {
           to: "rides"
           isOneToOne: true
           isSetofReturn: false
+        }
+      }
+      get_invoice_by_token: {
+        Args: { _token: string }
+        Returns: {
+          bill_to: string
+          created_at: string
+          id: string
+          invoice_number: string
+          notes: string | null
+          period_end: string | null
+          period_start: string | null
+          public_token: string | null
+          sales_tax_amount: number
+          sales_tax_rate: number
+          status: Database["public"]["Enums"]["invoice_status"]
+          subtotal: number
+          system: Database["public"]["Enums"]["workspace_system"]
+          total: number
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_invoice_items_by_token: {
+        Args: { _token: string }
+        Returns: {
+          amount: number
+          description: string
+          id: string
+          invoice_id: string
+          ride_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "invoice_items"
+          isOneToOne: false
+          isSetofReturn: true
         }
       }
       log_activity: {
