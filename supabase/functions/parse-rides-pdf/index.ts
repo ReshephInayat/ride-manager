@@ -194,16 +194,16 @@ ${String(pageText).slice(0, 12000)}`;
     }
 
     console.log(`[parse-rides-pdf] Success: extracted ${parsed.rides?.length ?? 0} rides`);
-    return json({ rides: parsed.rides ?? [] });
+    return jsonRes({ rides: parsed.rides ?? [] }, 200, cors);
   } catch (err) {
     console.error("[parse-rides-pdf] Unhandled error:", err);
-    return json({ error: String(err) }, 500);
+    return jsonRes({ error: "Processing failed" }, 500, cors);
   }
 });
 
-function json(body: unknown, status = 200) {
+function jsonRes(body: unknown, status = 200, headers: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...headers, "Content-Type": "application/json" },
   });
 }
