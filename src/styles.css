@@ -246,7 +246,7 @@
 
   /* Backdrop blur overlay */
   .backdrop-luxury {
-    background: color-mix(in srgb, var(--background) 70%, transparent);
+    background: rgba(8,8,16,0.7);
     backdrop-filter: blur(12px);
   }
 
