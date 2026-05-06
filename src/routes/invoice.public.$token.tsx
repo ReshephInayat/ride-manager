@@ -30,18 +30,19 @@ function PublicInvoice() {
 
   useEffect(() => {
     (async () => {
-      // Use anonymous client (no session). RLS blocks reads; we expose via a
-      // separate fetch that filters by token through a public RPC-less path.
-      // Workaround: an authenticated user opening the link will see the data
-      // through their own RLS, otherwise we show a friendly message.
       const url = import.meta.env.VITE_SUPABASE_URL;
       const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const sb = createClient(url, key);
-      const { data, error } = await sb.from("invoices").select("*").eq("public_token", token).maybeSingle();
-      if (error) setErr(error.message);
-      if (data) {
-        setInv(data as Inv);
-        const { data: it } = await sb.from("invoice_items").select("*").eq("invoice_id", (data as Inv).id);
+      // Use secure RPC that requires the exact token (no open RLS policy)
+      const { data, error } = await sb.rpc("get_invoice_by_token", { _token: token });
+      if (error) {
+        console.error("Invoice load failed");
+        setErr("Unable to load invoice");
+      }
+      const invoice = Array.isArray(data) ? data[0] : data;
+      if (invoice) {
+        setInv(invoice as Inv);
+        const { data: it } = await sb.rpc("get_invoice_items_by_token", { _token: token });
         setItems((it as Item[]) ?? []);
       }
       setLoading(false);
