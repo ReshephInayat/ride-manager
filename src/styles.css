@@ -154,10 +154,10 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: var(--color-muted);
+    background: #2A2A3F;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--color-primary);
+    background: #6C63FF;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -168,8 +168,8 @@
 /* Utility classes */
 @layer utilities {
   .luxury-card {
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
+    background: #10101C;
+    border: 1px solid rgba(255,255,255,0.07);
     border-radius: 16px;
   }
 
