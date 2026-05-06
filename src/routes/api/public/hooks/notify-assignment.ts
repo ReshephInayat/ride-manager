@@ -1,19 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 
-// Called from the admin UI whenever a driver is assigned (or reassigned) to a
-// ride. Sends an SMS to the driver and writes an in-app notification for the
-// admin who owns the ride.
 export const Route = createFileRoute("/api/public/hooks/notify-assignment")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         let payload: { ride_id?: string } = {};
+
         try {
           payload = (await request.json()) as { ride_id?: string };
         } catch {
           return jsonError("invalid_json", 400);
         }
+
         const rideId = payload.ride_id;
         if (!rideId || typeof rideId !== "string") {
           return jsonError("missing_ride_id", 400);
@@ -22,12 +21,13 @@ export const Route = createFileRoute("/api/public/hooks/notify-assignment")({
         const url = process.env.SUPABASE_URL;
         const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
         if (!url || !key) return jsonError("server_misconfigured", 500);
+
         const sb = createClient(url, key);
 
         const { data: ride, error } = await sb
           .from("rides")
           .select(
-            "id, user_id, system, ride_date, pickup_time, pickup_location, pickup_from, dropoff_location, dropoff_to, department, riders, passenger_name, flight_number, phone, notes, amount, driver_id, drivers:driver_id(name, phone, email)"
+            "id, user_id, system, ride_date, pickup_time, pickup_location, pickup_from, dropoff_location, dropoff_to, department, riders, passenger_name, flight_number, phone, notes, amount, driver_id, drivers:driver_id(name, phone, email)",
           )
           .eq("id", rideId)
           .maybeSingle();
@@ -37,10 +37,13 @@ export const Route = createFileRoute("/api/public/hooks/notify-assignment")({
         if (!ride.driver_id) return jsonError("ride_has_no_driver", 400);
 
         const driver = Array.isArray(ride.drivers) ? ride.drivers[0] : ride.drivers;
+
         const driverName = driver?.name ?? "Driver";
 
-        const title = `New ride assigned — ${ride.ride_date} ${ride.pickup_time ?? ""}`.trim();
-        const lines = [
+        // -------------------------------
+        // FULL ADMIN NOTIFICATION BODY
+        // -------------------------------
+        const fullBodyLines = [
           `Driver: ${driverName}`,
           `Date/time: ${ride.ride_date}${ride.pickup_time ? ` at ${ride.pickup_time}` : ""}`,
           ride.passenger_name ? `Passenger: ${ride.passenger_name}` : null,
@@ -52,9 +55,12 @@ export const Route = createFileRoute("/api/public/hooks/notify-assignment")({
           `Dropoff: ${ride.dropoff_location ?? ""}${ride.dropoff_to ? ` (${ride.dropoff_to})` : ""}`,
           ride.notes ? `Notes: ${ride.notes}` : null,
         ].filter(Boolean);
-        const body = lines.join(" • ");
 
-        // In-app notification for the admin (so admin sees confirmation in bell drawer)
+        const adminBody = fullBodyLines.join(" | ");
+
+        // -------------------------------
+        // IN-APP NOTIFICATION
+        // -------------------------------
         await sb.from("notifications").insert({
           user_id: ride.user_id,
           system: ride.system ?? "api",
@@ -62,14 +68,47 @@ export const Route = createFileRoute("/api/public/hooks/notify-assignment")({
           ride_id: ride.id,
           kind: "assignment",
           title: `Assigned to ${driverName}`,
-          body,
+          body: adminBody,
         });
 
-        // SMS the driver
-        let sms: { sent: boolean; reason?: string } = { sent: false, reason: "no_phone" };
+        // -------------------------------
+        // OPTIMIZED SMS BUILDER
+        // -------------------------------
+        function buildSms(ride: any, driverName: string) {
+          const pickup = `${ride.pickup_location ?? ""}${ride.pickup_from ? ` (${ride.pickup_from})` : ""}`;
+
+          const dropoff = `${ride.dropoff_location ?? ""}${ride.dropoff_to ? ` (${ride.dropoff_to})` : ""}`;
+
+          const time = `${ride.ride_date}${ride.pickup_time ? ` ${ride.pickup_time}` : ""}`;
+
+          return [
+            `Ride: ${ride.flight_number ?? ride.id}`,
+            `Driver: ${driverName}`,
+            `Pickup: ${pickup}`,
+            `Dropoff: ${dropoff}`,
+            `Pax: ${ride.riders ?? "-"}`,
+            `Time: ${time}`,
+          ]
+            .filter(Boolean)
+            .join(" | ")
+            .replace(/•/g, "|")
+            .replace(/—/g, "-");
+        }
+
+        // -------------------------------
+        // SMS SENDING
+        // -------------------------------
+        let sms: { sent: boolean; reason?: string } = {
+          sent: false,
+          reason: "no_phone",
+        };
+
         if (driver?.phone) {
           try {
-            await sendSms(driver.phone, `${title}\n${body}`.slice(0, 600));
+            const smsBody = buildSms(ride, driverName);
+
+            await sendSms(driver.phone, smsBody);
+
             sms = { sent: true };
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
@@ -86,6 +125,9 @@ export const Route = createFileRoute("/api/public/hooks/notify-assignment")({
   },
 });
 
+// -------------------------------
+// ERROR HELPER
+// -------------------------------
 function jsonError(message: string, status: number): Response {
   return new Response(JSON.stringify({ ok: false, error: message }), {
     status,
@@ -93,10 +135,14 @@ function jsonError(message: string, status: number): Response {
   });
 }
 
+// -------------------------------
+// TWILIO SENDER
+// -------------------------------
 async function sendSms(to: string, body: string): Promise<void> {
   const lovableKey = process.env.LOVABLE_API_KEY;
   const twilioKey = process.env.TWILIO_API_KEY;
   const from = process.env.TWILIO_FROM_NUMBER;
+
   if (!lovableKey) throw new Error("LOVABLE_API_KEY not configured");
   if (!twilioKey) throw new Error("TWILIO_API_KEY not configured");
   if (!from) throw new Error("TWILIO_FROM_NUMBER not configured");
@@ -108,8 +154,13 @@ async function sendSms(to: string, body: string): Promise<void> {
       "X-Connection-Api-Key": twilioKey,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: new URLSearchParams({ To: to, From: from, Body: body }),
+    body: new URLSearchParams({
+      To: to,
+      From: from,
+      Body: body,
+    }),
   });
+
   if (!res.ok) {
     const txt = await res.text();
     throw new Error(`Twilio ${res.status}: ${txt}`);
