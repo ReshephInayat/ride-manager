@@ -1224,6 +1224,7 @@ function DashboardInner() {
                   <TableHead>Department</TableHead>
                   <TableHead>Pickup</TableHead>
                   <TableHead>Dropoff</TableHead>
+                  <TableHead>Flight</TableHead>
                   <TableHead>Riders</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1242,8 +1243,9 @@ function DashboardInner() {
                     </TableCell>
                     <TableCell className="text-xs">
                       <div className="font-medium">{row.data.dropoff_location}</div>
-                      <div className="text-muted-foreground">{row.data.dropoff_to}</div>
+                      <div className="text-muted-foreground">{stripTrailingTime(row.data.dropoff_to) || row.data.dropoff_to}</div>
                     </TableCell>
+                    <TableCell className="text-xs font-medium">{row.data.flight_number}</TableCell>
                     <TableCell>{row.data.riders ?? 1}</TableCell>
                   </TableRow>
                 ))}
