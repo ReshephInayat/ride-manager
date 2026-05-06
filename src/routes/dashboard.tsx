@@ -348,7 +348,7 @@ function DashboardInner() {
 
   const driverMap = useMemo(() => Object.fromEntries(drivers.map((d) => [d.id, d.name])), [drivers]);
 
-  // ---- PDF parse → preview modal ----
+  // ---- XLSX parse → preview modal ----
   const [previewExtracted, setPreviewExtracted] = useState(0);
   const [previewInvalid, setPreviewInvalid] = useState(0);
 
@@ -357,7 +357,7 @@ function DashboardInner() {
     try {
       const parsed = await callParser(file);
       if (!parsed?.length) {
-        toast("No rides found in the PDF.");
+        toast("No rides found in the spreadsheet.");
         return;
       }
       const valid = parsed.filter((p) => p.ride_date);
@@ -800,31 +800,31 @@ function DashboardInner() {
           <h1 className="text-3xl font-bold">Rides</h1>
           <p className="text-muted-foreground mt-1">
             <span className="font-medium text-foreground">{label}</span> —{" "}
-            {system === "api"
-              ? "upload hotel schedule PDFs, review extracted rides, then import."
-              : "add rides manually using your saved routes & prices."}
-          </p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" onClick={() => setManualOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Add ride
-          </Button>
-          {system === "api" && (
-            <>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="application/pdf"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleUpload(f);
-                }}
-              />
-              <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
-                {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-                {uploading ? "Reading PDF…" : "Upload PDF"}
-              </Button>
+             {system === "api"
+               ? "upload Horizon Air schedule spreadsheets, review extracted rides, then import."
+               : "add rides manually using your saved routes & prices."}
+           </p>
+         </div>
+         <div className="flex gap-2 flex-wrap">
+           <Button variant="outline" onClick={() => setManualOpen(true)}>
+             <Plus className="h-4 w-4 mr-2" /> Add ride
+           </Button>
+           {system === "api" && (
+             <>
+               <input
+                 ref={fileRef}
+                 type="file"
+                 accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                 className="hidden"
+                 onChange={(e) => {
+                   const f = e.target.files?.[0];
+                   if (f) handleUpload(f);
+                 }}
+               />
+               <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
+                 {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                 {uploading ? "Reading spreadsheet…" : "Upload Schedule"}
+               </Button>
             </>
           )}
         </div>
@@ -1016,7 +1016,7 @@ function DashboardInner() {
               ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
-                    No rides match. Upload a PDF or change filters.
+                    No rides match. Upload a schedule or change filters.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -1192,14 +1192,14 @@ function DashboardInner() {
           />
         )}
 
-      {/* PDF Preview Modal */}
+      {/* Schedule Preview Modal */}
       <Dialog open={!!previewRows} onOpenChange={(o) => !o && setPreviewRows(null)}>
         <DialogContent className="max-w-5xl">
           <DialogHeader>
             <DialogTitle>Review extracted rides — {previewFile}</DialogTitle>
           </DialogHeader>
           <div className="text-sm text-muted-foreground">
-            Extracted <span className="font-semibold text-foreground">{previewExtracted}</span> rows from PDF •{" "}
+            Extracted <span className="font-semibold text-foreground">{previewExtracted}</span> rows from spreadsheet •{" "}
             <span className="font-semibold text-foreground">{previewRows?.length ?? 0}</span> ready to import
             {previewInvalid > 0 ? (
               <>

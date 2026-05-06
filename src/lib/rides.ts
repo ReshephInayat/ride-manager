@@ -174,93 +174,103 @@ export function buildRideKey(
   ].join("|");
 }
 
-interface PdfPageText {
-  pageNumber: number;
-  totalPages: number;
-  text: string;
+// ---- XLSX parser (no AI, deterministic) ----
+
+const FLIGHT_RE = /^([A-Z]{2}\s*\d{3,4})/;
+
+function extractFlight(val: string | null | undefined): string | null {
+  if (!val) return null;
+  const m = String(val).trim().match(FLIGHT_RE);
+  return m ? m[1].replace(/\s+/g, " ") : null;
 }
 
-function isPdfTextItem(item: unknown): item is { str: string; hasEOL?: boolean } {
-  return typeof item === "object" && item !== null && "str" in item;
+function parsePickupTime(val: string | null | undefined): string | null {
+  if (!val) return null;
+  const s = String(val).trim();
+  // "01 May 07:35" → "07:35"
+  const m = s.match(/(\d{1,2}:\d{2})\s*$/);
+  return m ? m[1] : null;
 }
 
-async function extractPdfPagesText(file: File): Promise<PdfPageText[]> {
-  const pdfjsLib = await import("pdfjs-dist");
-  const pdfWorker = await import("pdfjs-dist/build/pdf.worker.mjs?url");
-  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker.default;
+function parseDateCell(val: string | null | undefined): string | null {
+  if (!val) return null;
+  const s = String(val).trim();
+  // "01-May-2026" → "2026-05-01"
+  const m = s.match(/^(\d{1,2})-([A-Za-z]+)-(\d{4})$/);
+  if (!m) return null;
+  const day = m[1].padStart(2, "0");
+  const months: Record<string, string> = {
+    jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+    jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
+  };
+  const mon = months[m[2].toLowerCase().slice(0, 3)];
+  if (!mon) return null;
+  return `${m[3]}-${mon}-${day}`;
+}
 
+export async function callParser(file: File): Promise<Array<Partial<Ride>>> {
+  const XLSX = await import("xlsx");
   const bytes = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-  const pages: PdfPageText[] = [];
+  const wb = XLSX.read(bytes, { type: "array" });
 
-  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-    const page = await pdf.getPage(pageNumber);
-    const content = await page.getTextContent();
-    const text = content.items
-      .map((item) => (isPdfTextItem(item) ? `${item.str}${item.hasEOL ? "\n" : " "}` : ""))
-      .join("")
-      .replace(/[ \t]+/g, " ")
-      .replace(/\n\s+/g, "\n")
-      .trim();
-    pages.push({ pageNumber, totalPages: pdf.numPages, text });
-  }
-
-  return pages;
-}
-
-async function callParserText(page: PdfPageText, fileName: string, documentContext: string) {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const token = sessionData.session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-rides-pdf`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        fileName,
-        pageNumber: page.pageNumber,
-        totalPages: page.totalPages,
-        pageText: page.text,
-        documentContext,
-      }),
-    },
-  );
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!response.ok) {
-    throw new Error(data?.message ?? data?.error ?? `PDF import failed (${response.status}).`);
-  }
-  if (data?.error) throw new Error(data.error);
-  return (data?.rides ?? []) as Array<Partial<Ride>>;
-}
-
-export async function callParser(file: File) {
-  const pages = await extractPdfPagesText(file);
-  const readablePages = pages.filter((page) => page.text.length > 40);
-  if (!readablePages.length) {
-    throw new Error("Could not read text from this PDF. Please upload a text-based schedule PDF.");
-  }
-
-  const documentContext = pages
-    .map((page) => page.text)
-    .join("\n")
-    .slice(0, 4000);
-
-  // Parse pages in parallel batches of 4 for speed
-  const CONCURRENCY = 4;
   const rides: Array<Partial<Ride>> = [];
-  for (let i = 0; i < readablePages.length; i += CONCURRENCY) {
-    const batch = readablePages.slice(i, i + CONCURRENCY);
-    const results = await Promise.all(
-      batch.map((page) => callParserText(page, file.name, documentContext)),
-    );
-    for (const chunkRides of results) {
-      rides.push(...chunkRides);
+
+  for (const sheetName of wb.SheetNames) {
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json<(string | number | null)[]>(ws, { header: 1 });
+
+    let currentDate: string | null = null;
+    let dataStarted = false;
+
+    for (const row of rows) {
+      if (!row || row.length < 15) continue;
+
+      // Detect header row to know data section started
+      const col2 = row[2] != null ? String(row[2]).trim() : "";
+      if (col2 === "DATE") {
+        dataStarted = true;
+        continue;
+      }
+      if (!dataStarted) continue;
+
+      // Stop at end marker
+      if (col2.startsWith("***")) break;
+
+      // Date carry-down
+      const parsedDate = parseDateCell(col2);
+      if (parsedDate) currentDate = parsedDate;
+      if (!currentDate) continue;
+
+      // Must have riders column
+      const ridersRaw = row[10];
+      if (ridersRaw == null || ridersRaw === "") continue;
+      const riders = parseInt(String(ridersRaw), 10) || 1;
+
+      const pickupLocation = row[12] != null ? String(row[12]).trim() : null;
+      const pickupFrom = row[14] != null ? String(row[14]).trim() : null;
+      const pickupDateTime = row[24] != null ? String(row[24]).trim() : null;
+      const dropoffLocation = row[28] != null ? String(row[28]).trim() : null;
+      const dropoffTo = row[32] != null ? String(row[32]).trim() : null;
+      const department = row[7] != null ? String(row[7]).trim() : null;
+
+      const pickupTime = parsePickupTime(pickupDateTime);
+
+      // Extract flight number from whichever field has it
+      const flightNumber = extractFlight(pickupFrom) || extractFlight(dropoffTo);
+
+      rides.push({
+        ride_date: currentDate,
+        department,
+        riders,
+        pickup_location: pickupLocation || null,
+        pickup_from: null,
+        pickup_time: pickupTime,
+        dropoff_location: dropoffLocation || null,
+        dropoff_to: null,
+        flight_number: flightNumber,
+      });
     }
   }
+
   return rides;
 }
