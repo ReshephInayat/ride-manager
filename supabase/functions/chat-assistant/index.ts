@@ -420,12 +420,12 @@ Deno.serve(async (req) => {
         }),
       });
 
-      if (resp.status === 429) return json({ error: "Rate limited, please wait a moment." }, 429);
-      if (resp.status === 402) return json({ error: "AI credits exhausted. Add credits in Settings → Workspace → Usage." }, 402);
+      if (resp.status === 429) return jsonRes({ error: "Rate limited, please wait a moment." }, 429, cors);
+      if (resp.status === 402) return jsonRes({ error: "AI credits exhausted. Add credits in Settings → Workspace → Usage." }, 402, cors);
       if (!resp.ok) {
         const t = await resp.text();
         console.error("AI error", resp.status, t);
-        return json({ error: "AI gateway error" }, 500);
+        return jsonRes({ error: "AI gateway error" }, 500, cors);
       }
 
       const data = await resp.json();
