@@ -3,6 +3,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  loadDashboardData, updateRideStatus, updateRideRoute, updateRideDriver,
+  deleteRide as deleteRideServer, deleteRides as deleteRidesServer,
+  completeRides as completeRidesServer, insertRide as insertRideServer,
+  upsertRides as upsertRidesServer, createInvoiceServer, getInvoiceCount,
+  loadDriverLocations,
+} from "@/server/admin.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
