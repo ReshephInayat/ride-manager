@@ -155,7 +155,7 @@ function CarDetailInner() {
 
   const deleteRecord = async (table: string, recordId: string) => {
     if (!confirm("Delete this record?")) return;
-    const { error } = await supabase.from(table).delete().eq("id", recordId);
+    const { error } = await (supabase.from(table as any) as any).delete().eq("id", recordId);
     if (error) toast.error(error.message);
     else { toast.success("Deleted"); load(); }
   };
