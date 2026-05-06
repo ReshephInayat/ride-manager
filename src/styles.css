@@ -168,8 +168,8 @@
 /* Utility classes */
 @layer utilities {
   .luxury-card {
-    background: #10101C;
-    border: 1px solid rgba(255,255,255,0.07);
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
     border-radius: 16px;
   }
 
