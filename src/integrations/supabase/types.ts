@@ -153,13 +153,39 @@ export type Database = {
           },
         ]
       }
+      driver_sessions: {
+        Row: {
+          created_at: string
+          driver_id: string
+          expires_at: string
+          id: string
+          system: Database["public"]["Enums"]["workspace_system"]
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          expires_at?: string
+          id?: string
+          system?: Database["public"]["Enums"]["workspace_system"]
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          expires_at?: string
+          id?: string
+          system?: Database["public"]["Enums"]["workspace_system"]
+          token?: string
+        }
+        Relationships: []
+      }
       drivers: {
         Row: {
           active: boolean
           created_at: string
           email: string | null
           id: string
-          login_pin: string | null
           name: string
           notes: string | null
           phone: string | null
@@ -172,7 +198,6 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
-          login_pin?: string | null
           name: string
           notes?: string | null
           phone?: string | null
@@ -185,7 +210,6 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
-          login_pin?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
@@ -539,8 +563,16 @@ export type Database = {
         Args: { _driver_id: string; _pin: string }
         Returns: undefined
       }
+      driver_clear_location_by_token: {
+        Args: { _token: string }
+        Returns: undefined
+      }
       driver_delete_notifications: {
         Args: { _driver_id: string; _pin: string }
+        Returns: undefined
+      }
+      driver_delete_notifications_by_token: {
+        Args: { _token: string }
         Returns: undefined
       }
       driver_login: {
@@ -556,12 +588,50 @@ export type Database = {
           user_id: string
         }[]
       }
+      driver_login_with_token: {
+        Args: {
+          _client_key?: string
+          _pin: string
+          _system: Database["public"]["Enums"]["workspace_system"]
+        }
+        Returns: {
+          driver_id: string
+          driver_name: string
+          driver_system: Database["public"]["Enums"]["workspace_system"]
+          session_token: string
+        }[]
+      }
       driver_mark_notifications_read: {
         Args: { _driver_id: string; _pin: string }
         Returns: undefined
       }
+      driver_mark_read_by_token: {
+        Args: { _token: string }
+        Returns: undefined
+      }
       driver_notifications: {
         Args: { _driver_id: string; _pin: string }
+        Returns: {
+          body: string | null
+          created_at: string
+          driver_id: string | null
+          id: string
+          kind: string
+          read: boolean
+          ride_id: string | null
+          system: Database["public"]["Enums"]["workspace_system"]
+          title: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notifications"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      driver_notifications_by_token: {
+        Args: { _token: string }
         Returns: {
           body: string | null
           created_at: string
@@ -617,6 +687,42 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      driver_rides_by_token: {
+        Args: { _token: string }
+        Returns: {
+          amount: number
+          created_at: string
+          dedupe_key: string | null
+          department: string | null
+          driver_id: string | null
+          dropoff_location: string | null
+          dropoff_to: string | null
+          flight_number: string | null
+          id: string
+          notes: string | null
+          passenger_email: string | null
+          passenger_name: string | null
+          phone: string | null
+          pickup_from: string | null
+          pickup_location: string | null
+          pickup_time: string | null
+          ride_date: string
+          ride_key: string
+          riders: number
+          route_id: string | null
+          source_file: string | null
+          status: Database["public"]["Enums"]["ride_status"]
+          system: Database["public"]["Enums"]["workspace_system"]
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "rides"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       driver_update_location: {
         Args: {
           _accuracy?: number
@@ -627,6 +733,18 @@ export type Database = {
           _pin: string
           _ride_id: string
           _speed?: number
+        }
+        Returns: undefined
+      }
+      driver_update_location_by_token: {
+        Args: {
+          _accuracy?: number
+          _heading?: number
+          _lat: number
+          _lng: number
+          _ride_id: string
+          _speed?: number
+          _token: string
         }
         Returns: undefined
       }
@@ -667,6 +785,67 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "rides"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      driver_update_status_by_token: {
+        Args: {
+          _ride_id: string
+          _status: Database["public"]["Enums"]["ride_status"]
+          _token: string
+        }
+        Returns: {
+          amount: number
+          created_at: string
+          dedupe_key: string | null
+          department: string | null
+          driver_id: string | null
+          dropoff_location: string | null
+          dropoff_to: string | null
+          flight_number: string | null
+          id: string
+          notes: string | null
+          passenger_email: string | null
+          passenger_name: string | null
+          phone: string | null
+          pickup_from: string | null
+          pickup_location: string | null
+          pickup_time: string | null
+          ride_date: string
+          ride_key: string
+          riders: number
+          route_id: string | null
+          source_file: string | null
+          status: Database["public"]["Enums"]["ride_status"]
+          system: Database["public"]["Enums"]["workspace_system"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rides"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      driver_validate_session: {
+        Args: { _token: string }
+        Returns: {
+          active: boolean
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          pin_hash: string | null
+          system: Database["public"]["Enums"]["workspace_system"]
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "drivers"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -725,6 +904,10 @@ export type Database = {
           _title: string
           _user_id: string
         }
+        Returns: undefined
+      }
+      log_invoice_access: {
+        Args: { _ip?: string; _token: string }
         Returns: undefined
       }
       normalize_ride_key_text: { Args: { _value: string }; Returns: string }
