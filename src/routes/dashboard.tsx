@@ -800,30 +800,31 @@ function DashboardInner() {
           <h1 className="text-3xl font-bold">Rides</h1>
           <p className="text-muted-foreground mt-1">
             <span className="font-medium text-foreground">{label}</span> —{" "}
-            {system === "api"
-              ? "upload hotel schedule PDFs, review extracted rides, then import."
-              : "add rides manually using your saved routes & prices."}
-          </p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" onClick={() => setManualOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Add ride
-          </Button>
-          {system === "api" && (
-            <>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="application/pdf"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleUpload(f);
-                }}
-              />
-              <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
-                {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-                {uploading ? "Reading PDF…" : "Upload PDF"}
+             {system === "api"
+               ? "upload Horizon Air schedule spreadsheets, review extracted rides, then import."
+               : "add rides manually using your saved routes & prices."}
+           </p>
+         </div>
+         <div className="flex gap-2 flex-wrap">
+           <Button variant="outline" onClick={() => setManualOpen(true)}>
+             <Plus className="h-4 w-4 mr-2" /> Add ride
+           </Button>
+           {system === "api" && (
+             <>
+               <input
+                 ref={fileRef}
+                 type="file"
+                 accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                 className="hidden"
+                 onChange={(e) => {
+                   const f = e.target.files?.[0];
+                   if (f) handleUpload(f);
+                 }}
+               />
+               <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
+                 {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                 {uploading ? "Reading spreadsheet…" : "Upload Schedule"}
+               </Button>
               </Button>
             </>
           )}
