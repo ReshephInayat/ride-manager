@@ -291,6 +291,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
     if (filter === "today") return rides.filter((r) => r.ride_date === today);
     if (filter === "upcoming") return rides.filter((r) => r.ride_date >= today);
     if (filter === "past") return rides.filter((r) => r.ride_date < today);
+    if (filter === "flights") return rides.filter((r) => r.ride_date >= today && !!r.flight_number);
     return rides;
   }, [rides, filter, today]);
 
