@@ -220,7 +220,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "calendar">("list");
-  const [filter, setFilter] = useState<"upcoming" | "today" | "past" | "all">("upcoming");
+  const [filter, setFilter] = useState<"upcoming" | "today" | "past" | "flights" | "all">("upcoming");
 
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
