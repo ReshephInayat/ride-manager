@@ -204,10 +204,10 @@
   }
 
   .input-luxury {
-    background: #18182A;
-    border: 1px solid rgba(255,255,255,0.08);
+    background: var(--color-muted);
+    border: 1px solid var(--color-border);
     border-radius: 10px;
-    color: #E2E2F0;
+    color: var(--color-foreground);
     min-height: 48px;
   }
   .input-luxury:focus {
