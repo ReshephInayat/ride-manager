@@ -356,7 +356,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
         {/* Filter tabs */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-            {(["upcoming", "today", "past", "all"] as const).map((k) => (
+            {(["upcoming", "today", "past", "flights", "all"] as const).map((k) => (
               <button
                 key={k}
                 onClick={() => setFilter(k)}
@@ -366,7 +366,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
                     : "text-[#7A7A9A] hover:text-white hover:bg-white/[0.05]"
                 }`}
               >
-                {k}
+                {k === "flights" ? "✈ Flights" : k}
               </button>
             ))}
           </div>
