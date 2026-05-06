@@ -98,7 +98,7 @@ const adminTools = [
           name: { type: "string", description: "Driver's full name" },
           phone: { type: "string", description: "Phone number" },
           email: { type: "string", description: "Email address" },
-          login_pin: { type: "string", description: "Login PIN for the driver portal (min 4 digits)" },
+          login_pin: { type: "string", description: "Login PIN for the driver portal (min 4 digits). Will be securely hashed." },
         },
         required: ["name"],
       },
