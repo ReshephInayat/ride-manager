@@ -5,6 +5,13 @@ export const Route = createFileRoute("/api/public/hooks/notify-assignment")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Verify cron secret to prevent unauthenticated access
+        const cronSecret = process.env.CRON_SECRET;
+        const providedSecret = request.headers.get("x-cron-secret");
+        if (!cronSecret || providedSecret !== cronSecret) {
+          return jsonError("unauthorized", 401);
+        }
+
         let payload: { ride_id?: string } = {};
 
         try {
