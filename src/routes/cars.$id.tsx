@@ -76,7 +76,7 @@ function CarDetailInner() {
   const updateCar = async () => {
     const { error } = await supabase.from("cars").update({
       current_mileage: parseInt(mileageInput) || 0,
-      status: statusInput,
+      status: statusInput as "active" | "inactive" | "in_service",
     }).eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("Car updated"); load(); }

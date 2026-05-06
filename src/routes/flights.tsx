@@ -163,7 +163,7 @@ function FlightsInner() {
                   <Badge className="bg-white/5 text-white/50 border-white/10 text-[10px]">
                     <Users className="w-3 h-3 mr-1" /> {group.rides.length} ride{group.rides.length !== 1 ? "s" : ""}
                   </Badge>
-                  <FlightSearchButton flightCode={group.flight} />
+                  <FlightSearchButton ride={{ flight_number: group.flight }} />
                 </div>
               </div>
               <div className="px-4 py-2">
