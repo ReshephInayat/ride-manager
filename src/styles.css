@@ -56,43 +56,43 @@
 
 :root {
   --radius: 0.625rem;
-  /* Dark luxury palette — always dark */
-  --background: #080810;
-  --foreground: #E2E2F0;
-  --card: #10101C;
-  --card-foreground: #E2E2F0;
-  --popover: #10101C;
-  --popover-foreground: #E2E2F0;
+  /* Light mode palette */
+  --background: #F8F9FC;
+  --foreground: #1A1A2E;
+  --card: #FFFFFF;
+  --card-foreground: #1A1A2E;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A2E;
   --primary: #6C63FF;
   --primary-foreground: #ffffff;
-  --secondary: #18182A;
-  --secondary-foreground: #E2E2F0;
-  --muted: #18182A;
-  --muted-foreground: #7A7A9A;
+  --secondary: #F0F0F8;
+  --secondary-foreground: #1A1A2E;
+  --muted: #F0F0F8;
+  --muted-foreground: #6B6B8A;
   --accent: #6C63FF;
   --accent-foreground: #ffffff;
   --gold: #F5A623;
   --gold-foreground: #ffffff;
   --success: #10B981;
   --warning: #F59E0B;
-  --elevated: #18182A;
+  --elevated: #FFFFFF;
   --destructive: #EF4444;
   --destructive-foreground: #ffffff;
-  --border: rgba(255,255,255,0.07);
-  --input: rgba(255,255,255,0.08);
+  --border: rgba(0,0,0,0.1);
+  --input: rgba(0,0,0,0.06);
   --ring: #6C63FF;
   --chart-1: #6C63FF;
   --chart-2: #10B981;
   --chart-3: #F5A623;
   --chart-4: #9B59B6;
   --chart-5: #EF4444;
-  --sidebar: #08080F;
-  --sidebar-foreground: #E2E2F0;
+  --sidebar: #F0F0F8;
+  --sidebar-foreground: #1A1A2E;
   --sidebar-primary: #6C63FF;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #18182A;
-  --sidebar-accent-foreground: #E2E2F0;
-  --sidebar-border: rgba(255,255,255,0.07);
+  --sidebar-accent: #E8E8F4;
+  --sidebar-accent-foreground: #1A1A2E;
+  --sidebar-border: rgba(0,0,0,0.08);
   --sidebar-ring: #6C63FF;
 }
 
@@ -154,10 +154,10 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #2A2A3F;
+    background: var(--color-muted);
   }
   ::-webkit-scrollbar-thumb {
-    background: #6C63FF;
+    background: var(--color-primary);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -168,8 +168,8 @@
 /* Utility classes */
 @layer utilities {
   .luxury-card {
-    background: #10101C;
-    border: 1px solid rgba(255,255,255,0.07);
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
     border-radius: 16px;
   }
 
@@ -204,10 +204,10 @@
   }
 
   .input-luxury {
-    background: #18182A;
-    border: 1px solid rgba(255,255,255,0.08);
+    background: var(--color-muted);
+    border: 1px solid var(--color-border);
     border-radius: 10px;
-    color: #E2E2F0;
+    color: var(--color-foreground);
     min-height: 48px;
   }
   .input-luxury:focus {
@@ -217,15 +217,15 @@
   }
 
   .glass-pill {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--color-muted);
+    border: 1px solid var(--color-border);
     backdrop-filter: blur(12px);
     border-radius: 9999px;
   }
 
   /* Skeleton shimmer */
   .skeleton-shimmer {
-    background: linear-gradient(90deg, #18182A 25%, #22223A 50%, #18182A 75%);
+    background: linear-gradient(90deg, var(--color-muted) 25%, var(--color-secondary) 50%, var(--color-muted) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s ease-in-out infinite;
   }
@@ -246,7 +246,7 @@
 
   /* Backdrop blur overlay */
   .backdrop-luxury {
-    background: rgba(8,8,16,0.7);
+    background: color-mix(in srgb, var(--background) 70%, transparent);
     backdrop-filter: blur(12px);
   }
 
