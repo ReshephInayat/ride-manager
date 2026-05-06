@@ -2,9 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Bell, Check } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import type { AppNotification } from "@/lib/rides";
 import { useSystem } from "@/lib/system";
@@ -50,7 +48,10 @@ export function NotificationBell() {
       )
       .subscribe();
     const t = setInterval(load, 60_000);
-    return () => { supabase.removeChannel(ch); clearInterval(t); };
+    return () => {
+      supabase.removeChannel(ch);
+      clearInterval(t);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [system, instanceId]);
 
@@ -67,7 +68,7 @@ export function NotificationBell() {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative" title="Notifications">
-          <Bell className="h-4 w-4" />
+          <Bell className="h-4 w-4" /> Notifications
           {unread > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[10px] font-bold grid place-items-center px-1">
               {unread > 9 ? "9+" : unread}
@@ -93,7 +94,9 @@ export function NotificationBell() {
                 <div className={`px-4 py-3 border-b text-sm ${!n.read ? "bg-primary/5" : ""}`}>
                   <div className="font-medium">{n.title}</div>
                   {n.body && <div className="text-xs text-muted-foreground mt-0.5 break-words">{n.body}</div>}
-                  <div className="text-[10px] text-muted-foreground mt-1">{new Date(n.created_at).toLocaleString()}</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">
+                    {new Date(n.created_at).toLocaleString()}
+                  </div>
                 </div>
               );
               return n.ride_id ? (
@@ -103,7 +106,9 @@ export function NotificationBell() {
                   params={{ id: n.ride_id }}
                   className="block hover:bg-secondary/50"
                   onClick={() => setOpen(false)}
-                >{body}</Link>
+                >
+                  {body}
+                </Link>
               ) : (
                 <div key={n.id}>{body}</div>
               );
