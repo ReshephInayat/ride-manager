@@ -1224,6 +1224,7 @@ function DashboardInner() {
                   <TableHead>Department</TableHead>
                   <TableHead>Pickup</TableHead>
                   <TableHead>Dropoff</TableHead>
+                  <TableHead>Flight</TableHead>
                   <TableHead>Riders</TableHead>
                 </TableRow>
               </TableHeader>
