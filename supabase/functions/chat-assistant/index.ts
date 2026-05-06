@@ -344,7 +344,7 @@ Deno.serve(async (req) => {
     });
     const { data: userData } = await userClient.auth.getUser(token);
     const user = userData?.user;
-    if (!user) return json({ error: "Unauthorized" }, 401);
+    if (!user) return jsonRes({ error: "Unauthorized" }, 401, cors);
 
     const { messages, system } = await req.json();
     const sys = system === "llc" ? "llc" : "api";
