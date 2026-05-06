@@ -146,7 +146,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             {!collapsed && <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>}
           </button>
           <div className={`flex items-center gap-3 px-3 py-2 ${collapsed ? "justify-center px-0" : ""}`}>
-            <NotificationBell /> Notification
+            <NotificationBell />
+            {!collapsed && <span>Notifications</span>}
           </div>
           {!collapsed && user && (
             <div className="px-3 py-2 flex items-center gap-2 min-w-0">
