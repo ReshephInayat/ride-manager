@@ -258,15 +258,24 @@ export async function callParser(file: File): Promise<Array<Partial<Ride>>> {
       // Extract flight number from whichever field has it
       const flightNumber = extractFlight(pickupFrom) || extractFlight(dropoffTo);
 
+      // Determine which field is the hotel/location name vs flight info
+      // If pickupFrom starts with a flight code, it's an arrival (hotel is dropoffTo)
+      // Otherwise pickupFrom is the hotel name
+      const pickupFromIsFlight = pickupFrom ? FLIGHT_RE.test(pickupFrom) : false;
+      const dropoffToIsFlight = dropoffTo ? FLIGHT_RE.test(dropoffTo) : false;
+
+      const fromLocation = pickupFromIsFlight ? stripTrailingTime(pickupFrom) : (pickupFrom || null);
+      const toLocation = dropoffToIsFlight ? stripTrailingTime(dropoffTo) : (dropoffTo || null);
+
       rides.push({
         ride_date: currentDate,
         department,
         riders,
         pickup_location: pickupLocation || null,
-        pickup_from: null,
+        pickup_from: fromLocation,
         pickup_time: pickupTime,
         dropoff_location: dropoffLocation || null,
-        dropoff_to: null,
+        dropoff_to: toLocation,
         flight_number: flightNumber,
       });
     }
