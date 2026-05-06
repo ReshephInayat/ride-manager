@@ -55,7 +55,7 @@ function PublicInvoice() {
       <div>
         <h1 className="text-2xl font-bold mb-2">Invoice unavailable</h1>
         <p className="text-muted-foreground">This link is invalid or has expired.</p>
-        {err && <p className="text-xs text-rose-600 mt-2">{err}</p>}
+        {err && <p className="text-xs text-rose-600 mt-2">Please try again later or contact support.</p>}
       </div>
     </div>
   );
