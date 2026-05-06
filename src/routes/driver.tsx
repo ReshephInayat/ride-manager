@@ -220,7 +220,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "calendar">("list");
-  const [filter, setFilter] = useState<"upcoming" | "today" | "past" | "all">("upcoming");
+  const [filter, setFilter] = useState<"upcoming" | "today" | "past" | "flights" | "all">("upcoming");
 
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -291,6 +291,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
     if (filter === "today") return rides.filter((r) => r.ride_date === today);
     if (filter === "upcoming") return rides.filter((r) => r.ride_date >= today);
     if (filter === "past") return rides.filter((r) => r.ride_date < today);
+    if (filter === "flights") return rides.filter((r) => r.ride_date >= today && !!r.flight_number);
     return rides;
   }, [rides, filter, today]);
 
@@ -356,7 +357,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
         {/* Filter tabs */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-            {(["upcoming", "today", "past", "all"] as const).map((k) => (
+            {(["upcoming", "today", "past", "flights", "all"] as const).map((k) => (
               <button
                 key={k}
                 onClick={() => setFilter(k)}
@@ -366,7 +367,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
                     : "text-[#7A7A9A] hover:text-white hover:bg-white/[0.05]"
                 }`}
               >
-                {k}
+                {k === "flights" ? "✈ Flights" : k}
               </button>
             ))}
           </div>

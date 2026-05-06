@@ -56,6 +56,204 @@ export type Database = {
         }
         Relationships: []
       }
+      car_installments: {
+        Row: {
+          amount: number
+          car_id: string
+          created_at: string
+          due_date: string
+          id: string
+          notes: string | null
+          paid: boolean
+          paid_date: string | null
+          system: Database["public"]["Enums"]["workspace_system"]
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          car_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          notes?: string | null
+          paid?: boolean
+          paid_date?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          car_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          notes?: string | null
+          paid?: boolean
+          paid_date?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "car_installments_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      car_insurance: {
+        Row: {
+          car_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          notes: string | null
+          policy_number: string | null
+          premium: number
+          provider: string
+          start_date: string
+          system: Database["public"]["Enums"]["workspace_system"]
+          user_id: string
+        }
+        Insert: {
+          car_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          policy_number?: string | null
+          premium?: number
+          provider: string
+          start_date: string
+          system?: Database["public"]["Enums"]["workspace_system"]
+          user_id: string
+        }
+        Update: {
+          car_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          policy_number?: string | null
+          premium?: number
+          provider?: string
+          start_date?: string
+          system?: Database["public"]["Enums"]["workspace_system"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "car_insurance_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      car_maintenance: {
+        Row: {
+          car_id: string
+          cost: number
+          created_at: string
+          description: string | null
+          id: string
+          mileage_at_service: number | null
+          next_service_mileage: number | null
+          service_date: string
+          system: Database["public"]["Enums"]["workspace_system"]
+          type: Database["public"]["Enums"]["maintenance_type"]
+          user_id: string
+        }
+        Insert: {
+          car_id: string
+          cost?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          mileage_at_service?: number | null
+          next_service_mileage?: number | null
+          service_date?: string
+          system?: Database["public"]["Enums"]["workspace_system"]
+          type?: Database["public"]["Enums"]["maintenance_type"]
+          user_id: string
+        }
+        Update: {
+          car_id?: string
+          cost?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          mileage_at_service?: number | null
+          next_service_mileage?: number | null
+          service_date?: string
+          system?: Database["public"]["Enums"]["workspace_system"]
+          type?: Database["public"]["Enums"]["maintenance_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "car_maintenance_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cars: {
+        Row: {
+          color: string | null
+          created_at: string
+          current_mileage: number
+          id: string
+          license_plate: string | null
+          make: string | null
+          model: string | null
+          name: string
+          status: Database["public"]["Enums"]["car_status"]
+          system: Database["public"]["Enums"]["workspace_system"]
+          updated_at: string
+          user_id: string
+          vin: string | null
+          year: number | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          current_mileage?: number
+          id?: string
+          license_plate?: string | null
+          make?: string | null
+          model?: string | null
+          name: string
+          status?: Database["public"]["Enums"]["car_status"]
+          system?: Database["public"]["Enums"]["workspace_system"]
+          updated_at?: string
+          user_id: string
+          vin?: string | null
+          year?: number | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          current_mileage?: number
+          id?: string
+          license_plate?: string | null
+          make?: string | null
+          model?: string | null
+          name?: string
+          status?: Database["public"]["Enums"]["car_status"]
+          system?: Database["public"]["Enums"]["workspace_system"]
+          updated_at?: string
+          user_id?: string
+          vin?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
       driver_locations: {
         Row: {
           accuracy: number | null
@@ -153,6 +351,53 @@ export type Database = {
           },
         ]
       }
+      driver_payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          driver_id: string
+          id: string
+          notes: string | null
+          paid_at: string | null
+          period_end: string | null
+          period_start: string | null
+          system: Database["public"]["Enums"]["workspace_system"]
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          driver_id: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          driver_id?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_payouts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_sessions: {
         Row: {
           created_at: string
@@ -218,6 +463,63 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      fuel_expenses: {
+        Row: {
+          car_id: string
+          cost: number
+          created_at: string
+          driver_id: string | null
+          fuel_date: string
+          gallons: number | null
+          id: string
+          mileage_at_fill: number | null
+          notes: string | null
+          system: Database["public"]["Enums"]["workspace_system"]
+          user_id: string
+        }
+        Insert: {
+          car_id: string
+          cost?: number
+          created_at?: string
+          driver_id?: string | null
+          fuel_date?: string
+          gallons?: number | null
+          id?: string
+          mileage_at_fill?: number | null
+          notes?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
+          user_id: string
+        }
+        Update: {
+          car_id?: string
+          cost?: number
+          created_at?: string
+          driver_id?: string | null
+          fuel_date?: string
+          gallons?: number | null
+          id?: string
+          mileage_at_fill?: number | null
+          notes?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_expenses_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_expenses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoice_items: {
         Row: {
@@ -918,7 +1220,14 @@ export type Database = {
       }
     }
     Enums: {
+      car_status: "active" | "inactive" | "in_service"
       invoice_status: "draft" | "finalized"
+      maintenance_type:
+        | "oil_change"
+        | "tire"
+        | "brake"
+        | "general"
+        | "scheduled_service"
       ride_status:
         | "pending"
         | "completed"
@@ -1054,7 +1363,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      car_status: ["active", "inactive", "in_service"],
       invoice_status: ["draft", "finalized"],
+      maintenance_type: [
+        "oil_change",
+        "tire",
+        "brake",
+        "general",
+        "scheduled_service",
+      ],
       ride_status: [
         "pending",
         "completed",

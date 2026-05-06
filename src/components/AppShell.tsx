@@ -21,15 +21,21 @@ import {
   MoreHorizontal,
   X,
   MapPin,
+  Car,
+  DollarSign,
+  Plane,
 } from "lucide-react";
 
 const mainNav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, group: "Main" },
   { to: "/calendar", label: "Calendar", icon: CalendarDays, group: "Main" },
+  { to: "/flights", label: "Flights", icon: Plane, group: "Main" },
 ];
 const mgmtNav = [
   { to: "/drivers", label: "Drivers", icon: Users, group: "Management" },
   { to: "/routes", label: "Routes", icon: MapPin, group: "Management" },
+  { to: "/cars", label: "Cars", icon: Car, group: "Fleet" },
+  { to: "/payouts", label: "Payouts", icon: DollarSign, group: "Fleet" },
 ];
 const billingNav = [{ to: "/invoices", label: "Invoices", icon: FileText, group: "Billing" }];
 const systemNav = [{ to: "/logs", label: "Logs", icon: ScrollText, group: "System" }];
@@ -39,7 +45,8 @@ const allNav = [...mainNav, ...mgmtNav, ...billingNav, ...systemNav];
 // Bottom tab bar items (mobile)
 const bottomTabs = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays },
+  { to: "/flights", label: "Flights", icon: Plane },
+  { to: "/cars", label: "Cars", icon: Car },
   { to: "/invoices", label: "Invoices", icon: FileText },
   { to: "/drivers", label: "Drivers", icon: Users },
 ];
