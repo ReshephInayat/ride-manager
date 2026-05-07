@@ -676,10 +676,8 @@ function DashboardInner() {
     });
   };
 
-  const buildRouteLines = (start: string, end: string): InvoiceLine[] => {
-    const items = rides.filter(
-      (r) => (r.status === "completed" || r.status === "no_show") && r.ride_date >= start && r.ride_date <= end,
-    );
+  const buildRouteLines = async (start: string, end: string): Promise<InvoiceLine[]> => {
+    const items = await fetchBillableRides(start, end);
     const groups = new Map<string, { name: string; price: number; rides: Ride[] }>();
     for (const r of items) {
       const key = r.route_id ?? "__unassigned__";
