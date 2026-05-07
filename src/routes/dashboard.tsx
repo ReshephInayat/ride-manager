@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,9 @@ import {
   Search,
   Plus,
   MapPin,
+  ChevronLeft,
+  ChevronRight,
+  Archive,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import {
@@ -41,6 +44,13 @@ import { useNavigate } from "@tanstack/react-router";
 import { useSystem } from "@/lib/system";
 import { FlightSearchButton } from "@/components/FlightTrackLink";
 import { TrackRideDialog } from "@/components/TrackRideDialog";
+import {
+  getPaginatedRides,
+  bulkDeleteRides,
+  bulkUpdateRideStatus,
+  bulkDeleteFiltered,
+  bulkCompleteFiltered,
+} from "@/server/rides.functions";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
