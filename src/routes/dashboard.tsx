@@ -519,26 +519,50 @@ function DashboardInner() {
     toast.success("Ride deleted");
   };
 
+  // Batch helper — splits large ID arrays into chunks to avoid URL length limits
+  const BATCH_SIZE = 50;
+  const batchDelete = async (ids: string[]) => {
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+      const batch = ids.slice(i, i + BATCH_SIZE);
+      const { error } = await supabase.from("rides").delete().in("id", batch);
+      if (error) throw error;
+    }
+  };
+  const batchUpdate = async (ids: string[], patch: Record<string, unknown>) => {
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+      const batch = ids.slice(i, i + BATCH_SIZE);
+      const { error } = await supabase.from("rides").update(patch).in("id", batch);
+      if (error) throw error;
+    }
+  };
+
   const deleteSelected = async () => {
     const ids = Array.from(selected);
     if (!ids.length) return toast.error("Select rides to delete.");
     if (!confirm(`Delete ${ids.length} ride${ids.length === 1 ? "" : "s"}?`)) return;
-    const { error } = await supabase.from("rides").delete().in("id", ids);
-    if (error) return toast.error(error.message);
-    setRides((rs) => rs.filter((r) => !selected.has(r.id)));
-    setSelected(new Set());
-    toast.success("Deleted");
+    try {
+      await batchDelete(ids);
+      setRides((rs) => rs.filter((r) => !selected.has(r.id)));
+      setSelected(new Set());
+      toast.success("Deleted");
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
 
   const deleteAllFiltered = async () => {
     if (!filtered.length) return toast.error("Nothing to delete.");
     if (!confirm(`Delete ALL ${filtered.length} rides in current view? This cannot be undone.`)) return;
     const ids = filtered.map((r) => r.id);
-    const { error } = await supabase.from("rides").delete().in("id", ids);
-    if (error) return toast.error(error.message);
-    setRides((rs) => rs.filter((r) => !ids.includes(r.id)));
-    setSelected(new Set());
-    toast.success(`Deleted ${ids.length} rides`);
+    try {
+      await batchDelete(ids);
+      const idSet = new Set(ids);
+      setRides((rs) => rs.filter((r) => !idSet.has(r.id)));
+      setSelected(new Set());
+      toast.success(`Deleted ${ids.length} rides`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
 
   const completeAllFiltered = async () => {
@@ -546,10 +570,14 @@ function DashboardInner() {
     if (!targets.length) return toast("All filtered rides are already completed.");
     if (!confirm(`Mark ${targets.length} ride${targets.length === 1 ? "" : "s"} as completed?`)) return;
     const ids = targets.map((r) => r.id);
-    const { error } = await supabase.from("rides").update({ status: "completed" }).in("id", ids);
-    if (error) return toast.error(error.message);
-    setRides((rs) => rs.map((r) => (ids.includes(r.id) ? { ...r, status: "completed" } : r)));
-    toast.success(`Completed ${ids.length} rides`);
+    try {
+      await batchUpdate(ids, { status: "completed" });
+      const idSet = new Set(ids);
+      setRides((rs) => rs.map((r) => (idSet.has(r.id) ? { ...r, status: "completed" } : r)));
+      toast.success(`Completed ${ids.length} rides`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
 
   const toggleSelect = (id: string) => {
