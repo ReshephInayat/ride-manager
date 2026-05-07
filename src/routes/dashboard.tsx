@@ -539,7 +539,7 @@ function DashboardInner() {
     }
   };
 
-
+  const toggleSelect = (id: string) => {
     setSelected((s) => {
       const n = new Set(s);
       if (n.has(id)) n.delete(id);
