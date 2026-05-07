@@ -806,6 +806,9 @@ function DashboardInner() {
            </p>
          </div>
          <div className="flex gap-2 flex-wrap">
+           <Button variant="outline" onClick={handleExportCsv}>
+             <Download className="h-4 w-4 mr-2" /> Export CSV
+           </Button>
            <Button variant="outline" onClick={() => setManualOpen(true)}>
              <Plus className="h-4 w-4 mr-2" /> Add ride
            </Button>
