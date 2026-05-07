@@ -528,10 +528,10 @@ function DashboardInner() {
       if (error) throw error;
     }
   };
-  const batchUpdate = async (ids: string[], patch: Record<string, unknown>) => {
+  const batchUpdate = async (ids: string[], patch: { status: string }) => {
     for (let i = 0; i < ids.length; i += BATCH_SIZE) {
       const batch = ids.slice(i, i + BATCH_SIZE);
-      const { error } = await supabase.from("rides").update(patch).in("id", batch);
+      const { error } = await supabase.from("rides").update(patch as any).in("id", batch);
       if (error) throw error;
     }
   };
