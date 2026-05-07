@@ -177,6 +177,9 @@ interface InvoicePreviewState {
 function DashboardInner() {
   const { system, label } = useSystem();
   const [rides, setRides] = useState<Ride[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
   const [routes, setRoutes] = useState<RouteRow[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [liveLocations, setLiveLocations] = useState<
@@ -192,6 +195,7 @@ function DashboardInner() {
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
   const [search, setSearch] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
   const [previewFile, setPreviewFile] = useState<string>("");
@@ -201,140 +205,92 @@ function DashboardInner() {
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  const load = async () => {
-    setLoading(true);
-    const [rRes, routeRes, dRes] = await Promise.all([
-      supabase
-        .from("rides")
-        .select("*")
-        .eq("system", system)
-        .order("ride_date", { ascending: true })
-        .order("pickup_time", { ascending: true })
-        .range(0, 9999),
-      supabase.from("routes").select("*").eq("system", system).order("created_at"),
-      supabase.from("drivers").select("*").eq("system", system).order("created_at"),
-    ]);
-    if (rRes.error) toast.error(rRes.error.message);
-    if (routeRes.error) toast.error(routeRes.error.message);
-    if (dRes.error) toast.error(dRes.error.message);
-    setRides((rRes.data as Ride[]) ?? []);
-    setRoutes((routeRes.data as RouteRow[]) ?? []);
-    setDrivers((dRes.data as Driver[]) ?? []);
-    setSelected(new Set());
-    setLoading(false);
-  };
-
+  // Debounced search for server queries
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   useEffect(() => {
-    load();
-  }, [system]);
-
-  // Realtime: refresh whenever rides, routes, or drivers change in this workspace.
-  useEffect(() => {
-    const ch = supabase
-      .channel(`dashboard-${system}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "routes" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, () => load())
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [system]);
-
-  // Realtime: track live driver locations for this workspace.
-  useEffect(() => {
-    const fetchAll = async () => {
-      const { data } = await supabase
-        .from("driver_locations")
-        .select("driver_id, lat, lng, updated_at, ride_id")
-        .eq("system", system);
-      if (data) {
-        const next: Record<string, { lat: number; lng: number; updated_at: string; ride_id: string | null }> = {};
-        for (const row of data as Array<{
-          driver_id: string;
-          lat: number;
-          lng: number;
-          updated_at: string;
-          ride_id: string | null;
-        }>) {
-          next[row.driver_id] = { lat: row.lat, lng: row.lng, updated_at: row.updated_at, ride_id: row.ride_id };
-        }
-        setLiveLocations(next);
-      }
-    };
-    void fetchAll();
-    const ch = supabase
-      .channel(`live-locations-${system}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "driver_locations" }, (payload) => {
-        if (payload.eventType === "DELETE") {
-          const old = payload.old as { driver_id?: string };
-          if (old?.driver_id)
-            setLiveLocations((m) => {
-              const n = { ...m };
-              delete n[old.driver_id!];
-              return n;
-            });
-        } else {
-          const row = payload.new as {
-            driver_id: string;
-            lat: number;
-            lng: number;
-            updated_at: string;
-            ride_id: string | null;
-          };
-          setLiveLocations((m) => ({
-            ...m,
-            [row.driver_id]: { lat: row.lat, lng: row.lng, updated_at: row.updated_at, ride_id: row.ride_id },
-          }));
-        }
-      })
-      .subscribe();
-    // refresh ticker so "fresh" status decays after 60s
-    const t = setInterval(() => setLiveLocations((m) => ({ ...m })), 30000);
-    return () => {
-      supabase.removeChannel(ch);
-      clearInterval(t);
-    };
-  }, [system]);
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const range = useMemo(
     () => getDateRange(dateFilter, customMonth, customStart, customEnd),
     [dateFilter, customMonth, customStart, customEnd],
   );
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return rides.filter((r) => {
-      if (filterStatus !== "all" && r.status !== filterStatus) return false;
-      if (filterDriver === "unassigned" && r.driver_id) return false;
-      if (filterDriver !== "all" && filterDriver !== "unassigned" && r.driver_id !== filterDriver) return false;
-      if (range.start && r.ride_date < range.start) return false;
-      if (range.end && r.ride_date > range.end) return false;
-      if (q) {
-        const hay = [
-          r.department,
-          r.pickup_from,
-          r.dropoff_to,
-          r.pickup_location,
-          r.dropoff_location,
-          r.pickup_time,
-          r.passenger_name,
-          r.passenger_email,
-          r.phone,
-          r.flight_number,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [rides, filterStatus, filterDriver, range, search]);
+  // Build filter params for server calls
+  const filterParams = useMemo(
+    () => ({
+      system: system as "api" | "llc",
+      dateStart: range.start,
+      dateEnd: range.end,
+      status: filterStatus !== "all" ? filterStatus : undefined,
+      driverId: filterDriver !== "all" ? filterDriver : undefined,
+      search: debouncedSearch || undefined,
+    }),
+    [system, range, filterStatus, filterDriver, debouncedSearch],
+  );
 
-  // Pagination removed — show all filtered rides at once.
-  const pagedRides = filtered;
+  const loadRides = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await getPaginatedRides({
+        data: {
+          ...filterParams,
+          page,
+          pageSize: PAGE_SIZE,
+          showArchived,
+        },
+      });
+      setRides((result.rides as Ride[]) ?? []);
+      setTotalCount(result.totalCount);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to load rides");
+    } finally {
+      setLoading(false);
+    }
+  }, [filterParams, page, showArchived]);
+
+  const loadMeta = useCallback(async () => {
+    const [routeRes, dRes] = await Promise.all([
+      supabase.from("routes").select("*").eq("system", system).order("created_at"),
+      supabase.from("drivers").select("*").eq("system", system).order("created_at"),
+    ]);
+    if (routeRes.error) toast.error(routeRes.error.message);
+    if (dRes.error) toast.error(dRes.error.message);
+    setRoutes((routeRes.data as RouteRow[]) ?? []);
+    setDrivers((dRes.data as Driver[]) ?? []);
+  }, [system]);
+
+  useEffect(() => {
+    loadRides();
+  }, [loadRides]);
+
+  useEffect(() => {
+    loadMeta();
+  }, [loadMeta]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(0);
+    setSelected(new Set());
+  }, [filterStatus, filterDriver, dateFilter, customMonth, customStart, customEnd, debouncedSearch, system, showArchived]);
+
+  // Realtime: refresh current page when rides change
+  useEffect(() => {
+    const ch = supabase
+      .channel(`dashboard-${system}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => loadRides())
+      .on("postgres_changes", { event: "*", schema: "public", table: "routes" }, () => loadMeta())
+      .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, () => loadMeta())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [system, loadRides, loadMeta]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const pagedRides = rides;
+  const filtered = rides; // Server already filtered
 
   useEffect(() => {
     setSelected(new Set());
