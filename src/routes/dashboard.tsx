@@ -292,9 +292,6 @@ function DashboardInner() {
   const pagedRides = rides;
   const filtered = rides; // Server already filtered
 
-  useEffect(() => {
-    setSelected(new Set());
-  }, [filterStatus, filterDriver, dateFilter, customMonth, customStart, customEnd, search, system]);
 
   const completedSum = useMemo(
     () =>
