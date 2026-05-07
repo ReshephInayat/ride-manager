@@ -50,6 +50,7 @@ import {
   bulkUpdateRideStatus,
   bulkDeleteFiltered,
   bulkCompleteFiltered,
+  exportRidesCsv,
 } from "@/server/rides.functions";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
