@@ -695,8 +695,9 @@ function DashboardInner() {
     }));
   };
 
-  const recalcLinesForDates = (start: string, end: string) => {
-    setInvoicePreview((p) => (p ? { ...p, start, end, lines: buildRouteLines(start, end) } : p));
+  const recalcLinesForDates = async (start: string, end: string) => {
+    const lines = await buildRouteLines(start, end);
+    setInvoicePreview((p) => (p ? { ...p, start, end, lines } : p));
   };
 
   const saveInvoiceFromPreview = async () => {
