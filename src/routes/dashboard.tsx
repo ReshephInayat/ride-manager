@@ -416,7 +416,7 @@ function DashboardInner() {
       setPreviewFile("");
       setPreviewExtracted(0);
       setPreviewInvalid(0);
-      await load();
+      await loadRides();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -430,7 +430,7 @@ function DashboardInner() {
     const { error } = await supabase.from("rides").update({ status }).eq("id", ride.id);
     if (error) {
       toast.error(error.message);
-      load();
+      loadRides();
     }
   };
 
@@ -441,7 +441,7 @@ function DashboardInner() {
     const { error } = await supabase.from("rides").update({ route_id: routeId, amount }).eq("id", ride.id);
     if (error) {
       toast.error(error.message);
-      load();
+      loadRides();
     }
   };
 
@@ -452,7 +452,7 @@ function DashboardInner() {
     const { error } = await supabase.from("rides").update({ driver_id }).eq("id", ride.id);
     if (error) {
       toast.error(error.message);
-      load();
+      loadRides();
       return;
     }
     if (driver_id && driver_id !== previous) {
@@ -784,7 +784,7 @@ function DashboardInner() {
     if (error) return toast.error(error.message);
     toast.success("Ride added");
     setManualOpen(false);
-    await load();
+    await loadRides();
   };
 
   return (
