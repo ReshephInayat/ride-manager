@@ -5,7 +5,6 @@ import { ShieldCheck, Sparkles, FileText } from "lucide-react";
 import { toast } from "react-hot-toast";
 import loginHero from "@/assets/login-hero.jpg";
 import { lovable } from "@/integrations/lovable/index";
-import loginHero from "@/assets/login-hero.jpg";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
