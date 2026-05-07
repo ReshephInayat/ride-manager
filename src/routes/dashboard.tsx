@@ -1265,7 +1265,7 @@ function DashboardInner() {
         routes={routes}
         drivers={drivers}
         system={system}
-        onRoutesChanged={load}
+        onRoutesChanged={loadMeta}
         onSave={addManualRide}
       />
 
