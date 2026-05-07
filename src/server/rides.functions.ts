@@ -43,7 +43,7 @@ export const getPaginatedRides = createServerFn({ method: "POST" })
 
     // Status
     if (data.status && data.status !== "all") {
-      query = query.eq("status", data.status);
+      query = query.eq("status", data.status as any);
     }
 
     // Driver
@@ -155,7 +155,7 @@ export const bulkDeleteFiltered = createServerFn({ method: "POST" })
 
     if (data.dateStart) query = query.gte("ride_date", data.dateStart);
     if (data.dateEnd) query = query.lte("ride_date", data.dateEnd);
-    if (data.status && data.status !== "all") query = query.eq("status", data.status);
+    if (data.status && data.status !== "all") query = query.eq("status", data.status as any);
     if (data.driverId === "unassigned") {
       query = query.is("driver_id", null);
     } else if (data.driverId && data.driverId !== "all") {
@@ -198,7 +198,7 @@ export const bulkCompleteFiltered = createServerFn({ method: "POST" })
 
     if (data.dateStart) query = query.gte("ride_date", data.dateStart);
     if (data.dateEnd) query = query.lte("ride_date", data.dateEnd);
-    if (data.status && data.status !== "all") query = query.eq("status", data.status);
+    if (data.status && data.status !== "all") query = query.eq("status", data.status as any);
     if (data.driverId === "unassigned") {
       query = query.is("driver_id", null);
     } else if (data.driverId && data.driverId !== "all") {
