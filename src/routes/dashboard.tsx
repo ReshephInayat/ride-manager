@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,10 +24,6 @@ import {
   Search,
   Plus,
   MapPin,
-  ChevronLeft,
-  ChevronRight,
-  Archive,
-  Download,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import {
@@ -45,14 +41,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { useSystem } from "@/lib/system";
 import { FlightSearchButton } from "@/components/FlightTrackLink";
 import { TrackRideDialog } from "@/components/TrackRideDialog";
-import {
-  getPaginatedRides,
-  bulkDeleteRides,
-  bulkUpdateRideStatus,
-  bulkDeleteFiltered,
-  bulkCompleteFiltered,
-  exportRidesCsv,
-} from "@/server/rides.functions";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -179,9 +167,6 @@ interface InvoicePreviewState {
 function DashboardInner() {
   const { system, label } = useSystem();
   const [rides, setRides] = useState<Ride[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [page, setPage] = useState(0);
-  const PAGE_SIZE = 50;
   const [routes, setRoutes] = useState<RouteRow[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [liveLocations, setLiveLocations] = useState<
@@ -197,7 +182,6 @@ function DashboardInner() {
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
   const [search, setSearch] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
   const [previewFile, setPreviewFile] = useState<string>("");
@@ -207,93 +191,144 @@ function DashboardInner() {
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  // Debounced search for server queries
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const load = async () => {
+    setLoading(true);
+    const [rRes, routeRes, dRes] = await Promise.all([
+      supabase
+        .from("rides")
+        .select("*")
+        .eq("system", system)
+        .order("ride_date", { ascending: true })
+        .order("pickup_time", { ascending: true })
+        .range(0, 9999),
+      supabase.from("routes").select("*").eq("system", system).order("created_at"),
+      supabase.from("drivers").select("*").eq("system", system).order("created_at"),
+    ]);
+    if (rRes.error) toast.error(rRes.error.message);
+    if (routeRes.error) toast.error(routeRes.error.message);
+    if (dRes.error) toast.error(dRes.error.message);
+    setRides((rRes.data as Ride[]) ?? []);
+    setRoutes((routeRes.data as RouteRow[]) ?? []);
+    setDrivers((dRes.data as Driver[]) ?? []);
+    setSelected(new Set());
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(t);
-  }, [search]);
+    load();
+  }, [system]);
+
+  // Realtime: refresh whenever rides, routes, or drivers change in this workspace.
+  useEffect(() => {
+    const ch = supabase
+      .channel(`dashboard-${system}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "routes" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, () => load())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [system]);
+
+  // Realtime: track live driver locations for this workspace.
+  useEffect(() => {
+    const fetchAll = async () => {
+      const { data } = await supabase
+        .from("driver_locations")
+        .select("driver_id, lat, lng, updated_at, ride_id")
+        .eq("system", system);
+      if (data) {
+        const next: Record<string, { lat: number; lng: number; updated_at: string; ride_id: string | null }> = {};
+        for (const row of data as Array<{
+          driver_id: string;
+          lat: number;
+          lng: number;
+          updated_at: string;
+          ride_id: string | null;
+        }>) {
+          next[row.driver_id] = { lat: row.lat, lng: row.lng, updated_at: row.updated_at, ride_id: row.ride_id };
+        }
+        setLiveLocations(next);
+      }
+    };
+    void fetchAll();
+    const ch = supabase
+      .channel(`live-locations-${system}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "driver_locations" }, (payload) => {
+        if (payload.eventType === "DELETE") {
+          const old = payload.old as { driver_id?: string };
+          if (old?.driver_id)
+            setLiveLocations((m) => {
+              const n = { ...m };
+              delete n[old.driver_id!];
+              return n;
+            });
+        } else {
+          const row = payload.new as {
+            driver_id: string;
+            lat: number;
+            lng: number;
+            updated_at: string;
+            ride_id: string | null;
+          };
+          setLiveLocations((m) => ({
+            ...m,
+            [row.driver_id]: { lat: row.lat, lng: row.lng, updated_at: row.updated_at, ride_id: row.ride_id },
+          }));
+        }
+      })
+      .subscribe();
+    // refresh ticker so "fresh" status decays after 60s
+    const t = setInterval(() => setLiveLocations((m) => ({ ...m })), 30000);
+    return () => {
+      supabase.removeChannel(ch);
+      clearInterval(t);
+    };
+  }, [system]);
 
   const range = useMemo(
     () => getDateRange(dateFilter, customMonth, customStart, customEnd),
     [dateFilter, customMonth, customStart, customEnd],
   );
 
-  // Build filter params for server calls
-  const filterParams = useMemo(
-    () => ({
-      system: system as "api" | "llc",
-      dateStart: range.start,
-      dateEnd: range.end,
-      status: filterStatus !== "all" ? filterStatus : undefined,
-      driverId: filterDriver !== "all" ? filterDriver : undefined,
-      search: debouncedSearch || undefined,
-    }),
-    [system, range, filterStatus, filterDriver, debouncedSearch],
-  );
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return rides.filter((r) => {
+      if (filterStatus !== "all" && r.status !== filterStatus) return false;
+      if (filterDriver === "unassigned" && r.driver_id) return false;
+      if (filterDriver !== "all" && filterDriver !== "unassigned" && r.driver_id !== filterDriver) return false;
+      if (range.start && r.ride_date < range.start) return false;
+      if (range.end && r.ride_date > range.end) return false;
+      if (q) {
+        const hay = [
+          r.department,
+          r.pickup_from,
+          r.dropoff_to,
+          r.pickup_location,
+          r.dropoff_location,
+          r.pickup_time,
+          r.passenger_name,
+          r.passenger_email,
+          r.phone,
+          r.flight_number,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [rides, filterStatus, filterDriver, range, search]);
 
-  const loadRides = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await getPaginatedRides({
-        data: {
-          ...filterParams,
-          page,
-          pageSize: PAGE_SIZE,
-          showArchived,
-        },
-      });
-      setRides((result.rides as Ride[]) ?? []);
-      setTotalCount(result.totalCount);
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to load rides");
-    } finally {
-      setLoading(false);
-    }
-  }, [filterParams, page, showArchived]);
-
-  const loadMeta = useCallback(async () => {
-    const [routeRes, dRes] = await Promise.all([
-      supabase.from("routes").select("*").eq("system", system).order("created_at"),
-      supabase.from("drivers").select("*").eq("system", system).order("created_at"),
-    ]);
-    if (routeRes.error) toast.error(routeRes.error.message);
-    if (dRes.error) toast.error(dRes.error.message);
-    setRoutes((routeRes.data as RouteRow[]) ?? []);
-    setDrivers((dRes.data as Driver[]) ?? []);
-  }, [system]);
+  // Pagination removed — show all filtered rides at once.
+  const pagedRides = filtered;
 
   useEffect(() => {
-    loadRides();
-  }, [loadRides]);
-
-  useEffect(() => {
-    loadMeta();
-  }, [loadMeta]);
-
-  // Reset page when filters change
-  useEffect(() => {
-    setPage(0);
     setSelected(new Set());
-  }, [filterStatus, filterDriver, dateFilter, customMonth, customStart, customEnd, debouncedSearch, system, showArchived]);
-
-  // Realtime: refresh current page when rides change
-  useEffect(() => {
-    const ch = supabase
-      .channel(`dashboard-${system}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => loadRides())
-      .on("postgres_changes", { event: "*", schema: "public", table: "routes" }, () => loadMeta())
-      .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, () => loadMeta())
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-  }, [system, loadRides, loadMeta]);
-
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const pagedRides = rides;
-  const filtered = rides; // Server already filtered
-
+  }, [filterStatus, filterDriver, dateFilter, customMonth, customStart, customEnd, search, system]);
 
   const completedSum = useMemo(
     () =>
@@ -415,7 +450,7 @@ function DashboardInner() {
       setPreviewFile("");
       setPreviewExtracted(0);
       setPreviewInvalid(0);
-      await loadRides();
+      await load();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -429,7 +464,7 @@ function DashboardInner() {
     const { error } = await supabase.from("rides").update({ status }).eq("id", ride.id);
     if (error) {
       toast.error(error.message);
-      loadRides();
+      load();
     }
   };
 
@@ -440,7 +475,7 @@ function DashboardInner() {
     const { error } = await supabase.from("rides").update({ route_id: routeId, amount }).eq("id", ride.id);
     if (error) {
       toast.error(error.message);
-      loadRides();
+      load();
     }
   };
 
@@ -451,7 +486,7 @@ function DashboardInner() {
     const { error } = await supabase.from("rides").update({ driver_id }).eq("id", ride.id);
     if (error) {
       toast.error(error.message);
-      loadRides();
+      load();
       return;
     }
     if (driver_id && driver_id !== previous) {
@@ -484,58 +519,64 @@ function DashboardInner() {
     toast.success("Ride deleted");
   };
 
+  // Batch helper — splits large ID arrays into chunks to avoid URL length limits
+  const BATCH_SIZE = 50;
+  const batchDelete = async (ids: string[]) => {
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+      const batch = ids.slice(i, i + BATCH_SIZE);
+      const { error } = await supabase.from("rides").delete().in("id", batch);
+      if (error) throw error;
+    }
+  };
+  const batchUpdate = async (ids: string[], patch: { status: string }) => {
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+      const batch = ids.slice(i, i + BATCH_SIZE);
+      const { error } = await supabase.from("rides").update(patch as any).in("id", batch);
+      if (error) throw error;
+    }
+  };
+
   const deleteSelected = async () => {
     const ids = Array.from(selected);
     if (!ids.length) return toast.error("Select rides to delete.");
     if (!confirm(`Delete ${ids.length} ride${ids.length === 1 ? "" : "s"}?`)) return;
     try {
-      const result = await bulkDeleteRides({ data: { ids, system: system as "api" | "llc" } });
-      toast.success(`Deleted ${result.deleted} rides`);
+      await batchDelete(ids);
+      setRides((rs) => rs.filter((r) => !selected.has(r.id)));
       setSelected(new Set());
-      await loadRides();
+      toast.success("Deleted");
     } catch (e: any) {
       toast.error(e.message);
     }
   };
 
   const deleteAllFiltered = async () => {
-    if (!totalCount) return toast.error("Nothing to delete.");
-    if (!confirm(`Delete ALL ${totalCount} rides in current view? This cannot be undone.`)) return;
+    if (!filtered.length) return toast.error("Nothing to delete.");
+    if (!confirm(`Delete ALL ${filtered.length} rides in current view? This cannot be undone.`)) return;
+    const ids = filtered.map((r) => r.id);
     try {
-      const result = await bulkDeleteFiltered({ data: filterParams });
-      toast.success(`Deleted ${result.deleted} rides`);
+      await batchDelete(ids);
+      const idSet = new Set(ids);
+      setRides((rs) => rs.filter((r) => !idSet.has(r.id)));
       setSelected(new Set());
-      await loadRides();
+      toast.success(`Deleted ${ids.length} rides`);
     } catch (e: any) {
       toast.error(e.message);
     }
   };
 
   const completeAllFiltered = async () => {
-    if (!totalCount) return toast("No rides to complete.");
-    if (!confirm(`Mark all filtered rides as completed?`)) return;
+    const targets = filtered.filter((r) => r.status !== "completed");
+    if (!targets.length) return toast("All filtered rides are already completed.");
+    if (!confirm(`Mark ${targets.length} ride${targets.length === 1 ? "" : "s"} as completed?`)) return;
+    const ids = targets.map((r) => r.id);
     try {
-      const result = await bulkCompleteFiltered({ data: filterParams });
-      toast.success(`Completed ${result.updated} rides`);
-      await loadRides();
+      await batchUpdate(ids, { status: "completed" });
+      const idSet = new Set(ids);
+      setRides((rs) => rs.map((r) => (idSet.has(r.id) ? { ...r, status: "completed" } : r)));
+      toast.success(`Completed ${ids.length} rides`);
     } catch (e: any) {
       toast.error(e.message);
-    }
-  };
-
-  const handleExportCsv = async () => {
-    try {
-      const result = await exportRidesCsv({ data: filterParams });
-      const blob = new Blob([result.csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `rides-export-${new Date().toISOString().slice(0, 10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success(`Exported ${result.count} rides`);
-    } catch (e: any) {
-      toast.error(e.message ?? "Export failed");
     }
   };
 
@@ -571,19 +612,6 @@ function DashboardInner() {
     if (!items.length) return toast.error("No billable rides in current view.");
     await createInvoice(items, `Invoice — ${dateFilter}`);
   };
-  const fetchBillableRides = async (start: string, end: string) => {
-    const { data, error } = await supabase
-      .from("rides")
-      .select("*")
-      .eq("system", system)
-      .gte("ride_date", start)
-      .lte("ride_date", end)
-      .in("status", ["completed", "no_show"])
-      .order("ride_date");
-    if (error) { toast.error(error.message); return []; }
-    return (data as Ride[]) ?? [];
-  };
-
   const createWeeklyInvoice = async () => {
     const today = new Date();
     const day = today.getDay();
@@ -594,7 +622,7 @@ function DashboardInner() {
     sun.setDate(mon.getDate() + 6);
     const start = ymd(mon);
     const end = ymd(sun);
-    const items = await fetchBillableRides(start, end);
+    const items = rides.filter((r) => isBillable(r.status) && r.ride_date >= start && r.ride_date <= end);
     if (!items.length) return toast.error("No billable rides this week.");
     await createInvoice(items, `Weekly invoice (${start} → ${end})`, true);
   };
@@ -604,7 +632,7 @@ function DashboardInner() {
     const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     const start = ymd(first);
     const end = ymd(last);
-    const items = await fetchBillableRides(start, end);
+    const items = rides.filter((r) => isBillable(r.status) && r.ride_date >= start && r.ride_date <= end);
     if (!items.length) return toast.error("No billable rides this month.");
     await createInvoice(items, `Monthly invoice (${start} → ${end})`);
   };
@@ -683,19 +711,20 @@ function DashboardInner() {
     const start = ymd(first);
     const end = ymd(last);
     const num = await nextInvoiceNumber();
-    const lines = await buildRouteLines(start, end);
     setInvoicePreview({
       start,
       end,
       billTo: label,
       invoiceNumber: num,
       notes: `By-route invoice (${start} → ${end})`,
-      lines,
+      lines: buildRouteLines(start, end),
     });
   };
 
-  const buildRouteLines = async (start: string, end: string): Promise<InvoiceLine[]> => {
-    const items = await fetchBillableRides(start, end);
+  const buildRouteLines = (start: string, end: string): InvoiceLine[] => {
+    const items = rides.filter(
+      (r) => (r.status === "completed" || r.status === "no_show") && r.ride_date >= start && r.ride_date <= end,
+    );
     const groups = new Map<string, { name: string; price: number; rides: Ride[] }>();
     for (const r of items) {
       const key = r.route_id ?? "__unassigned__";
@@ -713,9 +742,8 @@ function DashboardInner() {
     }));
   };
 
-  const recalcLinesForDates = async (start: string, end: string) => {
-    const lines = await buildRouteLines(start, end);
-    setInvoicePreview((p) => (p ? { ...p, start, end, lines } : p));
+  const recalcLinesForDates = (start: string, end: string) => {
+    setInvoicePreview((p) => (p ? { ...p, start, end, lines: buildRouteLines(start, end) } : p));
   };
 
   const saveInvoiceFromPreview = async () => {
@@ -790,7 +818,7 @@ function DashboardInner() {
     if (error) return toast.error(error.message);
     toast.success("Ride added");
     setManualOpen(false);
-    await loadRides();
+    await load();
   };
 
   return (
@@ -806,9 +834,6 @@ function DashboardInner() {
            </p>
          </div>
          <div className="flex gap-2 flex-wrap">
-           <Button variant="outline" onClick={handleExportCsv}>
-             <Download className="h-4 w-4 mr-2" /> Export CSV
-           </Button>
            <Button variant="outline" onClick={() => setManualOpen(true)}>
              <Plus className="h-4 w-4 mr-2" /> Add ride
            </Button>
@@ -834,7 +859,7 @@ function DashboardInner() {
       </div>
 
       <div className={`grid grid-cols-2 ${system === "api" ? "md:grid-cols-6" : "md:grid-cols-4"} gap-4 mb-6`}>
-        <StatCard tone="blue" label="Total rides (filtered)" value={totalCount.toString()} />
+        <StatCard tone="blue" label="Total rides (filtered)" value={filtered.length.toString()} />
         <StatCard
           tone="violet"
           label="Completed"
@@ -946,18 +971,6 @@ function DashboardInner() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">&nbsp;</label>
-            <Button
-              variant={showArchived ? "default" : "outline"}
-              size="sm"
-              className="h-9"
-              onClick={() => setShowArchived((v) => !v)}
-            >
-              <Archive className="h-4 w-4 mr-1" />
-              {showArchived ? "Showing archived" : "Show archived"}
-            </Button>
           </div>
           <div className="ml-auto flex gap-2 flex-wrap">
             {selected.size > 0 && (
@@ -1188,34 +1201,9 @@ function DashboardInner() {
         </div>
       </Card>
 
-      {totalCount > 0 && (
-        <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount} ride{totalCount === 1 ? "" : "s"}
-          </span>
-          {totalPages > 1 && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 0}
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-foreground font-medium">
-                Page {page + 1} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages - 1}
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+      {filtered.length > 0 && (
+        <div className="mt-4 text-sm text-muted-foreground">
+          Showing all {filtered.length} ride{filtered.length === 1 ? "" : "s"}
         </div>
       )}
 
@@ -1311,7 +1299,7 @@ function DashboardInner() {
         routes={routes}
         drivers={drivers}
         system={system}
-        onRoutesChanged={loadMeta}
+        onRoutesChanged={load}
         onSave={addManualRide}
       />
 

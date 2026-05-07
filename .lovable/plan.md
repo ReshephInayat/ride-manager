@@ -1,119 +1,63 @@
 
-# Full System Optimization Plan
+# Feature Expansion Plan
 
-This is a large scope covering security, scalability, features, and code quality. I'll implement in priority order across multiple phases.
-
----
-
-## Phase 1 — Security Hardening (Immediate)
-
-### 1A. Revoke anon EXECUTE on internal DB functions
-- Database migration to `REVOKE EXECUTE ON FUNCTION ... FROM anon` for all internal functions except the 4 that need public access: `driver_login`, `driver_login_with_token`, `get_invoice_by_token`, `get_invoice_items_by_token`
-- Functions to lock down: `set_driver_pin`, `log_activity`, `rides_log_changes`, `build_ride_key`, `normalize_ride_key_text`, `normalize_ride_key_time`, `rides_set_dedupe_key`, `seed_default_routes`, `seed_default_driver`, `driver_update_location`, `driver_clear_location`, `driver_rides`, `driver_update_ride_status`, `driver_mark_notifications_read`, `driver_delete_notifications`, `driver_notifications`, `notifications_log_insert`, `set_updated_at`, `log_invoice_access`
-
-### 1B. Enable leaked password protection (HIBP)
-- Use `configure_auth` tool to enable password HIBP check
-
-### 1C. Add RLS policy on driver_login_attempts
-- Add a deny-all policy so direct table access is blocked (only SECURITY DEFINER functions use it)
+## Overview
+Add fleet management (cars, maintenance, fuel, insurance, installments), driver financials (ride counts, payouts, payout history), and a flight tracking page (placeholder for future API integration).
 
 ---
 
-## Phase 2 — Scalability: Paginate Remaining Pages
+## Phase 1: Database Tables
 
-### 2A. Payouts page — server-side pagination
-- Create `getPaginatedPayouts` server function in `rides.functions.ts`
-- Add pagination controls, date range filter
+### New tables:
 
-### 2B. Flights page — server-side pagination
-- Create `getPaginatedFlights` server function (rides with flight_number)
-- Add pagination controls
+1. **cars** — id, user_id, system, name, make, model, year, license_plate, vin, color, current_mileage, status (active/inactive/in_service), created_at, updated_at
+2. **car_maintenance** — id, user_id, system, car_id, type (oil_change/tire/brake/general/scheduled_service), description, mileage_at_service, cost, service_date, next_service_mileage, created_at
+3. **fuel_expenses** — id, user_id, system, car_id, driver_id (nullable), gallons, cost, mileage_at_fill, fuel_date, notes, created_at
+4. **car_installments** — id, user_id, system, car_id, amount, due_date, paid, paid_date, notes, created_at
+5. **car_insurance** — id, user_id, system, car_id, provider, policy_number, premium, start_date, end_date, notes, created_at
+6. **driver_payouts** — id, user_id, system, driver_id, amount, period_start, period_end, notes, paid_at, created_at
 
-### 2C. Calendar page — server-side filtering
-- Load only the currently displayed month's rides from server
-- No full data load
-
-### 2D. Activity logs — increase cap + pagination
-- Server-side paginated query for logs (currently capped at 1,000)
+All tables will have RLS policies restricting access to the owner (auth.uid() = user_id).
 
 ---
 
-## Phase 3 — Code Quality: Dashboard Refactor
+## Phase 2: New Pages
 
-- Split the 1,791-line `dashboard.tsx` into sub-components:
-  - `DashboardFilters` — search, date, status, driver filters
-  - `RidesTable` — table rendering + inline actions
-  - `ImportDialog` — XLSX upload + preview
-  - `InvoiceDialog` — invoice creation modal
-  - `BulkActions` — select all, bulk delete/complete
-  - `DashboardStats` — stat cards
-- Main `dashboard.tsx` becomes a thin orchestrator (~300 lines)
+### Admin Pages:
 
----
+1. **`/cars`** — Manage cars: add/edit/delete vehicles, view current mileage, status
+2. **`/cars/$id`** — Car detail page with tabs: Maintenance, Fuel, Installments, Insurance histories
+3. **`/payouts`** — Driver payout management: ride counts per driver, create payouts, view payout history
+4. **`/flights`** — Flight tracking dashboard: list all flights from today's rides, placeholder for future API integration (show flight numbers, status placeholder, links to FlightAware)
 
-## Phase 4 — CSV Export
-
-- Add "Export CSV" button on dashboard, payouts, and invoices pages
-- Server function to generate CSV from filtered rides/data
-- Download as `.csv` file in browser
+### Driver Page Enhancement:
+- Add a "Flights" tab/section to the driver portal showing today's flight numbers with tracking links
 
 ---
 
-## Phase 5 — Google OAuth for Admin Login
+## Phase 3: Navigation Updates
 
-- Enable Google OAuth via `configure_social_auth`
-- Add "Sign in with Google" button on login page
-- Works alongside existing email/password auth
-
----
-
-## Phase 6 — Reporting Dashboard
-
-- New route `/reports`
-- Revenue over time chart (Recharts — already installed)
-- Rides by status breakdown
-- Driver performance (rides completed, avg per day)
-- Monthly comparison
-- Data fetched via server functions with date range filters
+Add to AppShell sidebar:
+- **Fleet** group: Cars, Payouts
+- **Tracking** group: Flights
+- Update bottom tabs for mobile
 
 ---
 
-## Phase 7 — Additional Improvements
+## Phase 4: Flight Tracking (Placeholder)
 
-- **Migrate cars/payouts/flights to server functions** (currently using direct Supabase client)
-- **Car maintenance alerts** — highlight cars near service mileage
-- **Driver ride count on payouts** — show completed ride count per period
-- **Dark/light mode polish** — replace any hardcoded colors with design tokens
+Since you'll provide the flight API key later, I'll build:
+- A page listing all unique flight numbers from rides (filterable by today/tomorrow/date range)
+- Each flight shows: flight number, associated ride info, pickup time, and a "Track" link
+- Placeholder for real-time status that will be wired to an API later
+- Available on both admin and driver portals
 
 ---
 
 ## Technical Details
 
-**Files modified:**
-- `src/routes/dashboard.tsx` — refactored into sub-components
-- `src/routes/payouts.tsx` — server-side pagination
-- `src/routes/flights.tsx` — server-side pagination
-- `src/routes/calendar.tsx` — month-only loading
-- `src/routes/login.tsx` — Google OAuth button
-- `src/server/rides.functions.ts` — new server functions for pagination + CSV
-
-**Files created:**
-- `src/components/dashboard/DashboardFilters.tsx`
-- `src/components/dashboard/RidesTable.tsx`
-- `src/components/dashboard/ImportDialog.tsx`
-- `src/components/dashboard/InvoiceDialog.tsx`
-- `src/components/dashboard/BulkActions.tsx`
-- `src/components/dashboard/DashboardStats.tsx`
-- `src/routes/reports.tsx`
-
-**Database migrations:**
-- Revoke anon EXECUTE on internal functions
-- RLS policy for driver_login_attempts
-
-**No breaking changes** — all existing workflows continue to work.
-
----
-
-## Implementation Order
-
-I'll implement phases sequentially, verifying each before moving on. This is substantial work across 7 phases. Shall I proceed?
+- 6 new database tables with RLS
+- 5 new route files: `cars.tsx`, `cars.$id.tsx`, `payouts.tsx`, `flights.tsx`
+- Updated `AppShell.tsx` navigation
+- Updated `driver.tsx` with flights section
+- All pages follow existing dark theme design patterns
