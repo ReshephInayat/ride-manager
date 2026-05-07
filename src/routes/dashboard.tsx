@@ -275,7 +275,17 @@ function DashboardInner() {
   useEffect(() => {
     setPage(0);
     setSelected(new Set());
-  }, [filterStatus, filterDriver, dateFilter, customMonth, customStart, customEnd, debouncedSearch, system, showArchived]);
+  }, [
+    filterStatus,
+    filterDriver,
+    dateFilter,
+    customMonth,
+    customStart,
+    customEnd,
+    debouncedSearch,
+    system,
+    showArchived,
+  ]);
 
   // Realtime: refresh current page when rides change
   useEffect(() => {
@@ -293,7 +303,6 @@ function DashboardInner() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const pagedRides = rides;
   const filtered = rides; // Server already filtered
-
 
   const completedSum = useMemo(
     () =>
@@ -580,7 +589,10 @@ function DashboardInner() {
       .lte("ride_date", end)
       .in("status", ["completed", "no_show"])
       .order("ride_date");
-    if (error) { toast.error(error.message); return []; }
+    if (error) {
+      toast.error(error.message);
+      return [];
+    }
     return (data as Ride[]) ?? [];
   };
 
@@ -800,45 +812,45 @@ function DashboardInner() {
           <h1 className="text-3xl font-bold">Rides</h1>
           <p className="text-muted-foreground mt-1">
             <span className="font-medium text-foreground">{label}</span> —{" "}
-             {system === "api"
-               ? "upload Horizon Air schedule spreadsheets, review extracted rides, then import."
-               : "add rides manually using your saved routes & prices."}
-           </p>
-         </div>
-         <div className="flex gap-2 flex-wrap">
-           <Button variant="outline" onClick={handleExportCsv}>
-             <Download className="h-4 w-4 mr-2" /> Export CSV
-           </Button>
-           <Button variant="outline" onClick={() => setManualOpen(true)}>
-             <Plus className="h-4 w-4 mr-2" /> Add ride
-           </Button>
-           {system === "api" && (
-             <>
-               <input
-                 ref={fileRef}
-                 type="file"
-                 accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                 className="hidden"
-                 onChange={(e) => {
-                   const f = e.target.files?.[0];
-                   if (f) handleUpload(f);
-                 }}
-               />
-               <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
-                 {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-                 {uploading ? "Reading spreadsheet…" : "Upload Schedule"}
-               </Button>
+            {system === "api"
+              ? "upload Horizon Air schedule spreadsheets, review extracted rides, then import."
+              : "add rides manually using your saved routes & prices."}
+          </p>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={handleExportCsv}>
+            <Download className="h-4 w-4 mr-2" /> Export CSV
+          </Button>
+          <Button variant="outline" onClick={() => setManualOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Add ride
+          </Button>
+          {system === "api" && (
+            <>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleUpload(f);
+                }}
+              />
+              <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
+                {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                {uploading ? "Reading spreadsheet…" : "Upload Schedule"}
+              </Button>
             </>
           )}
         </div>
       </div>
 
       <div className={`grid grid-cols-2 ${system === "api" ? "md:grid-cols-6" : "md:grid-cols-4"} gap-4 mb-6`}>
-        <StatCard tone="blue" label="Total rides (filtered)" value={totalCount.toString()} />
+        <StatCard tone="blue" label="Total rides (filtered)" value={String(totalCount ?? 0)} />
         <StatCard
           tone="violet"
           label="Completed"
-          value={filtered.filter((r) => r.status === "completed").length.toString()}
+          value={String(filtered.filter((r) => r.status === "completed").length)}
         />
         <StatCard tone="emerald" label="Completed total" value={`$${completedSum.toFixed(2)}`} />
         {system === "api" && (
@@ -1191,7 +1203,8 @@ function DashboardInner() {
       {totalCount > 0 && (
         <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
           <span>
-            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount} ride{totalCount === 1 ? "" : "s"}
+            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount} ride
+            {totalCount === 1 ? "" : "s"}
           </span>
           {totalPages > 1 && (
             <div className="flex items-center gap-2">
@@ -1283,7 +1296,9 @@ function DashboardInner() {
                     </TableCell>
                     <TableCell className="text-xs">
                       <div className="font-medium">{row.data.dropoff_location}</div>
-                      <div className="text-muted-foreground">{stripTrailingTime(row.data.dropoff_to) || row.data.dropoff_to}</div>
+                      <div className="text-muted-foreground">
+                        {stripTrailingTime(row.data.dropoff_to) || row.data.dropoff_to}
+                      </div>
                     </TableCell>
                     <TableCell className="text-xs font-medium">{row.data.flight_number}</TableCell>
                     <TableCell>{row.data.riders ?? 1}</TableCell>
