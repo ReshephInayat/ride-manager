@@ -1,14 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { RideStatus } from "@/lib/rides";
+import type { Ride, RideStatus, Driver } from "@/lib/rides";
 import { toast } from "react-hot-toast";
 import { useSystem } from "@/lib/system";
-import { getCalendarRides } from "@/server/rides.functions";
 
 export const Route = createFileRoute("/calendar")({ component: CalendarPage });
 
@@ -41,7 +41,7 @@ function ymd(d: Date) {
 function startOfWeek(d: Date) {
   const x = new Date(d);
   const day = x.getDay();
-  const diff = (day + 6) % 7;
+  const diff = (day + 6) % 7; // Monday-start
   x.setDate(x.getDate() - diff);
   x.setHours(0, 0, 0, 0);
   return x;
@@ -49,10 +49,28 @@ function startOfWeek(d: Date) {
 
 function CalendarInner() {
   const { system, label: systemLabel } = useSystem();
-  const [rides, setRides] = useState<any[]>([]);
-  const [driverMap, setDriverMap] = useState<Record<string, string>>({});
+  const [rides, setRides] = useState<Ride[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [view, setView] = useState<"week" | "day">("week");
   const [anchor, setAnchor] = useState<Date>(new Date());
+
+  useEffect(() => {
+    (async () => {
+      const [r, d] = await Promise.all([
+        supabase.from("rides").select("*").eq("system", system).order("ride_date").order("pickup_time"),
+        supabase.from("drivers").select("*").eq("system", system),
+      ]);
+      if (r.error) toast.error(r.error.message);
+      if (d.error) toast.error(d.error.message);
+      setRides((r.data as Ride[]) ?? []);
+      setDrivers((d.data as Driver[]) ?? []);
+    })();
+  }, [system]);
+
+  const driverMap = useMemo(
+    () => Object.fromEntries(drivers.map((d) => [d.id, d.name])),
+    [drivers]
+  );
 
   const days = useMemo(() => {
     if (view === "day") return [new Date(anchor)];
@@ -64,25 +82,8 @@ function CalendarInner() {
     });
   }, [view, anchor]);
 
-  const dateStart = ymd(days[0]);
-  const dateEnd = ymd(days[days.length - 1]);
-
-  const load = useCallback(async () => {
-    try {
-      const result = await getCalendarRides({
-        data: { system: system as "api" | "llc", dateStart, dateEnd },
-      });
-      setRides(result.rides);
-      setDriverMap(Object.fromEntries(result.drivers.map((d: any) => [d.id, d.name])));
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to load calendar");
-    }
-  }, [system, dateStart, dateEnd]);
-
-  useEffect(() => { load(); }, [load]);
-
   const ridesByDate = useMemo(() => {
-    const m = new Map<string, any[]>();
+    const m = new Map<string, Ride[]>();
     for (const r of rides) {
       const arr = m.get(r.ride_date) ?? [];
       arr.push(r);
@@ -132,7 +133,7 @@ function CalendarInner() {
         {days.map((d) => {
           const key = ymd(d);
           const isToday = key === ymd(new Date());
-          const list = (ridesByDate.get(key) ?? []).slice().sort((a: any, b: any) =>
+          const list = (ridesByDate.get(key) ?? []).slice().sort((a, b) =>
             (a.pickup_time ?? "").localeCompare(b.pickup_time ?? "")
           );
           return (
@@ -147,12 +148,12 @@ function CalendarInner() {
                 {list.length === 0 ? (
                   <div className="text-xs text-muted-foreground italic">No rides</div>
                 ) : (
-                  list.map((r: any) => (
+                  list.map((r) => (
                     <Link
                       key={r.id}
                       to="/rides/$id"
                       params={{ id: r.id }}
-                      className={`block text-xs rounded border px-2 py-1.5 hover:ring-2 hover:ring-primary/40 transition ${statusColor[r.status as RideStatus]}`}
+                      className={`block text-xs rounded border px-2 py-1.5 hover:ring-2 hover:ring-primary/40 transition ${statusColor[r.status]}`}
                       title={`${r.pickup_from ?? r.pickup_location ?? ""} → ${r.dropoff_to ?? r.dropoff_location ?? ""}`}
                     >
                       <div className="font-semibold">{r.pickup_time || "—"}</div>
