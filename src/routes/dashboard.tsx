@@ -800,7 +800,7 @@ function DashboardInner() {
       </div>
 
       <div className={`grid grid-cols-2 ${system === "api" ? "md:grid-cols-6" : "md:grid-cols-4"} gap-4 mb-6`}>
-        <StatCard tone="blue" label="Total rides (filtered)" value={filtered.length.toString()} />
+        <StatCard tone="blue" label="Total rides (filtered)" value={totalCount.toString()} />
         <StatCard
           tone="violet"
           label="Completed"
