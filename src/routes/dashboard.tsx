@@ -916,6 +916,18 @@ function DashboardInner() {
               </SelectContent>
             </Select>
           </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">&nbsp;</label>
+            <Button
+              variant={showArchived ? "default" : "outline"}
+              size="sm"
+              className="h-9"
+              onClick={() => setShowArchived((v) => !v)}
+            >
+              <Archive className="h-4 w-4 mr-1" />
+              {showArchived ? "Showing archived" : "Show archived"}
+            </Button>
+          </div>
           <div className="ml-auto flex gap-2 flex-wrap">
             {selected.size > 0 && (
               <Button variant="destructive" onClick={deleteSelected}>
