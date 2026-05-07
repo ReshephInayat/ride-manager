@@ -665,13 +665,14 @@ function DashboardInner() {
     const start = ymd(first);
     const end = ymd(last);
     const num = await nextInvoiceNumber();
+    const lines = await buildRouteLines(start, end);
     setInvoicePreview({
       start,
       end,
       billTo: label,
       invoiceNumber: num,
       notes: `By-route invoice (${start} → ${end})`,
-      lines: buildRouteLines(start, end),
+      lines,
     });
   };
 
