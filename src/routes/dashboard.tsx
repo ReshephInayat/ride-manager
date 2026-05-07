@@ -553,6 +553,19 @@ function DashboardInner() {
     if (!items.length) return toast.error("No billable rides in current view.");
     await createInvoice(items, `Invoice — ${dateFilter}`);
   };
+  const fetchBillableRides = async (start: string, end: string) => {
+    const { data, error } = await supabase
+      .from("rides")
+      .select("*")
+      .eq("system", system)
+      .gte("ride_date", start)
+      .lte("ride_date", end)
+      .in("status", ["completed", "no_show"])
+      .order("ride_date");
+    if (error) { toast.error(error.message); return []; }
+    return (data as Ride[]) ?? [];
+  };
+
   const createWeeklyInvoice = async () => {
     const today = new Date();
     const day = today.getDay();
@@ -563,7 +576,7 @@ function DashboardInner() {
     sun.setDate(mon.getDate() + 6);
     const start = ymd(mon);
     const end = ymd(sun);
-    const items = rides.filter((r) => isBillable(r.status) && r.ride_date >= start && r.ride_date <= end);
+    const items = await fetchBillableRides(start, end);
     if (!items.length) return toast.error("No billable rides this week.");
     await createInvoice(items, `Weekly invoice (${start} → ${end})`, true);
   };
@@ -573,7 +586,7 @@ function DashboardInner() {
     const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     const start = ymd(first);
     const end = ymd(last);
-    const items = rides.filter((r) => isBillable(r.status) && r.ride_date >= start && r.ride_date <= end);
+    const items = await fetchBillableRides(start, end);
     if (!items.length) return toast.error("No billable rides this month.");
     await createInvoice(items, `Monthly invoice (${start} → ${end})`);
   };
