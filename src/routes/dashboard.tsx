@@ -523,7 +523,23 @@ function DashboardInner() {
     }
   };
 
-  const toggleSelect = (id: string) => {
+  const handleExportCsv = async () => {
+    try {
+      const result = await exportRidesCsv({ data: filterParams });
+      const blob = new Blob([result.csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `rides-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${result.count} rides`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Export failed");
+    }
+  };
+
+
     setSelected((s) => {
       const n = new Set(s);
       if (n.has(id)) n.delete(id);
