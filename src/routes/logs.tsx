@@ -1,16 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useSystem } from "@/lib/system";
-import { Search, ScrollText, User, Shield, Cog } from "lucide-react";
+import { Search, ScrollText, User, Shield, Cog, ChevronLeft, ChevronRight } from "lucide-react";
+import { getPaginatedLogs } from "@/server/rides.functions";
+import { toast } from "react-hot-toast";
 
 export const Route = createFileRoute("/logs")({ component: LogsRoute });
 
@@ -68,24 +71,48 @@ function ActorIcon({ actor }: { actor: string }) {
 function LogsInner() {
   const { system } = useSystem();
   const [rows, setRows] = useState<LogRow[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 100;
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [kindFilter, setKindFilter] = useState<string>("all");
   const [actorFilter, setActorFilter] = useState<string>("all");
 
-  const load = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from("activity_logs")
-      .select("*")
-      .eq("system", system)
-      .order("created_at", { ascending: false })
-      .limit(1000);
-    setRows((data as LogRow[]) ?? []);
-    setLoading(false);
-  };
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [system]);
+  // Reset page on filter change
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearch, kindFilter, actorFilter, system]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await getPaginatedLogs({
+        data: {
+          system: system as "api" | "llc",
+          page,
+          pageSize: PAGE_SIZE,
+          kind: kindFilter !== "all" ? kindFilter : undefined,
+          actor: actorFilter !== "all" ? actorFilter : undefined,
+          search: debouncedSearch || undefined,
+        },
+      });
+      setRows(result.rows as LogRow[]);
+      setTotalCount(result.totalCount);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to load logs");
+    } finally {
+      setLoading(false);
+    }
+  }, [system, page, kindFilter, actorFilter, debouncedSearch]);
+
+  useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
     const ch = supabase
@@ -93,21 +120,9 @@ function LogsInner() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_logs" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-    // eslint-disable-next-line
-  }, [system]);
+  }, [system, load]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return rows.filter((r) => {
-      if (kindFilter !== "all" && r.kind !== kindFilter) return false;
-      if (actorFilter !== "all" && r.actor !== actorFilter) return false;
-      if (q) {
-        const hay = [r.title, r.details, r.actor_name, r.kind, r.actor].filter(Boolean).join(" ").toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [rows, search, kindFilter, actorFilter]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -115,7 +130,7 @@ function LogsInner() {
         <ScrollText className="h-5 w-5" />
         <h1 className="text-2xl font-semibold">Activity logs</h1>
         <span className="text-sm text-muted-foreground ml-2">
-          {filtered.length} of {rows.length} entries
+          {totalCount} total entries
         </span>
       </div>
 
@@ -124,7 +139,7 @@ function LogsInner() {
           <div className="relative flex-1 min-w-[240px]">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search logs (title, details, driver, ride…)"
+              placeholder="Search logs (title, details, driver…)"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-8"
@@ -153,10 +168,10 @@ function LogsInner() {
 
       <Card className="divide-y">
         {loading && <div className="p-6 text-sm text-muted-foreground">Loading…</div>}
-        {!loading && filtered.length === 0 && (
+        {!loading && rows.length === 0 && (
           <div className="p-8 text-center text-sm text-muted-foreground">No log entries match your filters.</div>
         )}
-        {filtered.map((r) => (
+        {rows.map((r) => (
           <div key={r.id} className="p-3 flex items-start gap-3 text-sm hover:bg-secondary/30">
             <div className="pt-0.5 text-muted-foreground"><ActorIcon actor={r.actor} /></div>
             <div className="flex-1 min-w-0">
@@ -179,6 +194,23 @@ function LogsInner() {
           </div>
         ))}
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <span className="text-sm text-muted-foreground">
+            Page {page + 1} of {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+              <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+            </Button>
+            <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+              Next <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
