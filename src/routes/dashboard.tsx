@@ -932,6 +932,7 @@ function DashboardInner() {
                 <SelectItem value="tomorrow">Tomorrow</SelectItem>
                 <SelectItem value="yesterday">Yesterday</SelectItem>
                 <SelectItem value="this_week">This week</SelectItem>
+                <SelectItem value="pick_week">Pick week…</SelectItem>
                 <SelectItem value="this_month">This month</SelectItem>
                 <SelectItem value="custom_month">Pick month…</SelectItem>
                 <SelectItem value="custom_range">Date range…</SelectItem>
