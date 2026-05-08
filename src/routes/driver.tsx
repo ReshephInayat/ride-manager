@@ -6,7 +6,7 @@ import { playNotificationSound } from "@/lib/sound";
 import {
   LogOut, CalendarDays, Clock, MapPin, User, Phone, Plane,
   CheckCircle2, XCircle, Hourglass, ListChecks, ShieldCheck,
-  Sparkles, ArrowRight, Radio, AlertCircle,
+  Sparkles, ArrowRight, Radio, AlertCircle, Download, Wallet,
 } from "lucide-react";
 import { extractDropoffTime, stripTrailingTime, type Ride, type RideStatus } from "@/lib/rides";
 import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
@@ -14,6 +14,8 @@ import driverHero from "@/assets/driver-hero.jpg";
 import { FlightTrackLink, FlightSearchButton } from "@/components/FlightTrackLink";
 import { DriverNotificationBell } from "@/components/DriverNotificationBell";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
+import { DateRangeFilter, presetToRange, type DateRange } from "@/components/DateRangeFilter";
+import { downloadCSV } from "@/lib/export";
 
 export const Route = createFileRoute("/driver")({ component: DriverPortal });
 
