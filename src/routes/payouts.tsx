@@ -98,8 +98,8 @@ function PayoutsInner() {
     <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Driver Payouts</h1>
-          <p className="text-sm text-white/50">Ride counts, payouts & history</p>
+          <h1 className="text-xl font-bold text-foreground">Driver Payouts</h1>
+          <p className="text-sm text-muted-foreground">Ride counts, payouts & history</p>
         </div>
         <Button onClick={() => setDialogOpen(true)} className="gap-2 bg-[#6C63FF] hover:bg-[#5A52D5]">
           <Plus className="w-4 h-4" /> Record Payout
@@ -110,46 +110,46 @@ function PayoutsInner() {
       <div className="grid grid-cols-3 gap-3">
         <Card className="luxury-card p-3 text-center">
           <Users className="w-5 h-5 mx-auto text-blue-400 mb-1" />
-          <div className="text-lg font-bold text-white">{drivers.length}</div>
-          <div className="text-[10px] text-white/40">Active Drivers</div>
+          <div className="text-lg font-bold text-foreground">{drivers.length}</div>
+          <div className="text-[10px] text-muted-foreground/70">Active Drivers</div>
         </Card>
         <Card className="luxury-card p-3 text-center">
           <TrendingUp className="w-5 h-5 mx-auto text-emerald-400 mb-1" />
-          <div className="text-lg font-bold text-white">{rides.length}</div>
-          <div className="text-[10px] text-white/40">Total Rides</div>
+          <div className="text-lg font-bold text-foreground">{rides.length}</div>
+          <div className="text-[10px] text-muted-foreground/70">Total Rides</div>
         </Card>
         <Card className="luxury-card p-3 text-center">
           <DollarSign className="w-5 h-5 mx-auto text-amber-400 mb-1" />
-          <div className="text-lg font-bold text-white">${totalPaid.toFixed(0)}</div>
-          <div className="text-[10px] text-white/40">Total Paid Out</div>
+          <div className="text-lg font-bold text-foreground">${totalPaid.toFixed(0)}</div>
+          <div className="text-[10px] text-muted-foreground/70">Total Paid Out</div>
         </Card>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="bg-white/5 border border-white/10">
-          <TabsTrigger value="overview" className="text-xs data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/50">Driver Overview</TabsTrigger>
-          <TabsTrigger value="history" className="text-xs data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/50">Payout History</TabsTrigger>
+        <TabsList className="bg-muted/50 border border-border">
+          <TabsTrigger value="overview" className="text-xs data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground">Driver Overview</TabsTrigger>
+          <TabsTrigger value="history" className="text-xs data-[state=active]:bg-muted data-[state=active]:text-foreground text-muted-foreground">Payout History</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader><TableRow className="border-white/10">
-                <TableHead className="text-white/50">Driver</TableHead>
-                <TableHead className="text-white/50">Total Rides</TableHead>
-                <TableHead className="text-white/50">Completed</TableHead>
-                <TableHead className="text-white/50">Total Ride Value</TableHead>
-                <TableHead className="text-white/50">Total Paid</TableHead>
+              <TableHeader><TableRow className="border-border">
+                <TableHead className="text-muted-foreground">Driver</TableHead>
+                <TableHead className="text-muted-foreground">Total Rides</TableHead>
+                <TableHead className="text-muted-foreground">Completed</TableHead>
+                <TableHead className="text-muted-foreground">Total Ride Value</TableHead>
+                <TableHead className="text-muted-foreground">Total Paid</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {Object.entries(driverStats).map(([did, s]) => {
                   const driverPaid = payouts.filter((p) => p.driver_id === did).reduce((sum, p) => sum + Number(p.amount || 0), 0);
                   return (
-                    <TableRow key={did} className="border-white/5">
-                      <TableCell className="text-sm font-medium text-white">{s.name}</TableCell>
-                      <TableCell className="text-sm text-white/70">{s.rideCount}</TableCell>
+                    <TableRow key={did} className="border-border">
+                      <TableCell className="text-sm font-medium text-foreground">{s.name}</TableCell>
+                      <TableCell className="text-sm text-foreground/80">{s.rideCount}</TableCell>
                       <TableCell className="text-sm text-emerald-400">{s.completedCount}</TableCell>
-                      <TableCell className="text-sm text-white/70">${s.totalAmount.toFixed(2)}</TableCell>
+                      <TableCell className="text-sm text-foreground/80">${s.totalAmount.toFixed(2)}</TableCell>
                       <TableCell className="text-sm font-medium text-amber-400">${driverPaid.toFixed(2)}</TableCell>
                     </TableRow>
                   );
@@ -160,25 +160,25 @@ function PayoutsInner() {
         </TabsContent>
 
         <TabsContent value="history">
-          {payouts.length === 0 ? <p className="text-white/30 text-sm text-center py-8">No payouts yet</p> : (
+          {payouts.length === 0 ? <p className="text-muted-foreground/50 text-sm text-center py-8">No payouts yet</p> : (
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader><TableRow className="border-white/10">
-                  <TableHead className="text-white/50">Driver</TableHead>
-                  <TableHead className="text-white/50">Amount</TableHead>
-                  <TableHead className="text-white/50">Period</TableHead>
-                  <TableHead className="text-white/50">Paid At</TableHead>
-                  <TableHead className="text-white/50">Notes</TableHead>
+                <TableHeader><TableRow className="border-border">
+                  <TableHead className="text-muted-foreground">Driver</TableHead>
+                  <TableHead className="text-muted-foreground">Amount</TableHead>
+                  <TableHead className="text-muted-foreground">Period</TableHead>
+                  <TableHead className="text-muted-foreground">Paid At</TableHead>
+                  <TableHead className="text-muted-foreground">Notes</TableHead>
                   <TableHead />
                 </TableRow></TableHeader>
                 <TableBody>
                   {payouts.map((p) => (
-                    <TableRow key={p.id} className="border-white/5">
-                      <TableCell className="text-xs font-medium text-white">{driverName(p.driver_id)}</TableCell>
+                    <TableRow key={p.id} className="border-border">
+                      <TableCell className="text-xs font-medium text-foreground">{driverName(p.driver_id)}</TableCell>
                       <TableCell className="text-xs font-medium text-emerald-400">${Number(p.amount).toFixed(2)}</TableCell>
-                      <TableCell className="text-xs text-white/60">{p.period_start && p.period_end ? `${p.period_start} – ${p.period_end}` : "—"}</TableCell>
-                      <TableCell className="text-xs text-white/60">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : "—"}</TableCell>
-                      <TableCell className="text-xs text-white/40 max-w-[150px] truncate">{p.notes || "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{p.period_start && p.period_end ? `${p.period_start} – ${p.period_end}` : "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground/70 max-w-[150px] truncate">{p.notes || "—"}</TableCell>
                       <TableCell><Button variant="ghost" size="sm" onClick={() => deletePayout(p.id)} className="text-red-400 hover:text-red-300"><Trash2 className="w-3.5 h-3.5" /></Button></TableCell>
                     </TableRow>
                   ))}
@@ -190,21 +190,21 @@ function PayoutsInner() {
       </Tabs>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="luxury-card border-white/10 text-white max-w-md">
+        <DialogContent className="luxury-card border-border text-foreground max-w-md">
           <DialogHeader><DialogTitle>Record Payout</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label className="text-xs text-white/60">Driver *</Label>
+            <div><Label className="text-xs text-muted-foreground">Driver *</Label>
               <Select value={form.driver_id} onValueChange={(v) => setForm({ ...form, driver_id: v })}>
                 <SelectTrigger className="input-luxury"><SelectValue placeholder="Select driver" /></SelectTrigger>
                 <SelectContent>{drivers.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div><Label className="text-xs text-white/60">Amount ($) *</Label><Input value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="input-luxury" type="number" /></div>
+            <div><Label className="text-xs text-muted-foreground">Amount ($) *</Label><Input value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="input-luxury" type="number" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs text-white/60">Period Start</Label><Input value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} className="input-luxury" type="date" /></div>
-              <div><Label className="text-xs text-white/60">Period End</Label><Input value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} className="input-luxury" type="date" /></div>
+              <div><Label className="text-xs text-muted-foreground">Period Start</Label><Input value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} className="input-luxury" type="date" /></div>
+              <div><Label className="text-xs text-muted-foreground">Period End</Label><Input value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} className="input-luxury" type="date" /></div>
             </div>
-            <div><Label className="text-xs text-white/60">Notes</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input-luxury" /></div>
+            <div><Label className="text-xs text-muted-foreground">Notes</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input-luxury" /></div>
           </div>
           <DialogFooter><Button onClick={addPayout} className="bg-[#6C63FF] hover:bg-[#5A52D5]">Record Payout</Button></DialogFooter>
         </DialogContent>

@@ -1352,8 +1352,8 @@ function StatCard({
   };
   return (
     <div className={`luxury-card p-4 border-l-2 ${borderColors[tone] ?? borderColors.default}`}>
-      <div className="text-xs uppercase tracking-wide text-[#7A7A9A]">{label}</div>
-      <div className="text-2xl font-bold text-white mt-1">{value}</div>
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-2xl font-bold text-foreground mt-1">{value}</div>
     </div>
   );
 }
@@ -1372,9 +1372,9 @@ function StatusBtn({
   children: React.ReactNode;
 }) {
   const map = {
-    emerald: `border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/10 ${active ? "bg-[#10B981] text-white border-[#10B981]" : ""}`,
-    rose: `border-[#EF4444]/30 text-[#EF4444] hover:bg-[#EF4444]/10 ${active ? "bg-[#EF4444] text-white border-[#EF4444]" : ""}`,
-    amber: `border-[#F5A623]/30 text-[#F5A623] hover:bg-[#F5A623]/10 ${active ? "bg-[#F5A623] text-white border-[#F5A623]" : ""}`,
+    emerald: `border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/10 ${active ? "bg-[#10B981] text-foreground border-[#10B981]" : ""}`,
+    rose: `border-[#EF4444]/30 text-[#EF4444] hover:bg-[#EF4444]/10 ${active ? "bg-[#EF4444] text-foreground border-[#EF4444]" : ""}`,
+    amber: `border-[#F5A623]/30 text-[#F5A623] hover:bg-[#F5A623]/10 ${active ? "bg-[#F5A623] text-foreground border-[#F5A623]" : ""}`,
   };
   return (
     <button

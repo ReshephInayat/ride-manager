@@ -102,8 +102,8 @@ function CarsInner() {
     <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Fleet Management</h1>
-          <p className="text-sm text-white/50">Manage your vehicles</p>
+          <h1 className="text-xl font-bold text-foreground">Fleet Management</h1>
+          <p className="text-sm text-muted-foreground">Manage your vehicles</p>
         </div>
         <Button onClick={() => setDialogOpen(true)} className="gap-2 bg-[#6C63FF] hover:bg-[#5A52D5]">
           <Plus className="w-4 h-4" /> Add Car
@@ -112,8 +112,8 @@ function CarsInner() {
 
       {cars.length === 0 ? (
         <Card className="luxury-card p-12 text-center">
-          <Car className="w-12 h-12 mx-auto text-white/20 mb-3" />
-          <p className="text-white/40">No cars yet. Add your first vehicle.</p>
+          <Car className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
+          <p className="text-muted-foreground/70">No cars yet. Add your first vehicle.</p>
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -123,8 +123,8 @@ function CarsInner() {
               <Card key={car.id} className="luxury-card p-4 space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-semibold text-white">{car.name}</h3>
-                    <p className="text-xs text-white/50">
+                    <h3 className="font-semibold text-foreground">{car.name}</h3>
+                    <p className="text-xs text-muted-foreground">
                       {[car.year, car.make, car.model].filter(Boolean).join(" ") || "—"}
                     </p>
                   </div>
@@ -132,7 +132,7 @@ function CarsInner() {
                     {car.status.replace("_", " ")}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-4 text-xs text-white/60">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Gauge className="w-3.5 h-3.5" /> {car.current_mileage.toLocaleString()} mi</span>
                   {car.license_plate && <span>{car.license_plate}</span>}
                 </div>
@@ -143,11 +143,11 @@ function CarsInner() {
                 )}
                 <div className="flex gap-2 pt-1">
                   <Link to="/cars/$id" params={{ id: car.id }} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-white/10 text-white/70 hover:text-white">
+                    <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-border text-foreground/80 hover:text-foreground">
                       <Eye className="w-3.5 h-3.5" /> Details
                     </Button>
                   </Link>
-                  <Button variant="outline" size="sm" onClick={() => deleteCar(car.id)} className="text-red-400 border-white/10 hover:bg-red-500/10">
+                  <Button variant="outline" size="sm" onClick={() => deleteCar(car.id)} className="text-red-400 border-border hover:bg-red-500/10">
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>
@@ -158,23 +158,23 @@ function CarsInner() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="luxury-card border-white/10 text-white max-w-md">
+        <DialogContent className="luxury-card border-border text-foreground max-w-md">
           <DialogHeader><DialogTitle>Add Car</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label className="text-xs text-white/60">Name *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-luxury" placeholder="e.g. Town Car #1" /></div>
+            <div><Label className="text-xs text-muted-foreground">Name *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-luxury" placeholder="e.g. Town Car #1" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs text-white/60">Make</Label><Input value={form.make} onChange={(e) => setForm({ ...form, make: e.target.value })} className="input-luxury" placeholder="Lincoln" /></div>
-              <div><Label className="text-xs text-white/60">Model</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} className="input-luxury" placeholder="Town Car" /></div>
+              <div><Label className="text-xs text-muted-foreground">Make</Label><Input value={form.make} onChange={(e) => setForm({ ...form, make: e.target.value })} className="input-luxury" placeholder="Lincoln" /></div>
+              <div><Label className="text-xs text-muted-foreground">Model</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} className="input-luxury" placeholder="Town Car" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs text-white/60">Year</Label><Input value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} className="input-luxury" placeholder="2024" type="number" /></div>
-              <div><Label className="text-xs text-white/60">Color</Label><Input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} className="input-luxury" placeholder="Black" /></div>
+              <div><Label className="text-xs text-muted-foreground">Year</Label><Input value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} className="input-luxury" placeholder="2024" type="number" /></div>
+              <div><Label className="text-xs text-muted-foreground">Color</Label><Input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} className="input-luxury" placeholder="Black" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs text-white/60">License Plate</Label><Input value={form.license_plate} onChange={(e) => setForm({ ...form, license_plate: e.target.value })} className="input-luxury" /></div>
-              <div><Label className="text-xs text-white/60">Mileage</Label><Input value={form.current_mileage} onChange={(e) => setForm({ ...form, current_mileage: e.target.value })} className="input-luxury" type="number" /></div>
+              <div><Label className="text-xs text-muted-foreground">License Plate</Label><Input value={form.license_plate} onChange={(e) => setForm({ ...form, license_plate: e.target.value })} className="input-luxury" /></div>
+              <div><Label className="text-xs text-muted-foreground">Mileage</Label><Input value={form.current_mileage} onChange={(e) => setForm({ ...form, current_mileage: e.target.value })} className="input-luxury" type="number" /></div>
             </div>
-            <div><Label className="text-xs text-white/60">VIN</Label><Input value={form.vin} onChange={(e) => setForm({ ...form, vin: e.target.value })} className="input-luxury" /></div>
+            <div><Label className="text-xs text-muted-foreground">VIN</Label><Input value={form.vin} onChange={(e) => setForm({ ...form, vin: e.target.value })} className="input-luxury" /></div>
           </div>
           <DialogFooter>
             <Button onClick={addCar} className="bg-[#6C63FF] hover:bg-[#5A52D5]">Add Car</Button>

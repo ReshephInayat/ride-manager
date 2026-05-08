@@ -113,14 +113,14 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-[#080810]">
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
       {/* Left visual panel — hidden on mobile */}
       <div className="relative hidden lg:block overflow-hidden">
         <img src={driverHero} alt="Professional chauffeur next to luxury SUV at night" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-[#080810]/75" />
+        <div className="absolute inset-0 bg-background/75" />
         <div className="absolute inset-0 bg-gradient-to-br from-[#080810]/90 via-[#080810]/40 to-transparent" />
 
-        <div className="relative z-10 flex flex-col justify-between h-full p-12 text-white">
+        <div className="relative z-10 flex flex-col justify-between h-full p-12 text-foreground">
           <div>
             <div className="text-lg font-bold tracking-tight">Puget Sound Limo</div>
             <div className="text-[11px] uppercase tracking-[0.2em] text-[#F5A623] font-medium">Driver Portal</div>
@@ -131,11 +131,11 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
               <br />
               <span className="text-[#F5A623]">confidence.</span>
             </h1>
-            <p className="mt-4 text-[#E2E2F0]/80 max-w-md">
+            <p className="mt-4 text-foreground/80 max-w-md">
               See today's pickups, get SMS alerts an hour before each ride, and update status with one tap.
             </p>
           </div>
-          <div className="text-xs text-[#4A4A6A]">© {new Date().getFullYear()} Puget Sound Limo</div>
+          <div className="text-xs text-muted-foreground/60">© {new Date().getFullYear()} Puget Sound Limo</div>
         </div>
       </div>
 
@@ -144,25 +144,25 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
         {/* Mobile logo */}
         <div className="lg:hidden absolute top-0 left-0 right-0 flex items-center justify-center py-10">
           <div className="text-center">
-            <div className="text-xl font-bold text-white tracking-tight">Puget Sound Limo</div>
+            <div className="text-xl font-bold text-foreground tracking-tight">Puget Sound Limo</div>
             <div className="text-[10px] uppercase tracking-[0.2em] text-[#F5A623] font-medium mt-1">Driver Portal</div>
           </div>
         </div>
 
-        <div className="w-full max-w-md bg-[#10101C] border border-white/[0.07] rounded-[20px] p-8 sm:p-12 mt-24 lg:mt-0">
+        <div className="w-full max-w-md bg-card border border-border rounded-[20px] p-8 sm:p-12 mt-24 lg:mt-0">
           <div className="mb-6 flex items-center gap-3">
-            <span className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#F5A623] to-[#E8820C] grid place-items-center text-white shadow-lg">
+            <span className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#F5A623] to-[#E8820C] grid place-items-center text-foreground shadow-lg">
               <ShieldCheck className="h-6 w-6" />
             </span>
             <div>
-              <h1 className="text-2xl font-bold text-white">Driver sign in</h1>
-              <p className="text-sm text-[#7A7A9A]">Enter your PIN to view your rides</p>
+              <h1 className="text-2xl font-bold text-foreground">Driver sign in</h1>
+              <p className="text-sm text-muted-foreground">Enter your PIN to view your rides</p>
             </div>
           </div>
 
           <form onSubmit={submit} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-[#E2E2F0]">Workspace</label>
+              <label className="text-sm font-medium text-foreground">Workspace</label>
               <select
                 value={system}
                 onChange={(e) => setSystem(e.target.value as WorkspaceSystem)}
@@ -173,7 +173,7 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
               </select>
             </div>
             <div className="space-y-2">
-              <label htmlFor="pin" className="text-sm font-medium text-[#E2E2F0]">PIN</label>
+              <label htmlFor="pin" className="text-sm font-medium text-foreground">PIN</label>
               <input
                 id="pin"
                 inputMode="numeric"
@@ -191,12 +191,12 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
             >
               {busy ? "Signing in…" : (<>Sign in <ArrowRight className="h-4 w-4" /></>)}
             </button>
-            <p className="text-xs text-[#4A4A6A] text-center pt-1">
+            <p className="text-xs text-muted-foreground/60 text-center pt-1">
               Don't have a PIN? Ask the dispatcher to set one for you.
             </p>
-            <div className="flex items-center justify-between text-xs pt-3 border-t border-white/[0.07]">
+            <div className="flex items-center justify-between text-xs pt-3 border-t border-border">
               <Link to="/" className="text-[#F5A623] hover:opacity-80 font-medium">← Back to home</Link>
-              <Link to="/login" className="text-[#7A7A9A] hover:text-white transition-colors">Admin sign in →</Link>
+              <Link to="/login" className="text-muted-foreground hover:text-foreground transition-colors">Admin sign in →</Link>
             </div>
           </form>
         </div>
@@ -314,17 +314,17 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
   });
 
   return (
-    <div className="min-h-screen bg-[#080810]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-white/[0.07] bg-[#10101C]">
+      <header className="border-b border-border bg-card">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="font-bold text-white truncate">{session.name}</div>
-            <div className="text-xs text-[#7A7A9A] truncate">{SYSTEM_LABELS[session.system]}</div>
+            <div className="font-bold text-foreground truncate">{session.name}</div>
+            <div className="text-xs text-muted-foreground truncate">{SYSTEM_LABELS[session.system]}</div>
           </div>
           <div className="flex items-center gap-2">
             <DriverNotificationBell driverId={session.driverId} pin={session.pin} />
-            <button onClick={onLogout} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-[#7A7A9A] hover:text-white hover:bg-white/[0.05] transition-colors">
+            <button onClick={onLogout} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Sign out</span>
             </button>
@@ -363,19 +363,19 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
                 onClick={() => setFilter(k)}
                 className={`px-4 py-2 rounded-full text-sm font-medium capitalize whitespace-nowrap transition-colors ${
                   filter === k
-                    ? "bg-[#6C63FF] text-white"
-                    : "text-[#7A7A9A] hover:text-white hover:bg-white/[0.05]"
+                    ? "bg-[#6C63FF] text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
               >
                 {k === "flights" ? "✈ Flights" : k}
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-1 bg-[#18182A] rounded-lg p-1">
-            <button onClick={() => setView("list")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "list" ? "bg-[#6C63FF] text-white" : "text-[#7A7A9A]"}`}>
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+            <button onClick={() => setView("list")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "list" ? "bg-[#6C63FF] text-foreground" : "text-muted-foreground"}`}>
               <ListChecks className="h-4 w-4" /> List
             </button>
-            <button onClick={() => setView("calendar")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "calendar" ? "bg-[#6C63FF] text-white" : "text-[#7A7A9A]"}`}>
+            <button onClick={() => setView("calendar")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "calendar" ? "bg-[#6C63FF] text-foreground" : "text-muted-foreground"}`}>
               <CalendarDays className="h-4 w-4" /> Calendar
             </button>
           </div>
@@ -388,9 +388,9 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
           </div>
         ) : filtered.length === 0 ? (
           <div className="luxury-card p-12 text-center">
-            <AlertCircle className="h-12 w-12 text-[#4A4A6A] mx-auto mb-4" />
-            <p className="text-[#7A7A9A] text-lg font-medium">No rides in this view</p>
-            <p className="text-[#4A4A6A] text-sm mt-1">Try switching to a different filter</p>
+            <AlertCircle className="h-12 w-12 text-muted-foreground/60 mx-auto mb-4" />
+            <p className="text-muted-foreground text-lg font-medium">No rides in this view</p>
+            <p className="text-muted-foreground/60 text-sm mt-1">Try switching to a different filter</p>
           </div>
         ) : view === "list" ? (
           <div className="space-y-4">
@@ -410,8 +410,8 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
 function StatTile({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: number; highlight?: boolean }) {
   return (
     <div className={`luxury-card p-4 min-w-[140px] flex-shrink-0 ${highlight ? "border-l-2 border-l-[#F5A623]" : ""}`} style={{ scrollSnapAlign: "start" }}>
-      <div className="text-xs text-[#7A7A9A] flex items-center gap-1.5">{icon} {label}</div>
-      <div className="text-3xl font-bold text-white mt-2">{value}</div>
+      <div className="text-xs text-muted-foreground flex items-center gap-1.5">{icon} {label}</div>
+      <div className="text-3xl font-bold text-foreground mt-2">{value}</div>
     </div>
   );
 }
@@ -450,9 +450,9 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
   return (
     <div className="luxury-card overflow-hidden">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 sm:px-6 pt-4 pb-3 border-b border-white/[0.07]">
+      <div className="flex items-center justify-between px-5 sm:px-6 pt-4 pb-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-white/[0.06] text-[#E2E2F0]">
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-white/[0.06] text-foreground">
             {ride.ride_date}
           </span>
         </div>
@@ -469,27 +469,27 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="rounded-xl border border-[#6C63FF]/20 bg-[#6C63FF]/[0.06] px-4 py-3">
             <div className="text-[10px] uppercase tracking-wider font-bold text-[#6C63FF]/70">Pickup</div>
-            <div className="text-base font-bold text-white tabular-nums mt-0.5">{ride.pickup_time ?? "—"}</div>
-            <div className="text-sm text-[#E2E2F0] mt-0.5 truncate">{ride.pickup_location ?? "—"}</div>
-            {ride.pickup_from && <div className="text-xs text-[#7A7A9A] truncate">{ride.pickup_from}</div>}
+            <div className="text-base font-bold text-foreground tabular-nums mt-0.5">{ride.pickup_time ?? "—"}</div>
+            <div className="text-sm text-foreground mt-0.5 truncate">{ride.pickup_location ?? "—"}</div>
+            {ride.pickup_from && <div className="text-xs text-muted-foreground truncate">{ride.pickup_from}</div>}
           </div>
-          <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3">
-            <div className="text-[10px] uppercase tracking-wider font-bold text-[#7A7A9A]">Dropoff</div>
-            <div className="text-base font-bold text-white tabular-nums mt-0.5">{dropoffTime ?? "—"}</div>
-            <div className="text-sm text-[#E2E2F0] mt-0.5 truncate">{ride.dropoff_location ?? "—"}</div>
-            {cleanDropoffTo && <div className="text-xs text-[#7A7A9A] truncate">{cleanDropoffTo}</div>}
+          <div className="rounded-xl border border-border bg-white/[0.03] px-4 py-3">
+            <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Dropoff</div>
+            <div className="text-base font-bold text-foreground tabular-nums mt-0.5">{dropoffTime ?? "—"}</div>
+            <div className="text-sm text-foreground mt-0.5 truncate">{ride.dropoff_location ?? "—"}</div>
+            {cleanDropoffTo && <div className="text-xs text-muted-foreground truncate">{cleanDropoffTo}</div>}
           </div>
         </div>
 
         {/* Meta chips */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="glass-pill text-xs px-3 py-1 flex items-center gap-1.5 text-[#E2E2F0]">
-            <User className="h-3.5 w-3.5 text-[#7A7A9A]" />
+          <span className="glass-pill text-xs px-3 py-1 flex items-center gap-1.5 text-foreground">
+            <User className="h-3.5 w-3.5 text-muted-foreground" />
             {ride.riders ?? 1} {(ride.riders ?? 1) === 1 ? "passenger" : "passengers"}
           </span>
           {cleanFlight && (
-            <span className="glass-pill text-xs px-3 py-1 flex items-center gap-1.5 text-[#E2E2F0]">
-              <Plane className="h-3.5 w-3.5 text-[#7A7A9A]" />
+            <span className="glass-pill text-xs px-3 py-1 flex items-center gap-1.5 text-foreground">
+              <Plane className="h-3.5 w-3.5 text-muted-foreground" />
               <FlightTrackLink flightNumber={cleanFlight} />
             </span>
           )}
@@ -497,12 +497,12 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
 
         {ride.phone && (
           <div className="flex items-center gap-2 text-sm">
-            <Phone className="h-4 w-4 text-[#7A7A9A]" />
+            <Phone className="h-4 w-4 text-muted-foreground" />
             <a href={`tel:${ride.phone}`} className="text-[#6C63FF] hover:underline truncate">{ride.phone}</a>
           </div>
         )}
         {ride.notes && (
-          <div className="text-xs text-[#7A7A9A] italic break-words">Note: {ride.notes}</div>
+          <div className="text-xs text-muted-foreground italic break-words">Note: {ride.notes}</div>
         )}
         {(isStarted || isArrived) && (
           <div className="flex items-center gap-2 text-xs text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/20 rounded-lg px-3 py-2">
@@ -576,14 +576,14 @@ function CalendarView({ rides }: { rides: Ride[] }) {
     <div className="space-y-4">
       {byDate.map(([date, items]) => (
         <div key={date} className="luxury-card p-5">
-          <div className="font-semibold text-white mb-3">
+          <div className="font-semibold text-foreground mb-3">
             {new Date(date).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
           </div>
           <div className="space-y-2">
             {items.map((r) => (
-              <div key={r.id} className="flex items-center gap-3 text-sm border border-white/[0.07] rounded-lg px-3 py-2.5 bg-white/[0.02]">
-                <span className="font-mono text-xs text-[#7A7A9A] w-14 shrink-0">{r.pickup_time ?? "—"}</span>
-                <span className="truncate flex-1 text-[#E2E2F0]">
+              <div key={r.id} className="flex items-center gap-3 text-sm border border-border rounded-lg px-3 py-2.5 bg-white/[0.02]">
+                <span className="font-mono text-xs text-muted-foreground w-14 shrink-0">{r.pickup_time ?? "—"}</span>
+                <span className="truncate flex-1 text-foreground">
                   {(r.riders ?? 1)} pax • {r.pickup_location ?? "—"} → {r.dropoff_location ?? "—"}
                 </span>
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${statusStyle[r.status]}`}>
