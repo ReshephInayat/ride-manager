@@ -1,63 +1,46 @@
+# Implementation Plan
 
-# Feature Expansion Plan
+## 1. Theme (Light/Dark) — default Light
+- Audit `src/lib/theme.tsx`: keep but change default to `light` (ignore system preference unless user explicitly toggled).
+- Audit `src/styles.css` to ensure `:root` has full light tokens and `.dark` overrides every token used in components.
+- Replace hard-coded `text-white`, `bg-black`, `bg-white/5`, `text-white/40` etc. used across pages (dashboard, flights, driver, logs, payouts, cars, invoices) with semantic tokens (`text-foreground`, `bg-card`, `text-muted-foreground`, `border-border`).
+- Add a visible toggle in `AppShell` header that flips `theme` and persists to localStorage (already wired — verify it works in both admin & driver shells).
 
-## Overview
-Add fleet management (cars, maintenance, fuel, insurance, installments), driver financials (ride counts, payouts, payout history), and a flight tracking page (placeholder for future API integration).
+## 2. Date filter component (shared)
+Create `src/components/DateRangeFilter.tsx` with options:
+`Today` (default) · `Yesterday` · `Tomorrow` · `This Week` · `Pick Week` · `This Month` · `Pick a Month` · `Between Dates` · `All`.
+Returns `{from: string|null, to: string|null}` (YYYY-MM-DD). Used by Dashboard, Driver portal, Logs, Flights.
 
----
+## 3. Dashboard load reduction
+- `src/routes/dashboard.tsx`: default query filters `ride_date` to today. Re-query when filter changes.
+- Keep granular realtime updates (already in place).
 
-## Phase 1: Database Tables
+## 4. Exports (admin)
+Create `src/lib/export.ts` with CSV helpers. Add an "Export" dropdown in Dashboard / relevant pages:
+- Total rides, Completed rides, Completed totals + 10% commission + net (computed CSV)
+- All imported rides
+- Drivers, Routes, Cars, Payouts, Payout history
+Each export pulls from Supabase (no row limit logic — paginate if >1000).
 
-### New tables:
+## 5. Driver portal (`src/routes/driver.tsx`)
+- Default rides view = today; add same DateRangeFilter.
+- New tabs/sections: **Completed rides** count + history list, **Payouts** (current pending + history).
+- Export buttons: Ride history CSV, Payout history CSV.
+- Use existing token RPCs; add new RPC `driver_payouts_by_token` if needed.
 
-1. **cars** — id, user_id, system, name, make, model, year, license_plate, vin, color, current_mileage, status (active/inactive/in_service), created_at, updated_at
-2. **car_maintenance** — id, user_id, system, car_id, type (oil_change/tire/brake/general/scheduled_service), description, mileage_at_service, cost, service_date, next_service_mileage, created_at
-3. **fuel_expenses** — id, user_id, system, car_id, driver_id (nullable), gallons, cost, mileage_at_fill, fuel_date, notes, created_at
-4. **car_installments** — id, user_id, system, car_id, amount, due_date, paid, paid_date, notes, created_at
-5. **car_insurance** — id, user_id, system, car_id, provider, policy_number, premium, start_date, end_date, notes, created_at
-6. **driver_payouts** — id, user_id, system, driver_id, amount, period_start, period_end, notes, paid_at, created_at
+## 6. System logs (`src/routes/logs.tsx`)
+- Default to today; add DateRangeFilter; export CSV button.
 
-All tables will have RLS policies restricting access to the owner (auth.uid() = user_id).
+## 7. Flights — AviationStack integration
+- Store API key as Supabase secret `AVIATIONSTACK_API_KEY` (request via add_secret since user pasted it in chat — security).
+- Create edge function `flight-lookup` that proxies AviationStack `flights?flight_iata=XX123` (caches response 5 min in-memory).
+- Update `src/components/FlightTrackLink.tsx` and `src/routes/flights.tsx` to call the function and render status, departure/arrival airports, scheduled/actual times, terminal/gate, delay — no external link required.
+- Add a "Flight Details" dialog reusable by admin & driver portal.
 
----
+## Technical notes
+- Migrations needed: optional `driver_payouts_by_token` RPC.
+- Secrets: `AVIATIONSTACK_API_KEY` (will prompt via add_secret).
+- No schema changes to rides/drivers/etc.
+- All new SQL via migration tool; data via insert tool.
 
-## Phase 2: New Pages
-
-### Admin Pages:
-
-1. **`/cars`** — Manage cars: add/edit/delete vehicles, view current mileage, status
-2. **`/cars/$id`** — Car detail page with tabs: Maintenance, Fuel, Installments, Insurance histories
-3. **`/payouts`** — Driver payout management: ride counts per driver, create payouts, view payout history
-4. **`/flights`** — Flight tracking dashboard: list all flights from today's rides, placeholder for future API integration (show flight numbers, status placeholder, links to FlightAware)
-
-### Driver Page Enhancement:
-- Add a "Flights" tab/section to the driver portal showing today's flight numbers with tracking links
-
----
-
-## Phase 3: Navigation Updates
-
-Add to AppShell sidebar:
-- **Fleet** group: Cars, Payouts
-- **Tracking** group: Flights
-- Update bottom tabs for mobile
-
----
-
-## Phase 4: Flight Tracking (Placeholder)
-
-Since you'll provide the flight API key later, I'll build:
-- A page listing all unique flight numbers from rides (filterable by today/tomorrow/date range)
-- Each flight shows: flight number, associated ride info, pickup time, and a "Track" link
-- Placeholder for real-time status that will be wired to an API later
-- Available on both admin and driver portals
-
----
-
-## Technical Details
-
-- 6 new database tables with RLS
-- 5 new route files: `cars.tsx`, `cars.$id.tsx`, `payouts.tsx`, `flights.tsx`
-- Updated `AppShell.tsx` navigation
-- Updated `driver.tsx` with flights section
-- All pages follow existing dark theme design patterns
+Approve to proceed and I will run the migration + secret request, then implement in one pass.
