@@ -69,6 +69,7 @@ type DateFilter =
   | "tomorrow"
   | "yesterday"
   | "this_week"
+  | "pick_week"
   | "this_month"
   | "custom_month"
   | "custom_range";
