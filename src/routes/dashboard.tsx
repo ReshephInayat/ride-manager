@@ -218,13 +218,40 @@ function DashboardInner() {
     load();
   }, [system]);
 
-  // Realtime: refresh whenever rides, routes, or drivers change in this workspace.
+  // Realtime: apply granular updates to rides instead of refetching everything.
   useEffect(() => {
     const ch = supabase
       .channel(`dashboard-${system}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "routes" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, () => load())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "rides" }, (payload) => {
+        const newRide = payload.new as Ride;
+        if (newRide.system !== system) return;
+        setRides((prev) => {
+          if (prev.some((r) => r.id === newRide.id)) return prev;
+          return [...prev, newRide].sort((a, b) =>
+            a.ride_date === b.ride_date
+              ? (a.pickup_time ?? "").localeCompare(b.pickup_time ?? "")
+              : a.ride_date.localeCompare(b.ride_date),
+          );
+        });
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "rides" }, (payload) => {
+        const updated = payload.new as Ride;
+        setRides((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "rides" }, (payload) => {
+        const old = payload.old as { id?: string };
+        if (old?.id) setRides((prev) => prev.filter((r) => r.id !== old.id));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "routes" }, () => {
+        supabase.from("routes").select("*").eq("system", system).order("created_at").then(({ data }) => {
+          if (data) setRoutes(data as RouteRow[]);
+        });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, () => {
+        supabase.from("drivers").select("*").eq("system", system).order("created_at").then(({ data }) => {
+          if (data) setDrivers(data as Driver[]);
+        });
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
@@ -428,7 +455,23 @@ function DashboardInner() {
         return { ...row, ride_key, dedupe_key: ride_key };
       });
 
-      const toInsert = allRows;
+      // Only skip rides that already exist in the DB — allow duplicates within the file
+      const uniqueKeys = [...new Set(allRows.map((r) => r.ride_key))];
+      const existingKeys = new Set<string>();
+      const KEY_BATCH = 200;
+      for (let i = 0; i < uniqueKeys.length; i += KEY_BATCH) {
+        const slice = uniqueKeys.slice(i, i + KEY_BATCH);
+        const { data: found } = await supabase
+          .from("rides")
+          .select("ride_key")
+          .eq("user_id", u.user!.id)
+          .eq("system", system)
+          .in("ride_key", slice);
+        if (found) for (const f of found) existingKeys.add(f.ride_key);
+      }
+
+      const toInsert = allRows.filter((r) => !existingKeys.has(r.ride_key));
+      const skipped = allRows.length - toInsert.length;
 
       let inserted = 0;
       const BATCH = 200;
@@ -436,7 +479,7 @@ function DashboardInner() {
         const slice = toInsert.slice(i, i + BATCH);
         const { data: ins, error } = await supabase
           .from("rides")
-          .upsert(slice, { onConflict: "user_id,system,ride_key", ignoreDuplicates: true })
+          .insert(slice)
           .select("id");
         if (error) throw error;
         inserted += ins?.length ?? 0;
@@ -444,6 +487,7 @@ function DashboardInner() {
 
       toast.success(
         `Imported ${inserted} new ride${inserted === 1 ? "" : "s"}` +
+          (skipped > 0 ? ` • ${skipped} already in system (skipped)` : "") +
           (previewInvalid > 0 ? ` • ${previewInvalid} invalid row${previewInvalid === 1 ? "" : "s"}` : ""),
       );
       setPreviewRows(null);

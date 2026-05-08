@@ -20,7 +20,7 @@ const adminTools = [
     type: "function" as const,
     function: {
       name: "update_ride_status",
-      description: "Update the status of a ride. Use when admin asks to change a ride's status.",
+      description: "Update the status of a single ride. Use when admin asks to change one ride's status.",
       parameters: {
         type: "object",
         properties: {
@@ -28,6 +28,21 @@ const adminTools = [
           status: { type: "string", enum: ["pending", "started", "arrived", "completed", "cancelled", "no_show"], description: "New status" },
         },
         required: ["ride_id", "status"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "bulk_update_ride_status",
+      description: "Update the status of multiple rides at once. Use when admin asks to change ALL rides or many rides to a specific status (e.g. 'complete all rides', 'mark all as pending'). You MUST pass ALL matching ride IDs — do not skip any.",
+      parameters: {
+        type: "object",
+        properties: {
+          ride_ids: { type: "array", items: { type: "string" }, description: "Array of ride UUIDs to update. Include ALL rides that match the user's criteria." },
+          status: { type: "string", enum: ["pending", "started", "arrived", "completed", "cancelled", "no_show"], description: "New status to set on all rides" },
+        },
+        required: ["ride_ids", "status"],
       },
     },
   },
@@ -195,6 +210,26 @@ async function executeToolCall(
         return `✅ Ride status updated to "${args.status}".`;
       }
 
+      case "bulk_update_ride_status": {
+        const rideIds = args.ride_ids as string[];
+        if (!rideIds || rideIds.length === 0) return "Error: No ride IDs provided.";
+        const status = args.status as string;
+        // Process in batches of 50
+        let updated = 0;
+        const BATCH = 50;
+        for (let i = 0; i < rideIds.length; i += BATCH) {
+          const batch = rideIds.slice(i, i + BATCH);
+          const { error, count } = await admin
+            .from("rides")
+            .update({ status, updated_at: new Date().toISOString() }, { count: "exact" })
+            .in("id", batch)
+            .eq("user_id", userId);
+          if (error) return `Error at batch ${Math.floor(i / BATCH) + 1}: ${error.message}`;
+          updated += count ?? batch.length;
+        }
+        return `✅ ${updated} ride${updated === 1 ? "" : "s"} updated to "${status}".`;
+      }
+
       case "assign_driver": {
         const dName = String(args.driver_name).toLowerCase();
         const drv = drivers.find((d) => d.name.toLowerCase().includes(dName));
@@ -227,7 +262,6 @@ async function executeToolCall(
           amount: 0,
           ride_key: `manual-${Date.now()}`,
         };
-        // Try to auto-match a route for pricing
         const pickHay = `${row.pickup_from ?? ""} ${row.pickup_location ?? ""}`.toString().toLowerCase();
         const dropHay = `${row.dropoff_to ?? ""} ${row.dropoff_location ?? ""}`.toString().toLowerCase();
         const { data: allRoutes } = await admin.from("routes").select("id,name,pickup_location,dropoff_location,price").eq("user_id", userId).eq("system", system);
@@ -272,7 +306,6 @@ async function executeToolCall(
           phone: args.phone ?? null,
           email: args.email ?? null,
         };
-        // Hash PIN if provided instead of storing plaintext
         if (args.login_pin && typeof args.login_pin === "string" && args.login_pin.length >= 4) {
           const encoder = new TextEncoder();
           const data = encoder.encode(String(args.login_pin));
@@ -352,9 +385,10 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const todayIso = new Date().toISOString().slice(0, 10);
 
+    // Fetch ALL rides (no limit) so the bot can operate on every ride
     const [ridesRes, routesRes, driversRes, invoicesRes] = await Promise.all([
       admin.from("rides").select("id,ride_date,pickup_time,pickup_from,pickup_location,dropoff_to,dropoff_location,status,riders,amount,passenger_name,phone,flight_number,notes,driver_id,route_id,department")
-        .eq("user_id", user.id).eq("system", sys).order("ride_date", { ascending: true }).order("pickup_time", { ascending: true }).limit(300),
+        .eq("user_id", user.id).eq("system", sys).order("ride_date", { ascending: true }).order("pickup_time", { ascending: true }).range(0, 9999),
       admin.from("routes").select("id,name,pickup_location,dropoff_location,price").eq("user_id", user.id).eq("system", sys),
       admin.from("drivers").select("id,name,phone,email,active").eq("user_id", user.id).eq("system", sys),
       admin.from("invoices").select("id,invoice_number,bill_to,period_start,period_end,subtotal,sales_tax_amount,total,created_at").eq("user_id", user.id).eq("system", sys).order("created_at", { ascending: false }).limit(50),
@@ -368,9 +402,14 @@ Deno.serve(async (req) => {
     const driverById = Object.fromEntries(drivers.map((d) => [d.id, d.name]));
     const routeById = Object.fromEntries(routes.map((r) => [r.id, r.name]));
 
-    const upcoming = rides.filter((r) => r.ride_date >= todayIso && r.status === "pending").slice(0, 25);
-    const recent = rides.filter((r) => r.ride_date < todayIso).slice(-25);
-    const completedSum = rides.filter((r) => r.status === "completed").reduce((s, r) => s + Number(r.amount || 0), 0);
+    // Status summary
+    const statusCounts: Record<string, number> = {};
+    for (const r of rides) {
+      statusCounts[r.status] = (statusCounts[r.status] || 0) + 1;
+    }
+    const statusSummary = Object.entries(statusCounts).map(([s, c]) => `${s}: ${c}`).join(", ");
+
+    const completedSum = rides.filter((r: any) => r.status === "completed").reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
 
     const fmtRide = (r: any) =>
       `- [${r.id}] ${r.ride_date} ${r.pickup_time ?? ""} | ${r.pickup_from ?? r.pickup_location ?? "?"} → ${r.dropoff_to ?? r.dropoff_location ?? "?"} | riders:${r.riders} | $${r.amount} | ${r.status}${r.passenger_name ? ` | pax:${r.passenger_name}` : ""}${r.phone ? ` ${r.phone}` : ""}${r.flight_number ? ` flight:${r.flight_number}` : ""}${r.driver_id ? ` | driver:${driverById[r.driver_id] ?? "?"}` : ""}${r.route_id ? ` | route:${routeById[r.route_id] ?? "?"}` : ""}`;
@@ -378,26 +417,26 @@ Deno.serve(async (req) => {
     const systemLabel = sys === "api" ? "Puget Sound Limo API" : "Puget Sound Limo LLC";
     const context = [
       `You are the in-app AI assistant for ${systemLabel}. Today is ${todayIso}.`,
-      `You can ANSWER questions AND PERFORM actions on behalf of the admin. You have tools to: update ride status, assign drivers, create/edit/delete rides, create/delete routes, create/deactivate drivers.`,
+      `You can ANSWER questions AND PERFORM actions on behalf of the admin. You have tools to: update ride status (single or bulk), assign drivers, create/edit/delete rides, create/delete routes, create/deactivate drivers.`,
       `When the admin asks you to do something (e.g. "change ride status", "add a new ride", "assign driver X"), use the appropriate tool. Always confirm the action result.`,
+      `IMPORTANT: When the admin asks to update ALL rides or many rides (e.g. "complete all rides", "mark all pending"), use the bulk_update_ride_status tool with ALL matching ride IDs. Do NOT skip any rides. Count them carefully.`,
       `When referencing rides, use the ride ID shown in brackets [id] in the data below.`,
       `If the user's request is ambiguous (e.g. "change that ride"), ask for clarification.`,
       sys === "api" ? `Commission rule: 10% of completed-ride totals. Total completed: $${completedSum.toFixed(2)}, commission: $${(completedSum * 0.1).toFixed(2)}, net: $${(completedSum * 0.9).toFixed(2)}.` : "",
       ``,
+      `TOTAL RIDES: ${rides.length} (${statusSummary})`,
+      ``,
       `ROUTES (${routes.length}):`,
-      ...routes.map((r) => `- [${r.id}] ${r.name}: ${r.pickup_location} → ${r.dropoff_location} @ $${r.price}`),
+      ...routes.map((r: any) => `- [${r.id}] ${r.name}: ${r.pickup_location} → ${r.dropoff_location} @ $${r.price}`),
       ``,
       `DRIVERS (${drivers.length}):`,
-      ...drivers.map((d) => `- [${d.id}] ${d.name}${d.phone ? ` (${d.phone})` : ""}${d.active ? "" : " [inactive]"}`),
+      ...drivers.map((d: any) => `- [${d.id}] ${d.name}${d.phone ? ` (${d.phone})` : ""}${d.active ? "" : " [inactive]"}`),
       ``,
-      `UPCOMING RIDES (${upcoming.length}):`,
-      ...upcoming.map(fmtRide),
-      ``,
-      `RECENT PAST RIDES (${recent.length}):`,
-      ...recent.map(fmtRide),
+      `ALL RIDES (${rides.length}):`,
+      ...rides.map(fmtRide),
       ``,
       `INVOICES (${invoices.length}):`,
-      ...invoices.slice(0, 15).map((i) => `- #${i.invoice_number} ${i.bill_to} ${i.period_start ?? ""}–${i.period_end ?? ""} total:$${i.total}`),
+      ...invoices.slice(0, 15).map((i: any) => `- #${i.invoice_number} ${i.bill_to} ${i.period_start ?? ""}–${i.period_end ?? ""} total:$${i.total}`),
     ].filter(Boolean).join("\n");
 
     // First AI call with tools
@@ -406,7 +445,7 @@ Deno.serve(async (req) => {
       ...(messages ?? []),
     ];
 
-    const MAX_TOOL_ROUNDS = 5;
+    const MAX_TOOL_ROUNDS = 10;
     let finalReply = "";
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
@@ -414,7 +453,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "google/gemini-2.5-flash",
           messages: aiMessages,
           tools: adminTools,
         }),
@@ -439,10 +478,8 @@ Deno.serve(async (req) => {
 
       // If the model wants to call tools
       if (msg.tool_calls && msg.tool_calls.length > 0) {
-        // Add assistant message with tool calls
         aiMessages.push(msg);
 
-        // Execute each tool call
         for (const tc of msg.tool_calls) {
           const fnName = tc.function.name;
           let fnArgs: Record<string, unknown> = {};
@@ -460,24 +497,21 @@ Deno.serve(async (req) => {
             user.id,
             sys,
             admin,
-            drivers.filter((d) => d.active),
+            drivers.filter((d: any) => d.active),
             routes,
           );
 
           console.log(`[chat-assistant] Tool result: ${result}`);
 
-          // Add tool result
           aiMessages.push({
             role: "tool",
             tool_call_id: tc.id,
             content: result,
           } as any);
         }
-        // Continue loop to let model generate final response
         continue;
       }
 
-      // No tool calls — this is the final text response
       finalReply = msg.content ?? "";
       break;
     }
