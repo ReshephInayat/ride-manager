@@ -109,6 +109,16 @@ function getDateRange(
     sun.setDate(mon.getDate() + 6);
     return { start: ymd(mon), end: ymd(sun) };
   }
+  if (filter === "pick_week" && customStart) {
+    const ref = new Date(customStart);
+    const day = ref.getDay();
+    const diffToMon = (day + 6) % 7;
+    const mon = new Date(ref);
+    mon.setDate(ref.getDate() - diffToMon);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    return { start: ymd(mon), end: ymd(sun) };
+  }
   if (filter === "this_month") {
     const first = new Date(now.getFullYear(), now.getMonth(), 1);
     const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
