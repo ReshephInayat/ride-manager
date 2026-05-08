@@ -956,6 +956,27 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      driver_payouts_by_pin: {
+        Args: { _driver_id: string; _pin: string }
+        Returns: {
+          amount: number
+          created_at: string
+          driver_id: string
+          id: string
+          notes: string | null
+          paid_at: string | null
+          period_end: string | null
+          period_start: string | null
+          system: Database["public"]["Enums"]["workspace_system"]
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "driver_payouts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       driver_rides: {
         Args: { _driver_id: string; _pin: string }
         Returns: {

@@ -6,7 +6,7 @@ import { playNotificationSound } from "@/lib/sound";
 import {
   LogOut, CalendarDays, Clock, MapPin, User, Phone, Plane,
   CheckCircle2, XCircle, Hourglass, ListChecks, ShieldCheck,
-  Sparkles, ArrowRight, Radio, AlertCircle,
+  Sparkles, ArrowRight, Radio, AlertCircle, Download, Wallet,
 } from "lucide-react";
 import { extractDropoffTime, stripTrailingTime, type Ride, type RideStatus } from "@/lib/rides";
 import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
@@ -14,6 +14,8 @@ import driverHero from "@/assets/driver-hero.jpg";
 import { FlightTrackLink, FlightSearchButton } from "@/components/FlightTrackLink";
 import { DriverNotificationBell } from "@/components/DriverNotificationBell";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
+import { DateRangeFilter, presetToRange, type DateRange } from "@/components/DateRangeFilter";
+import { downloadCSV } from "@/lib/export";
 
 export const Route = createFileRoute("/driver")({ component: DriverPortal });
 
@@ -220,7 +222,10 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "calendar">("list");
-  const [filter, setFilter] = useState<"upcoming" | "today" | "past" | "flights" | "all">("upcoming");
+  const [filter, setFilter] = useState<"upcoming" | "today" | "past" | "flights" | "all" | "history" | "payouts">("today");
+  const [dateRange, setDateRange] = useState<DateRange>(() => presetToRange("today"));
+  const [payouts, setPayouts] = useState<any[]>([]);
+  const [payoutsLoaded, setPayoutsLoaded] = useState(false);
 
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -287,19 +292,77 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
   };
 
   const today = new Date().toISOString().slice(0, 10);
+
+  const inRange = (d: string) => {
+    if (dateRange.from && d < dateRange.from) return false;
+    if (dateRange.to && d > dateRange.to) return false;
+    return true;
+  };
+
   const filtered = useMemo(() => {
     if (filter === "today") return rides.filter((r) => r.ride_date === today);
     if (filter === "upcoming") return rides.filter((r) => r.ride_date >= today);
     if (filter === "past") return rides.filter((r) => r.ride_date < today);
     if (filter === "flights") return rides.filter((r) => r.ride_date >= today && !!r.flight_number);
+    if (filter === "history") return rides.filter((r) => r.status === "completed" && inRange(r.ride_date));
     return rides;
-  }, [rides, filter, today]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rides, filter, today, dateRange.from, dateRange.to]);
 
   const counts = useMemo(() => ({
     today: rides.filter((r) => r.ride_date === today).length,
     upcoming: rides.filter((r) => r.ride_date >= today).length,
     completedToday: rides.filter((r) => r.ride_date === today && r.status === "completed").length,
+    completedAll: rides.filter((r) => r.status === "completed").length,
   }), [rides, today]);
+
+  useEffect(() => {
+    if (filter !== "payouts" || payoutsLoaded) return;
+    (async () => {
+      const { data, error } = await (supabase.rpc as any)("driver_payouts_by_pin", {
+        _driver_id: session.driverId,
+        _pin: session.pin,
+      });
+      if (error) toast.error(error.message);
+      else setPayouts((data as any[]) ?? []);
+      setPayoutsLoaded(true);
+    })();
+  }, [filter, payoutsLoaded, session.driverId, session.pin]);
+
+  const totalPaid = payouts.reduce((s, p) => s + Number(p.amount || 0), 0);
+  const completedTotal = useMemo(
+    () => rides.filter((r) => r.status === "completed").reduce((s, r) => s + Number(r.amount || 0), 0),
+    [rides],
+  );
+  const pendingEarnings = completedTotal - totalPaid;
+
+  const exportRideHistory = () => {
+    const rows = rides.filter((r) => r.status === "completed" && inRange(r.ride_date));
+    downloadCSV(
+      "my-completed-rides",
+      rows.map((r) => ({
+        date: r.ride_date,
+        pickup_time: r.pickup_time ?? "",
+        pickup: r.pickup_location ?? "",
+        dropoff: r.dropoff_location ?? "",
+        passenger: r.passenger_name ?? "",
+        amount: Number(r.amount).toFixed(2),
+      })),
+    );
+  };
+
+  const exportPayouts = () => {
+    downloadCSV(
+      "my-payouts",
+      payouts.map((p) => ({
+        amount: Number(p.amount).toFixed(2),
+        period_start: p.period_start ?? "",
+        period_end: p.period_end ?? "",
+        paid_at: p.paid_at ?? "",
+        notes: p.notes ?? "",
+      })),
+    );
+  };
 
   const activeRide = useMemo(
     () => rides.find((r) => r.status === "started" || r.status === "arrived") ?? null,
@@ -357,7 +420,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
         {/* Filter tabs */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-            {(["upcoming", "today", "past", "flights", "all"] as const).map((k) => (
+            {(["today", "upcoming", "past", "flights", "all", "history", "payouts"] as const).map((k) => (
               <button
                 key={k}
                 onClick={() => setFilter(k)}
@@ -371,18 +434,84 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-            <button onClick={() => setView("list")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "list" ? "bg-[#6C63FF] text-foreground" : "text-muted-foreground"}`}>
-              <ListChecks className="h-4 w-4" /> List
-            </button>
-            <button onClick={() => setView("calendar")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "calendar" ? "bg-[#6C63FF] text-foreground" : "text-muted-foreground"}`}>
-              <CalendarDays className="h-4 w-4" /> Calendar
-            </button>
-          </div>
+          {filter !== "history" && filter !== "payouts" && (
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+              <button onClick={() => setView("list")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "list" ? "bg-[#6C63FF] text-foreground" : "text-muted-foreground"}`}>
+                <ListChecks className="h-4 w-4" /> List
+              </button>
+              <button onClick={() => setView("calendar")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "calendar" ? "bg-[#6C63FF] text-foreground" : "text-muted-foreground"}`}>
+                <CalendarDays className="h-4 w-4" /> Calendar
+              </button>
+            </div>
+          )}
         </div>
 
+        {/* History / Payouts toolbar */}
+        {filter === "history" && (
+          <div className="luxury-card p-4 mb-4 flex flex-wrap items-center gap-3">
+            <DateRangeFilter value={dateRange} onChange={setDateRange} />
+            <div className="text-sm text-muted-foreground">
+              {filtered.length} completed • ${filtered.reduce((s, r) => s + Number(r.amount || 0), 0).toFixed(2)}
+            </div>
+            <button
+              onClick={exportRideHistory}
+              className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-[#6C63FF] text-foreground"
+            >
+              <Download className="h-4 w-4" /> Export CSV
+            </button>
+          </div>
+        )}
+
+        {filter === "payouts" && (
+          <div className="luxury-card p-4 mb-4">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <Wallet className="h-5 w-5 text-muted-foreground" />
+              <div className="text-sm">
+                <div className="text-muted-foreground">Total paid</div>
+                <div className="font-semibold">${totalPaid.toFixed(2)}</div>
+              </div>
+              <div className="text-sm">
+                <div className="text-muted-foreground">Completed earnings</div>
+                <div className="font-semibold">${completedTotal.toFixed(2)}</div>
+              </div>
+              <div className="text-sm">
+                <div className="text-muted-foreground">Pending</div>
+                <div className={`font-semibold ${pendingEarnings > 0 ? "text-emerald-500" : ""}`}>${pendingEarnings.toFixed(2)}</div>
+              </div>
+              <button
+                onClick={exportPayouts}
+                className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-[#6C63FF] text-foreground"
+              >
+                <Download className="h-4 w-4" /> Export CSV
+              </button>
+            </div>
+            {!payoutsLoaded ? (
+              <div className="text-sm text-muted-foreground">Loading payouts…</div>
+            ) : payouts.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No payouts recorded yet.</div>
+            ) : (
+              <div className="divide-y divide-border">
+                {payouts.map((p) => (
+                  <div key={p.id} className="py-3 flex items-center justify-between text-sm">
+                    <div>
+                      <div className="font-medium">${Number(p.amount).toFixed(2)}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {p.period_start ? `${p.period_start} → ${p.period_end ?? ""}` : new Date(p.created_at).toLocaleDateString()}
+                      </div>
+                      {p.notes && <div className="text-xs text-muted-foreground mt-0.5">{p.notes}</div>}
+                    </div>
+                    <div className={`text-xs ${p.paid_at ? "text-emerald-500" : "text-amber-500"}`}>
+                      {p.paid_at ? `Paid ${new Date(p.paid_at).toLocaleDateString()}` : "Pending"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Content */}
-        {loading ? (
+        {filter === "payouts" ? null : loading ? (
           <div className="space-y-3">
             {[1,2,3].map(i => <div key={i} className="h-48 rounded-2xl skeleton-shimmer" />)}
           </div>
@@ -392,7 +521,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
             <p className="text-muted-foreground text-lg font-medium">No rides in this view</p>
             <p className="text-muted-foreground/60 text-sm mt-1">Try switching to a different filter</p>
           </div>
-        ) : view === "list" ? (
+        ) : view === "list" || filter === "history" ? (
           <div className="space-y-4">
             {filtered.map((r) => (
               <RideCard key={r.id} ride={r} onSetStatus={(s) => setStatus(r.id, s)} />
