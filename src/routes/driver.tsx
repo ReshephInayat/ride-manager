@@ -292,19 +292,77 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
   };
 
   const today = new Date().toISOString().slice(0, 10);
+
+  const inRange = (d: string) => {
+    if (dateRange.from && d < dateRange.from) return false;
+    if (dateRange.to && d > dateRange.to) return false;
+    return true;
+  };
+
   const filtered = useMemo(() => {
     if (filter === "today") return rides.filter((r) => r.ride_date === today);
     if (filter === "upcoming") return rides.filter((r) => r.ride_date >= today);
     if (filter === "past") return rides.filter((r) => r.ride_date < today);
     if (filter === "flights") return rides.filter((r) => r.ride_date >= today && !!r.flight_number);
+    if (filter === "history") return rides.filter((r) => r.status === "completed" && inRange(r.ride_date));
     return rides;
-  }, [rides, filter, today]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rides, filter, today, dateRange.from, dateRange.to]);
 
   const counts = useMemo(() => ({
     today: rides.filter((r) => r.ride_date === today).length,
     upcoming: rides.filter((r) => r.ride_date >= today).length,
     completedToday: rides.filter((r) => r.ride_date === today && r.status === "completed").length,
+    completedAll: rides.filter((r) => r.status === "completed").length,
   }), [rides, today]);
+
+  useEffect(() => {
+    if (filter !== "payouts" || payoutsLoaded) return;
+    (async () => {
+      const { data, error } = await (supabase.rpc as any)("driver_payouts_by_pin", {
+        _driver_id: session.driverId,
+        _pin: session.pin,
+      });
+      if (error) toast.error(error.message);
+      else setPayouts((data as any[]) ?? []);
+      setPayoutsLoaded(true);
+    })();
+  }, [filter, payoutsLoaded, session.driverId, session.pin]);
+
+  const totalPaid = payouts.reduce((s, p) => s + Number(p.amount || 0), 0);
+  const completedTotal = useMemo(
+    () => rides.filter((r) => r.status === "completed").reduce((s, r) => s + Number(r.amount || 0), 0),
+    [rides],
+  );
+  const pendingEarnings = completedTotal - totalPaid;
+
+  const exportRideHistory = () => {
+    const rows = rides.filter((r) => r.status === "completed" && inRange(r.ride_date));
+    downloadCSV(
+      "my-completed-rides",
+      rows.map((r) => ({
+        date: r.ride_date,
+        pickup_time: r.pickup_time ?? "",
+        pickup: r.pickup_location ?? "",
+        dropoff: r.dropoff_location ?? "",
+        passenger: r.passenger_name ?? "",
+        amount: Number(r.amount).toFixed(2),
+      })),
+    );
+  };
+
+  const exportPayouts = () => {
+    downloadCSV(
+      "my-payouts",
+      payouts.map((p) => ({
+        amount: Number(p.amount).toFixed(2),
+        period_start: p.period_start ?? "",
+        period_end: p.period_end ?? "",
+        paid_at: p.paid_at ?? "",
+        notes: p.notes ?? "",
+      })),
+    );
+  };
 
   const activeRide = useMemo(
     () => rides.find((r) => r.status === "started" || r.status === "arrived") ?? null,
