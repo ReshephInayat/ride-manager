@@ -69,6 +69,7 @@ type DateFilter =
   | "tomorrow"
   | "yesterday"
   | "this_week"
+  | "pick_week"
   | "this_month"
   | "custom_month"
   | "custom_range";
@@ -104,6 +105,16 @@ function getDateRange(
     const diffToMon = (day + 6) % 7;
     const mon = new Date(now);
     mon.setDate(now.getDate() - diffToMon);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    return { start: ymd(mon), end: ymd(sun) };
+  }
+  if (filter === "pick_week" && customStart) {
+    const ref = new Date(customStart);
+    const day = ref.getDay();
+    const diffToMon = (day + 6) % 7;
+    const mon = new Date(ref);
+    mon.setDate(ref.getDate() - diffToMon);
     const sun = new Date(mon);
     sun.setDate(mon.getDate() + 6);
     return { start: ymd(mon), end: ymd(sun) };
@@ -177,7 +188,7 @@ function DashboardInner() {
   const [uploading, setUploading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | RideStatus>("all");
   const [filterDriver, setFilterDriver] = useState<string>("all");
-  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("today");
   const [customMonth, setCustomMonth] = useState<string>("");
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
@@ -921,6 +932,7 @@ function DashboardInner() {
                 <SelectItem value="tomorrow">Tomorrow</SelectItem>
                 <SelectItem value="yesterday">Yesterday</SelectItem>
                 <SelectItem value="this_week">This week</SelectItem>
+                <SelectItem value="pick_week">Pick week…</SelectItem>
                 <SelectItem value="this_month">This month</SelectItem>
                 <SelectItem value="custom_month">Pick month…</SelectItem>
                 <SelectItem value="custom_range">Date range…</SelectItem>
@@ -936,6 +948,12 @@ function DashboardInner() {
                 onChange={(e) => setCustomMonth(e.target.value)}
                 className="w-44"
               />
+            </div>
+          )}
+          {dateFilter === "pick_week" && (
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Week of</label>
+              <Input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="w-44" />
             </div>
           )}
           {dateFilter === "custom_range" && (
@@ -1352,8 +1370,8 @@ function StatCard({
   };
   return (
     <div className={`luxury-card p-4 border-l-2 ${borderColors[tone] ?? borderColors.default}`}>
-      <div className="text-xs uppercase tracking-wide text-[#7A7A9A]">{label}</div>
-      <div className="text-2xl font-bold text-white mt-1">{value}</div>
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-2xl font-bold text-foreground mt-1">{value}</div>
     </div>
   );
 }
@@ -1372,9 +1390,9 @@ function StatusBtn({
   children: React.ReactNode;
 }) {
   const map = {
-    emerald: `border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/10 ${active ? "bg-[#10B981] text-white border-[#10B981]" : ""}`,
-    rose: `border-[#EF4444]/30 text-[#EF4444] hover:bg-[#EF4444]/10 ${active ? "bg-[#EF4444] text-white border-[#EF4444]" : ""}`,
-    amber: `border-[#F5A623]/30 text-[#F5A623] hover:bg-[#F5A623]/10 ${active ? "bg-[#F5A623] text-white border-[#F5A623]" : ""}`,
+    emerald: `border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/10 ${active ? "bg-[#10B981] text-foreground border-[#10B981]" : ""}`,
+    rose: `border-[#EF4444]/30 text-[#EF4444] hover:bg-[#EF4444]/10 ${active ? "bg-[#EF4444] text-foreground border-[#EF4444]" : ""}`,
+    amber: `border-[#F5A623]/30 text-[#F5A623] hover:bg-[#F5A623]/10 ${active ? "bg-[#F5A623] text-foreground border-[#F5A623]" : ""}`,
   };
   return (
     <button

@@ -109,12 +109,12 @@ function FlightsInner() {
     <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
             <Plane className="w-5 h-5 text-[#6C63FF]" /> Flight Tracker
           </h1>
-          <p className="text-sm text-white/50">Track all flights from your rides • Auto-refreshes every minute</p>
+          <p className="text-sm text-muted-foreground">Track all flights from your rides • Auto-refreshes every minute</p>
         </div>
-        <Button variant="outline" size="sm" onClick={load} className="gap-1 border-white/10 text-white/70 hover:text-white">
+        <Button variant="outline" size="sm" onClick={load} className="gap-1 border-border text-foreground/80 hover:text-foreground">
           <RefreshCw className="w-3.5 h-3.5" /> Refresh
         </Button>
       </div>
@@ -131,36 +131,36 @@ function FlightsInner() {
           </SelectContent>
         </Select>
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
           <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search flights..." className="input-luxury pl-9" />
         </div>
-        <Badge className="bg-white/5 text-white/60 border-white/10">{flightGroups.length} flights • {rides.length} rides</Badge>
+        <Badge className="bg-muted/50 text-muted-foreground border-border">{flightGroups.length} flights • {rides.length} rides</Badge>
       </div>
 
       {flightGroups.length === 0 ? (
         <Card className="luxury-card p-12 text-center">
-          <Plane className="w-12 h-12 mx-auto text-white/20 mb-3" />
-          <p className="text-white/40">No flights found for the selected filter</p>
+          <Plane className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
+          <p className="text-muted-foreground/70">No flights found for the selected filter</p>
         </Card>
       ) : (
         <div className="space-y-3">
           {flightGroups.map((group) => (
             <Card key={group.flight} className="luxury-card overflow-hidden">
-              <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+              <div className="px-4 py-3 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-lg bg-[#6C63FF]/20 grid place-items-center">
                     <Plane className="w-4 h-4 text-[#6C63FF]" />
                   </div>
                   <div>
-                    <span className="font-bold text-white text-sm">{group.flight}</span>
-                    <span className="ml-2 text-xs text-white/40">{group.rides[0]?.ride_date}</span>
+                    <span className="font-bold text-foreground text-sm">{group.flight}</span>
+                    <span className="ml-2 text-xs text-muted-foreground/70">{group.rides[0]?.ride_date}</span>
                   </div>
                   <Badge className="text-[10px] bg-amber-500/20 text-amber-400 border-amber-500/30">
                     API pending
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-white/5 text-white/50 border-white/10 text-[10px]">
+                  <Badge className="bg-muted/50 text-muted-foreground border-border text-[10px]">
                     <Users className="w-3 h-3 mr-1" /> {group.rides.length} ride{group.rides.length !== 1 ? "s" : ""}
                   </Badge>
                   <FlightSearchButton ride={{ flight_number: group.flight }} />
@@ -169,23 +169,23 @@ function FlightsInner() {
               <div className="px-4 py-2">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-white/5">
-                      <TableHead className="text-white/40 text-[10px] py-1">Time</TableHead>
-                      <TableHead className="text-white/40 text-[10px] py-1">Pickup</TableHead>
-                      <TableHead className="text-white/40 text-[10px] py-1">Dropoff</TableHead>
-                      <TableHead className="text-white/40 text-[10px] py-1">Driver</TableHead>
-                      <TableHead className="text-white/40 text-[10px] py-1">Status</TableHead>
+                    <TableRow className="border-border">
+                      <TableHead className="text-muted-foreground/70 text-[10px] py-1">Time</TableHead>
+                      <TableHead className="text-muted-foreground/70 text-[10px] py-1">Pickup</TableHead>
+                      <TableHead className="text-muted-foreground/70 text-[10px] py-1">Dropoff</TableHead>
+                      <TableHead className="text-muted-foreground/70 text-[10px] py-1">Driver</TableHead>
+                      <TableHead className="text-muted-foreground/70 text-[10px] py-1">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {group.rides.map((r: any) => (
-                      <TableRow key={r.id} className="border-white/5">
-                        <TableCell className="text-xs text-white/70 py-1.5">
-                          <Clock className="w-3 h-3 inline mr-1 text-white/30" />{r.pickup_time || "—"}
+                      <TableRow key={r.id} className="border-border">
+                        <TableCell className="text-xs text-foreground/80 py-1.5">
+                          <Clock className="w-3 h-3 inline mr-1 text-muted-foreground/50" />{r.pickup_time || "—"}
                         </TableCell>
-                        <TableCell className="text-xs text-white/60 py-1.5">{r.pickup_location || "—"}</TableCell>
-                        <TableCell className="text-xs text-white/60 py-1.5">{r.dropoff_location || "—"}</TableCell>
-                        <TableCell className="text-xs text-white/60 py-1.5">{driverName(r.driver_id) || <span className="text-white/30">Unassigned</span>}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground py-1.5">{r.pickup_location || "—"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground py-1.5">{r.dropoff_location || "—"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground py-1.5">{driverName(r.driver_id) || <span className="text-muted-foreground/50">Unassigned</span>}</TableCell>
                         <TableCell className="py-1.5">
                           <Badge className={`text-[10px] ${r.status === "completed" ? "bg-emerald-500/20 text-emerald-400" : r.status === "pending" ? "bg-gray-500/20 text-gray-400" : "bg-blue-500/20 text-blue-400"}`}>
                             {r.status}

@@ -8,12 +8,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = (typeof localStorage !== "undefined" && localStorage.getItem("psl-theme")) as Theme | null;
-    const initial: Theme =
-      saved ??
-      (typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light");
-    setTheme(initial);
+    setTheme(saved ?? "light");
   }, []);
 
   useEffect(() => {

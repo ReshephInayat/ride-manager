@@ -70,7 +70,7 @@ export function DriverNotificationBell({ driverId, pin }: Props) {
         <Button variant="ghost" size="icon" className="relative" title="Notifications">
           <Bell className="h-4 w-4" />
           {unread > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[10px] font-bold grid place-items-center px-1">
+            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-rose-500 text-foreground text-[10px] font-bold grid place-items-center px-1">
               {unread > 9 ? "9+" : unread}
             </span>
           )}
