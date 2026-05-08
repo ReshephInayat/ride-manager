@@ -874,10 +874,17 @@ function DashboardInner() {
                : "add rides manually using your saved routes & prices."}
            </p>
          </div>
-         <div className="flex gap-2 flex-wrap">
-           <Button variant="outline" onClick={() => setManualOpen(true)}>
-             <Plus className="h-4 w-4 mr-2" /> Add ride
-           </Button>
+          <div className="flex gap-2 flex-wrap">
+            <ExportMenu
+              system={system}
+              filtered={filtered}
+              completedSum={completedSum}
+              drivers={drivers}
+              routes={routes}
+            />
+            <Button variant="outline" onClick={() => setManualOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" /> Add ride
+            </Button>
            {system === "api" && (
              <>
                <input
