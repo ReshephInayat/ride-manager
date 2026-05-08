@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,7 @@ import { DollarSign, Plus, Users, TrendingUp, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useSystem } from "@/lib/system";
 import { PageLoader } from "@/components/Spinner";
+import { getPayoutsData } from "@/server/rides.functions";
 
 export const Route = createFileRoute("/payouts")({ component: PayoutsPage });
 
@@ -25,44 +26,31 @@ function PayoutsPage() {
 function PayoutsInner() {
   const { system } = useSystem();
   const [drivers, setDrivers] = useState<any[]>([]);
-  const [rides, setRides] = useState<any[]>([]);
+  const [driverStats, setDriverStats] = useState<Record<string, { rideCount: number; totalAmount: number; completedCount: number }>>({});
   const [payouts, setPayouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("overview");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ driver_id: "", amount: "", period_start: "", period_end: "", notes: "" });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
-    const [{ data: dData }, { data: rData }, { data: pData }] = await Promise.all([
-      supabase.from("drivers").select("*").eq("system", system).eq("active", true).order("name"),
-      supabase.from("rides").select("id, driver_id, ride_date, amount, status").eq("system", system),
-      supabase.from("driver_payouts").select("*").eq("system", system).order("created_at", { ascending: false }),
-    ]);
-    setDrivers(dData ?? []);
-    setRides(rData ?? []);
-    setPayouts(pData ?? []);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, [system]);
-
-  const driverStats = useMemo(() => {
-    const map: Record<string, { name: string; rideCount: number; totalAmount: number; completedCount: number }> = {};
-    for (const d of drivers) {
-      map[d.id] = { name: d.name, rideCount: 0, totalAmount: 0, completedCount: 0 };
+    try {
+      const result = await getPayoutsData({ data: { system: system as "api" | "llc" } });
+      setDrivers(result.drivers);
+      setPayouts(result.payouts);
+      setDriverStats(result.driverStats);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to load payouts");
+    } finally {
+      setLoading(false);
     }
-    for (const r of rides) {
-      if (r.driver_id && map[r.driver_id]) {
-        map[r.driver_id].rideCount++;
-        map[r.driver_id].totalAmount += Number(r.amount || 0);
-        if (r.status === "completed") map[r.driver_id].completedCount++;
-      }
-    }
-    return map;
-  }, [drivers, rides]);
+  }, [system]);
+
+  useEffect(() => { load(); }, [load]);
 
   const totalPaid = payouts.reduce((s, p) => s + Number(p.amount || 0), 0);
+  const totalRides = Object.values(driverStats).reduce((s, d) => s + d.rideCount, 0);
 
   const addPayout = async () => {
     if (!form.driver_id || !form.amount) { toast.error("Driver and amount are required"); return; }
@@ -92,7 +80,7 @@ function PayoutsInner() {
 
   if (loading) return <PageLoader />;
 
-  const driverName = (id: string) => drivers.find((d) => d.id === id)?.name ?? "Unknown";
+  const driverName = (id: string) => drivers.find((d: any) => d.id === id)?.name ?? "Unknown";
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
@@ -115,7 +103,7 @@ function PayoutsInner() {
         </Card>
         <Card className="luxury-card p-3 text-center">
           <TrendingUp className="w-5 h-5 mx-auto text-emerald-400 mb-1" />
-          <div className="text-lg font-bold text-white">{rides.length}</div>
+          <div className="text-lg font-bold text-white">{totalRides}</div>
           <div className="text-[10px] text-white/40">Total Rides</div>
         </Card>
         <Card className="luxury-card p-3 text-center">
@@ -142,14 +130,15 @@ function PayoutsInner() {
                 <TableHead className="text-white/50">Total Paid</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {Object.entries(driverStats).map(([did, s]) => {
-                  const driverPaid = payouts.filter((p) => p.driver_id === did).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                {drivers.map((d: any) => {
+                  const stats = driverStats[d.id] || { rideCount: 0, totalAmount: 0, completedCount: 0 };
+                  const driverPaid = payouts.filter((p) => p.driver_id === d.id).reduce((sum, p) => sum + Number(p.amount || 0), 0);
                   return (
-                    <TableRow key={did} className="border-white/5">
-                      <TableCell className="text-sm font-medium text-white">{s.name}</TableCell>
-                      <TableCell className="text-sm text-white/70">{s.rideCount}</TableCell>
-                      <TableCell className="text-sm text-emerald-400">{s.completedCount}</TableCell>
-                      <TableCell className="text-sm text-white/70">${s.totalAmount.toFixed(2)}</TableCell>
+                    <TableRow key={d.id} className="border-white/5">
+                      <TableCell className="text-sm font-medium text-white">{d.name}</TableCell>
+                      <TableCell className="text-sm text-white/70">{stats.rideCount}</TableCell>
+                      <TableCell className="text-sm text-emerald-400">{stats.completedCount}</TableCell>
+                      <TableCell className="text-sm text-white/70">${stats.totalAmount.toFixed(2)}</TableCell>
                       <TableCell className="text-sm font-medium text-amber-400">${driverPaid.toFixed(2)}</TableCell>
                     </TableRow>
                   );
@@ -196,7 +185,7 @@ function PayoutsInner() {
             <div><Label className="text-xs text-white/60">Driver *</Label>
               <Select value={form.driver_id} onValueChange={(v) => setForm({ ...form, driver_id: v })}>
                 <SelectTrigger className="input-luxury"><SelectValue placeholder="Select driver" /></SelectTrigger>
-                <SelectContent>{drivers.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{drivers.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div><Label className="text-xs text-white/60">Amount ($) *</Label><Input value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="input-luxury" type="number" /></div>

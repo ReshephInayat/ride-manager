@@ -1,20 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
-import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plane, Search, RefreshCw, ExternalLink, Clock, MapPin, Users } from "lucide-react";
+import { Plane, Search, RefreshCw, Clock, Users } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useSystem } from "@/lib/system";
 import { PageLoader } from "@/components/Spinner";
 import { FlightSearchButton } from "@/components/FlightTrackLink";
 import { stripTrailingTime } from "@/lib/rides";
+import { getFlightsData } from "@/server/rides.functions";
 
 export const Route = createFileRoute("/flights")({ component: FlightsPage });
 
@@ -24,10 +24,6 @@ function FlightsPage() {
 
 type DateFilter = "today" | "tomorrow" | "this_week" | "all";
 
-function ymd(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 function FlightsInner() {
   const { system } = useSystem();
   const [rides, setRides] = useState<any[]>([]);
@@ -35,62 +31,49 @@ function FlightsInner() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<DateFilter>("today");
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const load = async () => {
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  const load = useCallback(async () => {
     setLoading(true);
-    const today = new Date();
-    let query = supabase.from("rides").select("*").eq("system", system).not("flight_number", "is", null);
-
-    if (filter === "today") {
-      query = query.eq("ride_date", ymd(today));
-    } else if (filter === "tomorrow") {
-      const tmr = new Date(today);
-      tmr.setDate(tmr.getDate() + 1);
-      query = query.eq("ride_date", ymd(tmr));
-    } else if (filter === "this_week") {
-      const weekStart = new Date(today);
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
-      query = query.gte("ride_date", ymd(weekStart)).lte("ride_date", ymd(weekEnd));
+    try {
+      const result = await getFlightsData({
+        data: {
+          system: system as "api" | "llc",
+          dateFilter: filter,
+          search: debouncedSearch || undefined,
+        },
+      });
+      setRides(result.rides);
+      setDrivers(result.drivers);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to load flights");
+    } finally {
+      setLoading(false);
     }
+  }, [system, filter, debouncedSearch]);
 
-    const [{ data: rData }, { data: dData }] = await Promise.all([
-      query.order("ride_date").order("pickup_time"),
-      supabase.from("drivers").select("id, name").eq("system", system),
-    ]);
-    setRides(rData ?? []);
-    setDrivers(dData ?? []);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, [system, filter]);
+  useEffect(() => { load(); }, [load]);
 
   // Auto-refresh every 60s
   useEffect(() => {
     const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
-  }, [system, filter]);
+  }, [load]);
 
   const driverName = (id: string | null) => {
     if (!id) return null;
-    return drivers.find((d) => d.id === id)?.name ?? null;
+    return drivers.find((d: any) => d.id === id)?.name ?? null;
   };
 
   // Group by unique flight number
   const flightGroups = useMemo(() => {
-    let filtered = rides;
-    if (searchTerm) {
-      const s = searchTerm.toLowerCase();
-      filtered = rides.filter((r) =>
-        (r.flight_number ?? "").toLowerCase().includes(s) ||
-        (r.pickup_location ?? "").toLowerCase().includes(s) ||
-        (r.passenger_name ?? "").toLowerCase().includes(s)
-      );
-    }
-
     const map: Record<string, { flight: string; rides: any[] }> = {};
-    for (const r of filtered) {
+    for (const r of rides) {
       const fn = stripTrailingTime(r.flight_number).toUpperCase();
       if (!fn) continue;
       if (!map[fn]) map[fn] = { flight: fn, rides: [] };
@@ -101,7 +84,7 @@ function FlightsInner() {
       const bTime = b.rides[0]?.pickup_time ?? "";
       return aTime.localeCompare(bTime);
     });
-  }, [rides, searchTerm]);
+  }, [rides]);
 
   if (loading) return <PageLoader />;
 

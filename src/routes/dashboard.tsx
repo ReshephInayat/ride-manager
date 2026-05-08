@@ -27,6 +27,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Archive,
+  Download,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import {
@@ -50,6 +51,7 @@ import {
   bulkUpdateRideStatus,
   bulkDeleteFiltered,
   bulkCompleteFiltered,
+  exportRidesCsv,
 } from "@/server/rides.functions";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
@@ -521,6 +523,22 @@ function DashboardInner() {
     }
   };
 
+  const handleExportCsv = async () => {
+    try {
+      const result = await exportRidesCsv({ data: filterParams });
+      const blob = new Blob([result.csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `rides-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${result.count} rides`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Export failed");
+    }
+  };
+
   const toggleSelect = (id: string) => {
     setSelected((s) => {
       const n = new Set(s);
@@ -788,6 +806,9 @@ function DashboardInner() {
            </p>
          </div>
          <div className="flex gap-2 flex-wrap">
+           <Button variant="outline" onClick={handleExportCsv}>
+             <Download className="h-4 w-4 mr-2" /> Export CSV
+           </Button>
            <Button variant="outline" onClick={() => setManualOpen(true)}>
              <Plus className="h-4 w-4 mr-2" /> Add ride
            </Button>
