@@ -420,7 +420,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
         {/* Filter tabs */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-            {(["upcoming", "today", "past", "flights", "all"] as const).map((k) => (
+            {(["today", "upcoming", "past", "flights", "all", "history", "payouts"] as const).map((k) => (
               <button
                 key={k}
                 onClick={() => setFilter(k)}
@@ -434,18 +434,84 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-            <button onClick={() => setView("list")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "list" ? "bg-[#6C63FF] text-foreground" : "text-muted-foreground"}`}>
-              <ListChecks className="h-4 w-4" /> List
-            </button>
-            <button onClick={() => setView("calendar")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "calendar" ? "bg-[#6C63FF] text-foreground" : "text-muted-foreground"}`}>
-              <CalendarDays className="h-4 w-4" /> Calendar
-            </button>
-          </div>
+          {filter !== "history" && filter !== "payouts" && (
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+              <button onClick={() => setView("list")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "list" ? "bg-[#6C63FF] text-foreground" : "text-muted-foreground"}`}>
+                <ListChecks className="h-4 w-4" /> List
+              </button>
+              <button onClick={() => setView("calendar")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "calendar" ? "bg-[#6C63FF] text-foreground" : "text-muted-foreground"}`}>
+                <CalendarDays className="h-4 w-4" /> Calendar
+              </button>
+            </div>
+          )}
         </div>
 
+        {/* History / Payouts toolbar */}
+        {filter === "history" && (
+          <div className="luxury-card p-4 mb-4 flex flex-wrap items-center gap-3">
+            <DateRangeFilter value={dateRange} onChange={setDateRange} />
+            <div className="text-sm text-muted-foreground">
+              {filtered.length} completed • ${filtered.reduce((s, r) => s + Number(r.amount || 0), 0).toFixed(2)}
+            </div>
+            <button
+              onClick={exportRideHistory}
+              className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-[#6C63FF] text-foreground"
+            >
+              <Download className="h-4 w-4" /> Export CSV
+            </button>
+          </div>
+        )}
+
+        {filter === "payouts" && (
+          <div className="luxury-card p-4 mb-4">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <Wallet className="h-5 w-5 text-muted-foreground" />
+              <div className="text-sm">
+                <div className="text-muted-foreground">Total paid</div>
+                <div className="font-semibold">${totalPaid.toFixed(2)}</div>
+              </div>
+              <div className="text-sm">
+                <div className="text-muted-foreground">Completed earnings</div>
+                <div className="font-semibold">${completedTotal.toFixed(2)}</div>
+              </div>
+              <div className="text-sm">
+                <div className="text-muted-foreground">Pending</div>
+                <div className={`font-semibold ${pendingEarnings > 0 ? "text-emerald-500" : ""}`}>${pendingEarnings.toFixed(2)}</div>
+              </div>
+              <button
+                onClick={exportPayouts}
+                className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm bg-[#6C63FF] text-foreground"
+              >
+                <Download className="h-4 w-4" /> Export CSV
+              </button>
+            </div>
+            {!payoutsLoaded ? (
+              <div className="text-sm text-muted-foreground">Loading payouts…</div>
+            ) : payouts.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No payouts recorded yet.</div>
+            ) : (
+              <div className="divide-y divide-border">
+                {payouts.map((p) => (
+                  <div key={p.id} className="py-3 flex items-center justify-between text-sm">
+                    <div>
+                      <div className="font-medium">${Number(p.amount).toFixed(2)}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {p.period_start ? `${p.period_start} → ${p.period_end ?? ""}` : new Date(p.created_at).toLocaleDateString()}
+                      </div>
+                      {p.notes && <div className="text-xs text-muted-foreground mt-0.5">{p.notes}</div>}
+                    </div>
+                    <div className={`text-xs ${p.paid_at ? "text-emerald-500" : "text-amber-500"}`}>
+                      {p.paid_at ? `Paid ${new Date(p.paid_at).toLocaleDateString()}` : "Pending"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Content */}
-        {loading ? (
+        {filter === "payouts" ? null : loading ? (
           <div className="space-y-3">
             {[1,2,3].map(i => <div key={i} className="h-48 rounded-2xl skeleton-shimmer" />)}
           </div>
@@ -455,7 +521,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
             <p className="text-muted-foreground text-lg font-medium">No rides in this view</p>
             <p className="text-muted-foreground/60 text-sm mt-1">Try switching to a different filter</p>
           </div>
-        ) : view === "list" ? (
+        ) : view === "list" || filter === "history" ? (
           <div className="space-y-4">
             {filtered.map((r) => (
               <RideCard key={r.id} ride={r} onSetStatus={(s) => setStatus(r.id, s)} />
