@@ -1853,3 +1853,160 @@ function InvoicePreviewDialog({
     </Dialog>
   );
 }
+
+function ExportMenu({
+  system,
+  filtered,
+  completedSum,
+  drivers,
+  routes,
+}: {
+  system: "api" | "llc";
+  filtered: Ride[];
+  completedSum: number;
+  drivers: Driver[];
+  routes: RouteRow[];
+}) {
+  const driverName = (id: string | null | undefined) =>
+    id ? drivers.find((d) => d.id === id)?.name ?? "" : "";
+
+  const exportRides = (rows: Ride[], filename: string) => {
+    const data = rows.map((r) => ({
+      date: r.ride_date,
+      pickup_time: r.pickup_time ?? "",
+      pickup: r.pickup_location ?? "",
+      dropoff: r.dropoff_location ?? "",
+      passenger: r.passenger_name ?? "",
+      phone: r.phone ?? "",
+      email: r.passenger_email ?? "",
+      flight: r.flight_number ?? "",
+      riders: r.riders,
+      driver: driverName(r.driver_id),
+      status: r.status,
+      amount: Number(r.amount).toFixed(2),
+    }));
+    downloadCSV(filename, data);
+  };
+
+  const exportSummary = () => {
+    const completed = filtered.filter((r) => r.status === "completed");
+    const total = completed.reduce((s, r) => s + Number(r.amount), 0);
+    const commission = total * 0.1;
+    downloadCSV("ride-summary", [
+      { metric: "Total rides (filtered)", value: filtered.length },
+      { metric: "Completed rides", value: completed.length },
+      { metric: "Completed total", value: total.toFixed(2) },
+      { metric: "Commission (10%)", value: commission.toFixed(2) },
+      { metric: "Net after commission", value: (total - commission).toFixed(2) },
+    ]);
+  };
+
+  const exportAllImported = async () => {
+    const rows = await fetchAll<Ride>(async (from, to) => {
+      const { data, error } = await supabase
+        .from("rides")
+        .select("*")
+        .eq("system", system)
+        .order("ride_date", { ascending: true })
+        .range(from, to);
+      return { data: data as Ride[] | null, error };
+    });
+    exportRides(rows, "all-imported-rides");
+  };
+
+  const exportDrivers = () => {
+    downloadCSV(
+      "drivers",
+      drivers.map((d) => ({
+        name: d.name,
+        phone: (d as any).phone ?? "",
+        email: (d as any).email ?? "",
+        active: (d as any).active ?? true,
+      })),
+    );
+  };
+
+  const exportRoutes = () => {
+    downloadCSV(
+      "routes",
+      routes.map((r) => ({
+        name: r.name,
+        pickup: r.pickup_location,
+        dropoff: r.dropoff_location,
+        price: Number(r.price).toFixed(2),
+      })),
+    );
+  };
+
+  const exportPayouts = async () => {
+    const { data } = await supabase
+      .from("driver_payouts")
+      .select("*")
+      .eq("system", system)
+      .order("created_at", { ascending: false });
+    downloadCSV(
+      "driver-payouts",
+      (data ?? []).map((p: any) => ({
+        driver: driverName(p.driver_id),
+        amount: Number(p.amount).toFixed(2),
+        period_start: p.period_start ?? "",
+        period_end: p.period_end ?? "",
+        paid_at: p.paid_at ?? "",
+        notes: p.notes ?? "",
+      })),
+    );
+  };
+
+  const exportCars = async () => {
+    const { data } = await supabase.from("cars").select("*").eq("system", system);
+    downloadCSV(
+      "cars",
+      (data ?? []).map((c: any) => ({
+        name: c.name,
+        make: c.make ?? "",
+        model: c.model ?? "",
+        year: c.year ?? "",
+        license_plate: c.license_plate ?? "",
+        vin: c.vin ?? "",
+        mileage: c.current_mileage ?? 0,
+        status: c.status,
+      })),
+    );
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline">
+          <Download className="h-4 w-4 mr-2" /> Export
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuLabel>Current view</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => exportRides(filtered, "rides-filtered")}>
+          All filtered rides ({filtered.length})
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() =>
+            exportRides(
+              filtered.filter((r) => r.status === "completed"),
+              "completed-rides",
+            )
+          }
+        >
+          Completed rides only
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={exportSummary}>
+          Totals + commission summary
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>System backup</DropdownMenuLabel>
+        <DropdownMenuItem onClick={exportAllImported}>All imported rides</DropdownMenuItem>
+        <DropdownMenuItem onClick={exportDrivers}>Drivers</DropdownMenuItem>
+        <DropdownMenuItem onClick={exportRoutes}>Routes</DropdownMenuItem>
+        <DropdownMenuItem onClick={exportCars}>Cars</DropdownMenuItem>
+        <DropdownMenuItem onClick={exportPayouts}>Driver payouts</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
