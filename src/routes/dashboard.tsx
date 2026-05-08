@@ -950,6 +950,12 @@ function DashboardInner() {
               />
             </div>
           )}
+          {dateFilter === "pick_week" && (
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Week of</label>
+              <Input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="w-44" />
+            </div>
+          )}
           {dateFilter === "custom_range" && (
             <>
               <div>
