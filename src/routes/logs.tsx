@@ -75,29 +75,40 @@ function LogsInner() {
   const [search, setSearch] = useState("");
   const [kindFilter, setKindFilter] = useState<string>("all");
   const [actorFilter, setActorFilter] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<DateRange>(() => presetToRange("today"));
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase
+    let q = supabase
       .from("activity_logs")
       .select("*")
       .eq("system", system)
       .order("created_at", { ascending: false })
-      .limit(1000);
+      .limit(2000);
+    if (dateRange.from) q = q.gte("created_at", `${dateRange.from}T00:00:00`);
+    if (dateRange.to) q = q.lte("created_at", `${dateRange.to}T23:59:59`);
+    const { data } = await q;
     setRows((data as LogRow[]) ?? []);
     setLoading(false);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [system]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [system, dateRange.from, dateRange.to]);
 
   useEffect(() => {
     const ch = supabase
       .channel(`logs-${system}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_logs" }, () => load())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_logs" }, (payload) => {
+        const r = payload.new as LogRow;
+        if (r.system !== system) return;
+        const created = r.created_at?.slice(0, 10);
+        if (dateRange.from && created && created < dateRange.from) return;
+        if (dateRange.to && created && created > dateRange.to) return;
+        setRows((prev) => [r, ...prev]);
+      })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line
-  }, [system]);
+  }, [system, dateRange.from, dateRange.to]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
