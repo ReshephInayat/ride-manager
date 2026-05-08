@@ -344,10 +344,6 @@ function DashboardInner() {
     };
   }, [system]);
 
-  const range = useMemo(
-    () => getDateRange(dateFilter, customMonth, customStart, customEnd),
-    [dateFilter, customMonth, customStart, customEnd],
-  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
