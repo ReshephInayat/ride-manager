@@ -487,6 +487,7 @@ function DashboardInner() {
 
       toast.success(
         `Imported ${inserted} new ride${inserted === 1 ? "" : "s"}` +
+          (skipped > 0 ? ` • ${skipped} already in system (skipped)` : "") +
           (previewInvalid > 0 ? ` • ${previewInvalid} invalid row${previewInvalid === 1 ? "" : "s"}` : ""),
       );
       setPreviewRows(null);
