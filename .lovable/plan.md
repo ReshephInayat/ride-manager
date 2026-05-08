@@ -1,80 +1,63 @@
 
-# Scaling the Ride Management System
+# Feature Expansion Plan
 
-## Current Problems
-
-1. **Dashboard loads ALL rides at once** — `.range(0, 9999)` fetches up to 10,000 rides into memory on every page load. As data grows, this gets slower and eventually hits Supabase's response size limits.
-2. **Client-side filtering** — all filtering (date, status, driver, search) happens in JavaScript after loading everything. With thousands of rides this freezes the UI.
-3. **Bulk actions send many small requests** — batching in groups of 50 is better than one giant call, but still sequential and slow for large sets.
-4. **No data archiving** — old completed rides stay in the active table forever, slowing every query.
-5. **No pagination** — users see all rides on one page, which is slow to render.
+## Overview
+Add fleet management (cars, maintenance, fuel, insurance, installments), driver financials (ride counts, payouts, payout history), and a flight tracking page (placeholder for future API integration).
 
 ---
 
-## Plan
+## Phase 1: Database Tables
 
-### 1. Server-Side Pagination and Filtering
+### New tables:
 
-Replace the "load everything" approach with paginated, server-filtered queries.
+1. **cars** — id, user_id, system, name, make, model, year, license_plate, vin, color, current_mileage, status (active/inactive/in_service), created_at, updated_at
+2. **car_maintenance** — id, user_id, system, car_id, type (oil_change/tire/brake/general/scheduled_service), description, mileage_at_service, cost, service_date, next_service_mileage, created_at
+3. **fuel_expenses** — id, user_id, system, car_id, driver_id (nullable), gallons, cost, mileage_at_fill, fuel_date, notes, created_at
+4. **car_installments** — id, user_id, system, car_id, amount, due_date, paid, paid_date, notes, created_at
+5. **car_insurance** — id, user_id, system, car_id, provider, policy_number, premium, start_date, end_date, notes, created_at
+6. **driver_payouts** — id, user_id, system, driver_id, amount, period_start, period_end, notes, paid_at, created_at
 
-- Add a **server function** that accepts `page`, `pageSize`, `dateFilter`, `statusFilter`, `driverFilter`, and `search` parameters
-- Query rides with `.range()` based on page number, applying all filters in the SQL query (not in JS)
-- Return total count alongside the page data so the UI can show page numbers
-- Default page size: 50 rides
-
-### 2. Database Indexes for Common Queries
-
-Add a composite index to speed up the most common dashboard query pattern:
-
-- `(user_id, system, ride_date DESC, pickup_time)` — covers the main filtered + sorted query
-- `(user_id, system, status)` — for status-filtered views
-- `(user_id, system, driver_id, ride_date)` — for driver-filtered views
-
-### 3. Optimized Bulk Operations
-
-- **Bulk delete/update via server function** — move bulk operations to a server function that runs a single SQL statement (`DELETE FROM rides WHERE id = ANY($1)`) instead of multiple batched REST calls
-- This is faster and avoids URL length limits entirely
-
-### 4. Data Archiving Strategy
-
-- Add an `archived` boolean column (default `false`) to rides
-- Auto-archive rides older than 90 days with status `completed`/`cancelled`/`no_show` via a daily pg_cron job
-- Dashboard only queries non-archived rides by default, with a toggle to view archived data
-- This keeps the active dataset small and fast
-
-### 5. Virtual Scrolling for Large Lists
-
-- Replace the full ride list render with a virtualized list (using `@tanstack/react-virtual`)
-- Only renders visible rows in the DOM, so even 1000+ results don't freeze the browser
-
-### 6. Upload Optimization
-
-- Show a progress bar during bulk imports
-- Process XLSX parsing in a Web Worker so the UI doesn't freeze during large file parsing
-- Batch inserts in groups of 100 rows per request (already partially done)
+All tables will have RLS policies restricting access to the owner (auth.uid() = user_id).
 
 ---
 
-## Impact Summary
+## Phase 2: New Pages
 
-| Area | Before | After |
-|------|--------|-------|
-| Initial load | All rides (slow at 1000+) | 50 rides per page (instant) |
-| Filtering | Client-side JS (freezes UI) | Server-side SQL (fast) |
-| Bulk delete 500 rides | 10 sequential API calls | 1 server function call |
-| DOM rendering | All rows in DOM | Only visible rows (virtual) |
-| Old data | Always queried | Archived, excluded by default |
+### Admin Pages:
+
+1. **`/cars`** — Manage cars: add/edit/delete vehicles, view current mileage, status
+2. **`/cars/$id`** — Car detail page with tabs: Maintenance, Fuel, Installments, Insurance histories
+3. **`/payouts`** — Driver payout management: ride counts per driver, create payouts, view payout history
+4. **`/flights`** — Flight tracking dashboard: list all flights from today's rides, placeholder for future API integration (show flight numbers, status placeholder, links to FlightAware)
+
+### Driver Page Enhancement:
+- Add a "Flights" tab/section to the driver portal showing today's flight numbers with tracking links
+
+---
+
+## Phase 3: Navigation Updates
+
+Add to AppShell sidebar:
+- **Fleet** group: Cars, Payouts
+- **Tracking** group: Flights
+- Update bottom tabs for mobile
+
+---
+
+## Phase 4: Flight Tracking (Placeholder)
+
+Since you'll provide the flight API key later, I'll build:
+- A page listing all unique flight numbers from rides (filterable by today/tomorrow/date range)
+- Each flight shows: flight number, associated ride info, pickup time, and a "Track" link
+- Placeholder for real-time status that will be wired to an API later
+- Available on both admin and driver portals
 
 ---
 
 ## Technical Details
 
-**Files to modify:**
-- `src/routes/dashboard.tsx` — pagination UI, server-side filter params, virtual list
-- New server function file for paginated queries and bulk operations
-- Database migration for `archived` column, new indexes, pg_cron archive job
-
-**New dependencies:**
-- `@tanstack/react-virtual` for virtualized list rendering
-
-**No breaking changes** — existing data and workflows continue to work. Pagination is additive.
+- 6 new database tables with RLS
+- 5 new route files: `cars.tsx`, `cars.$id.tsx`, `payouts.tsx`, `flights.tsx`
+- Updated `AppShell.tsx` navigation
+- Updated `driver.tsx` with flights section
+- All pages follow existing dark theme design patterns
