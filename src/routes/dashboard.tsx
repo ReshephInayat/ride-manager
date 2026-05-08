@@ -455,7 +455,23 @@ function DashboardInner() {
         return { ...row, ride_key, dedupe_key: ride_key };
       });
 
-      const toInsert = allRows;
+      // Only skip rides that already exist in the DB — allow duplicates within the file
+      const uniqueKeys = [...new Set(allRows.map((r) => r.ride_key))];
+      const existingKeys = new Set<string>();
+      const KEY_BATCH = 200;
+      for (let i = 0; i < uniqueKeys.length; i += KEY_BATCH) {
+        const slice = uniqueKeys.slice(i, i + KEY_BATCH);
+        const { data: found } = await supabase
+          .from("rides")
+          .select("ride_key")
+          .eq("user_id", u.user!.id)
+          .eq("system", system)
+          .in("ride_key", slice);
+        if (found) for (const f of found) existingKeys.add(f.ride_key);
+      }
+
+      const toInsert = allRows.filter((r) => !existingKeys.has(r.ride_key));
+      const skipped = allRows.length - toInsert.length;
 
       let inserted = 0;
       const BATCH = 200;
@@ -463,7 +479,7 @@ function DashboardInner() {
         const slice = toInsert.slice(i, i + BATCH);
         const { data: ins, error } = await supabase
           .from("rides")
-          .upsert(slice, { onConflict: "user_id,system,ride_key", ignoreDuplicates: true })
+          .insert(slice)
           .select("id");
         if (error) throw error;
         inserted += ins?.length ?? 0;
