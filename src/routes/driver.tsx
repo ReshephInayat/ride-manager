@@ -222,7 +222,10 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "calendar">("list");
-  const [filter, setFilter] = useState<"upcoming" | "today" | "past" | "flights" | "all">("upcoming");
+  const [filter, setFilter] = useState<"upcoming" | "today" | "past" | "flights" | "all" | "history" | "payouts">("today");
+  const [dateRange, setDateRange] = useState<DateRange>(() => presetToRange("today"));
+  const [payouts, setPayouts] = useState<any[]>([]);
+  const [payoutsLoaded, setPayoutsLoaded] = useState(false);
 
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
