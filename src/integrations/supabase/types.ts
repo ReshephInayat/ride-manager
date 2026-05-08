@@ -712,7 +712,6 @@ export type Database = {
       rides: {
         Row: {
           amount: number
-          archived: boolean
           created_at: string
           dedupe_key: string | null
           department: string | null
@@ -740,7 +739,6 @@ export type Database = {
         }
         Insert: {
           amount?: number
-          archived?: boolean
           created_at?: string
           dedupe_key?: string | null
           department?: string | null
@@ -768,7 +766,6 @@ export type Database = {
         }
         Update: {
           amount?: number
-          archived?: boolean
           created_at?: string
           dedupe_key?: string | null
           department?: string | null
@@ -960,7 +957,6 @@ export type Database = {
         Args: { _driver_id: string; _pin: string }
         Returns: {
           amount: number
-          archived: boolean
           created_at: string
           dedupe_key: string | null
           department: string | null
@@ -997,7 +993,6 @@ export type Database = {
         Args: { _token: string }
         Returns: {
           amount: number
-          archived: boolean
           created_at: string
           dedupe_key: string | null
           department: string | null
@@ -1064,7 +1059,6 @@ export type Database = {
         }
         Returns: {
           amount: number
-          archived: boolean
           created_at: string
           dedupe_key: string | null
           department: string | null
@@ -1105,7 +1099,6 @@ export type Database = {
         }
         Returns: {
           amount: number
-          archived: boolean
           created_at: string
           dedupe_key: string | null
           department: string | null
