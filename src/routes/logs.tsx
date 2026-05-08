@@ -6,11 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useSystem } from "@/lib/system";
-import { Search, ScrollText, User, Shield, Cog } from "lucide-react";
+import { Search, ScrollText, User, Shield, Cog, Download } from "lucide-react";
+import { DateRangeFilter, presetToRange, type DateRange } from "@/components/DateRangeFilter";
+import { downloadCSV } from "@/lib/export";
 
 export const Route = createFileRoute("/logs")({ component: LogsRoute });
 
