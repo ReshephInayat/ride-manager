@@ -162,6 +162,27 @@ function LogsInner() {
               <SelectItem value="system">System</SelectItem>
             </SelectContent>
           </Select>
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9"
+            onClick={() =>
+              downloadCSV(
+                "activity-logs",
+                filtered.map((r) => ({
+                  date: new Date(r.created_at).toLocaleString(),
+                  actor: r.actor,
+                  actor_name: r.actor_name ?? "",
+                  kind: r.kind,
+                  title: r.title,
+                  details: r.details ?? "",
+                })),
+              )
+            }
+          >
+            <Download className="h-4 w-4 mr-1.5" /> Export CSV
+          </Button>
         </div>
       </Card>
 
