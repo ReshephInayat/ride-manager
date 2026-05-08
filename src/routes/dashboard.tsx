@@ -212,16 +212,23 @@ function DashboardInner() {
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
+  const range = useMemo(
+    () => getDateRange(dateFilter, customMonth, customStart, customEnd),
+    [dateFilter, customMonth, customStart, customEnd],
+  );
+
   const load = async () => {
     setLoading(true);
+    let q = supabase
+      .from("rides")
+      .select("*")
+      .eq("system", system)
+      .order("ride_date", { ascending: true })
+      .order("pickup_time", { ascending: true });
+    if (range.start) q = q.gte("ride_date", range.start);
+    if (range.end) q = q.lte("ride_date", range.end);
     const [rRes, routeRes, dRes] = await Promise.all([
-      supabase
-        .from("rides")
-        .select("*")
-        .eq("system", system)
-        .order("ride_date", { ascending: true })
-        .order("pickup_time", { ascending: true })
-        .range(0, 9999),
+      q.range(0, 9999),
       supabase.from("routes").select("*").eq("system", system).order("created_at"),
       supabase.from("drivers").select("*").eq("system", system).order("created_at"),
     ]);
@@ -237,7 +244,8 @@ function DashboardInner() {
 
   useEffect(() => {
     load();
-  }, [system]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [system, range.start, range.end]);
 
   // Realtime: apply granular updates to rides instead of refetching everything.
   useEffect(() => {
