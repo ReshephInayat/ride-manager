@@ -188,7 +188,7 @@ function DashboardInner() {
   const [uploading, setUploading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | RideStatus>("all");
   const [filterDriver, setFilterDriver] = useState<string>("all");
-  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("today");
   const [customMonth, setCustomMonth] = useState<string>("");
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
