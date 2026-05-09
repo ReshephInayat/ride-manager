@@ -885,24 +885,20 @@ function DashboardInner() {
             <Button variant="outline" onClick={() => setManualOpen(true)}>
               <Plus className="h-4 w-4 mr-2" /> Add ride
             </Button>
-           {system === "api" && (
-             <>
-               <input
-                 ref={fileRef}
-                 type="file"
-                 accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                 className="hidden"
-                 onChange={(e) => {
-                   const f = e.target.files?.[0];
-                   if (f) handleUpload(f);
-                 }}
-               />
-               <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
-                 {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-                 {uploading ? "Reading spreadsheet…" : "Upload Schedule"}
-               </Button>
-            </>
-          )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleUpload(f);
+              }}
+            />
+            <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
+              {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+              {uploading ? "Reading spreadsheet…" : "Upload Schedule"}
+            </Button>
         </div>
       </div>
 
