@@ -16,6 +16,7 @@ import { DriverNotificationBell } from "@/components/DriverNotificationBell";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
 import { DateRangeFilter, presetToRange, type DateRange } from "@/components/DateRangeFilter";
 import { downloadCSV } from "@/lib/export";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/driver")({ component: DriverPortal });
 
@@ -115,7 +116,8 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background relative">
+      <div className="absolute top-4 right-4 z-50"><ThemeToggle /></div>
       {/* Left visual panel — hidden on mobile */}
       <div className="relative hidden lg:block overflow-hidden">
         <img src={driverHero} alt="Professional chauffeur next to luxury SUV at night" className="absolute inset-0 h-full w-full object-cover" />
@@ -386,6 +388,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
             <div className="text-xs text-muted-foreground truncate">{SYSTEM_LABELS[session.system]}</div>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <DriverNotificationBell driverId={session.driverId} pin={session.pin} />
             <button onClick={onLogout} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
               <LogOut className="h-4 w-4" />

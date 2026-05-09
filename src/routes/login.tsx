@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { ShieldCheck, Sparkles, FileText } from "lucide-react";
 import { toast } from "react-hot-toast";
 import loginHero from "@/assets/login-hero.jpg";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
@@ -27,7 +28,8 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background relative">
+      <div className="absolute top-4 right-4 z-50"><ThemeToggle /></div>
       {/* Left visual panel — hidden on mobile */}
       <div className="relative hidden lg:block overflow-hidden">
         <img
