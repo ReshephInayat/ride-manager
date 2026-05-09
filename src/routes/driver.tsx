@@ -387,6 +387,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
             <div className="text-xs text-muted-foreground truncate">{SYSTEM_LABELS[session.system]}</div>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <DriverNotificationBell driverId={session.driverId} pin={session.pin} />
             <button onClick={onLogout} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
               <LogOut className="h-4 w-4" />
