@@ -28,7 +28,8 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background relative">
+      <div className="absolute top-4 right-4 z-50"><ThemeToggle /></div>
       {/* Left visual panel — hidden on mobile */}
       <div className="relative hidden lg:block overflow-hidden">
         <img
