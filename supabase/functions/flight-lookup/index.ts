@@ -27,11 +27,8 @@ Deno.serve(async (req) => {
     const params = new URLSearchParams({ access_key: apiKey, flight_iata: flight, limit: "5" });
     if (date) params.set("flight_date", date);
 
-    // Aviationstack free plan only supports HTTP. Try HTTPS first, fall back to HTTP on 403.
-    let resp = await fetch(`https://api.aviationstack.com/v1/flights?${params.toString()}`);
-    if (resp.status === 403 || resp.status === 401) {
-      resp = await fetch(`http://api.aviationstack.com/v1/flights?${params.toString()}`);
-    }
+    // Aviationstack free plan only supports HTTP (HTTPS returns 403).
+    const resp = await fetch(`http://api.aviationstack.com/v1/flights?${params.toString()}`);
     if (!resp.ok) {
       const t = await resp.text();
       return new Response(JSON.stringify({ error: `Aviationstack ${resp.status}`, body: t }), { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } });
