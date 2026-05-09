@@ -63,10 +63,13 @@ function Landing() {
                 Ride Manager
               </div>
             </div>
-            <span className="hidden sm:inline-flex items-center gap-2 text-xs text-foreground/70 px-3 py-1.5 glass-pill">
-              <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
-              Live dispatch
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:inline-flex items-center gap-2 text-xs text-foreground/70 px-3 py-1.5 glass-pill">
+                <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
+                Live dispatch
+              </span>
+              <ThemeToggle />
+            </div>
           </div>
         </header>
 
