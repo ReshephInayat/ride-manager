@@ -12,6 +12,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import landingHero from "@/assets/landing-hero.jpg";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/")({
   component: Landing,
