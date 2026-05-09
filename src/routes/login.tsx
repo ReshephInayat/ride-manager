@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { ShieldCheck, Sparkles, FileText } from "lucide-react";
 import { toast } from "react-hot-toast";
 import loginHero from "@/assets/login-hero.jpg";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
