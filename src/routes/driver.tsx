@@ -16,6 +16,7 @@ import { DriverNotificationBell } from "@/components/DriverNotificationBell";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
 import { DateRangeFilter, presetToRange, type DateRange } from "@/components/DateRangeFilter";
 import { downloadCSV } from "@/lib/export";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/driver")({ component: DriverPortal });
 
