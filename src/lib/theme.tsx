@@ -4,11 +4,11 @@ type Theme = "light" | "dark";
 const Ctx = createContext<{ theme: Theme; toggle: () => void } | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("light");
+  const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
     const saved = (typeof localStorage !== "undefined" && localStorage.getItem("psl-theme")) as Theme | null;
-    setTheme(saved ?? "light");
+    setTheme(saved ?? "dark");
   }, []);
 
   useEffect(() => {

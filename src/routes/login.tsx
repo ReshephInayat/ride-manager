@@ -16,7 +16,7 @@ function LoginPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (user) navigate({ to: "/dashboard" });
+    if (user) navigate({ to: "/finance" });
   }, [user, navigate]);
 
   const submit = async (e: React.FormEvent) => {

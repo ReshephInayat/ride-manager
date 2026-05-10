@@ -13,6 +13,7 @@ import { Route as PayoutsRouteImport } from './routes/payouts'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FlightsRouteImport } from './routes/flights'
+import { Route as FinanceRouteImport } from './routes/finance'
 import { Route as DriversRouteImport } from './routes/drivers'
 import { Route as DriverRouteImport } from './routes/driver'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -47,6 +48,11 @@ const LoginRoute = LoginRouteImport.update({
 const FlightsRoute = FlightsRouteImport.update({
   id: '/flights',
   path: '/flights',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinanceRoute = FinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DriversRoute = DriversRouteImport.update({
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/driver': typeof DriverRoute
   '/drivers': typeof DriversRoute
+  '/finance': typeof FinanceRoute
   '/flights': typeof FlightsRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/driver': typeof DriverRoute
   '/drivers': typeof DriversRoute
+  '/finance': typeof FinanceRoute
   '/flights': typeof FlightsRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/driver': typeof DriverRoute
   '/drivers': typeof DriversRoute
+  '/finance': typeof FinanceRoute
   '/flights': typeof FlightsRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/driver'
     | '/drivers'
+    | '/finance'
     | '/flights'
     | '/login'
     | '/logs'
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/driver'
     | '/drivers'
+    | '/finance'
     | '/flights'
     | '/login'
     | '/logs'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/driver'
     | '/drivers'
+    | '/finance'
     | '/flights'
     | '/login'
     | '/logs'
@@ -263,6 +275,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   DriverRoute: typeof DriverRoute
   DriversRoute: typeof DriversRoute
+  FinanceRoute: typeof FinanceRoute
   FlightsRoute: typeof FlightsRoute
   LoginRoute: typeof LoginRoute
   LogsRoute: typeof LogsRoute
@@ -307,6 +320,13 @@ declare module '@tanstack/react-router' {
       path: '/flights'
       fullPath: '/flights'
       preLoaderRoute: typeof FlightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/finance': {
+      id: '/finance'
+      path: '/finance'
+      fullPath: '/finance'
+      preLoaderRoute: typeof FinanceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/drivers': {
@@ -423,6 +443,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   DriverRoute: DriverRoute,
   DriversRoute: DriversRoute,
+  FinanceRoute: FinanceRoute,
   FlightsRoute: FlightsRoute,
   LoginRoute: LoginRoute,
   LogsRoute: LogsRoute,

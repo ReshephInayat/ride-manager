@@ -236,27 +236,45 @@ export function FlightSearchButton({
   for (const c of candidates) { code = extractFlightCode(c); if (code) break; }
   const padding = size === "xs" ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs";
 
+  const flightAwareBtn = (forCode: string) => (
+    <a
+      href={flightAwareUrl(forCode)}
+      target="_blank"
+      rel="noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      className={`inline-flex items-center gap-1 rounded-md border border-border bg-muted ${padding} font-medium text-foreground hover:bg-secondary transition-colors`}
+      title="Open in FlightAware"
+    >
+      <Plane className="h-3 w-3" /> Flight Aware <ExternalLink className="h-3 w-3 opacity-70" />
+    </a>
+  );
+
   if (!code) {
     return (
-      <a href={`https://flightaware.com/live/findflight?ident=${encodeURIComponent((ride.flight_number ?? "").trim())}`}
-         target="_blank" rel="noreferrer"
-         onClick={(e) => e.stopPropagation()}
-         className={`inline-flex items-center gap-1 rounded-md border border-border bg-muted ${padding} font-medium text-foreground hover:bg-secondary transition-colors ` + (className ?? "")}>
-        <Plane className="h-3 w-3" /> Search flight <ExternalLink className="h-3 w-3 opacity-70" />
-      </a>
+      <div className={`inline-flex items-center gap-1.5 ${className ?? ""}`}>
+        <a href={`https://flightaware.com/live/findflight?ident=${encodeURIComponent((ride.flight_number ?? "").trim())}`}
+           target="_blank" rel="noreferrer"
+           onClick={(e) => e.stopPropagation()}
+           className={`inline-flex items-center gap-1 rounded-md border border-border bg-muted ${padding} font-medium text-foreground hover:bg-secondary transition-colors`}>
+          <Plane className="h-3 w-3" /> Flight Aware <ExternalLink className="h-3 w-3 opacity-70" />
+        </a>
+      </div>
     );
   }
 
   return (
-    <FlightDetailsDialog
-      flightNumber={code}
-      date={ride.ride_date ?? undefined}
-      trigger={
-        <button type="button" onClick={(e) => e.stopPropagation()}
-          className={`inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 ${padding} font-medium text-primary hover:bg-primary/15 transition-colors ` + (className ?? "")}>
-          <Plane className="h-3 w-3" /> Track {code}
-        </button>
-      }
-    />
+    <div className={`inline-flex items-center gap-1.5 ${className ?? ""}`}>
+      <FlightDetailsDialog
+        flightNumber={code}
+        date={ride.ride_date ?? undefined}
+        trigger={
+          <button type="button" onClick={(e) => e.stopPropagation()}
+            className={`inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 ${padding} font-medium text-primary hover:bg-primary/15 transition-colors`}>
+            <Plane className="h-3 w-3" /> Track {code}
+          </button>
+        }
+      />
+      {flightAwareBtn(code)}
+    </div>
   );
 }

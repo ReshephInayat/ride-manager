@@ -24,16 +24,31 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get("AVIATIONSTACK_API_KEY");
     if (!apiKey) return new Response(JSON.stringify({ error: "AVIATIONSTACK_API_KEY not configured" }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
-    const params = new URLSearchParams({ access_key: apiKey, flight_iata: flight, limit: "5" });
-    if (date) params.set("flight_date", date);
+    const buildUrl = (withDate: boolean) => {
+      const p = new URLSearchParams({ access_key: apiKey, flight_iata: flight, limit: "5" });
+      if (withDate && date) p.set("flight_date", date);
+      // Aviationstack free plan only supports HTTP (HTTPS returns 403).
+      return `http://api.aviationstack.com/v1/flights?${p.toString()}`;
+    };
 
-    // Aviationstack free plan only supports HTTP (HTTPS returns 403).
-    const resp = await fetch(`http://api.aviationstack.com/v1/flights?${params.toString()}`);
+    let resp = await fetch(buildUrl(true));
+    let json: any = null;
+    if (!resp.ok) {
+      // Free plan: historical / future dates and HTTPS return 403/usage_limit_reached.
+      // Retry without flight_date for the live (today) feed.
+      if ((resp.status === 403 || resp.status === 401) && date) {
+        resp = await fetch(buildUrl(false));
+      }
+    }
     if (!resp.ok) {
       const t = await resp.text();
       return new Response(JSON.stringify({ error: `Aviationstack ${resp.status}`, body: t }), { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
-    const json = await resp.json();
+    json = await resp.json();
+    // Aviationstack returns 200 with { error: { code, message } } for plan limits — surface it.
+    if (json?.error) {
+      return new Response(JSON.stringify({ error: json.error.message ?? "Aviationstack error", code: json.error.code ?? null }), { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
     const payload = { flight, date, data: json.data ?? [], pagination: json.pagination ?? null };
     cache.set(key, { ts: Date.now(), data: payload });
     return new Response(JSON.stringify(payload), { headers: { "Content-Type": "application/json", ...corsHeaders } });
