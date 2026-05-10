@@ -24,10 +24,12 @@ import {
   Car,
   DollarSign,
   Plane,
+  Wallet,
 } from "lucide-react";
 
 const mainNav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, group: "Main" },
+  { to: "/finance", label: "Finance", icon: Wallet, group: "Main" },
   { to: "/calendar", label: "Calendar", icon: CalendarDays, group: "Main" },
   { to: "/flights", label: "Flights", icon: Plane, group: "Main" },
 ];
