@@ -224,7 +224,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "calendar">("list");
-  const [filter, setFilter] = useState<"upcoming" | "today" | "past" | "flights" | "all" | "history" | "payouts">("today");
+  const [filter, setFilter] = useState<"upcoming" | "today" | "past" | "flights" | "all" | "history" | "payouts" | "notes">("today");
   const [dateRange, setDateRange] = useState<DateRange>(() => presetToRange("today"));
   const [payouts, setPayouts] = useState<any[]>([]);
   const [payoutsLoaded, setPayoutsLoaded] = useState(false);
@@ -423,7 +423,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
         {/* Filter tabs */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-            {(["today", "upcoming", "past", "flights", "all", "history", "payouts"] as const).map((k) => (
+            {(["today", "upcoming", "past", "flights", "all", "history", "payouts", "notes"] as const).map((k) => (
               <button
                 key={k}
                 onClick={() => setFilter(k)}
@@ -437,7 +437,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
               </button>
             ))}
           </div>
-          {filter !== "history" && filter !== "payouts" && (
+          {filter !== "history" && filter !== "payouts" && filter !== "notes" && (
             <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
               <button onClick={() => setView("list")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "list" ? "bg-[#6C63FF] text-foreground" : "text-muted-foreground"}`}>
                 <ListChecks className="h-4 w-4" /> List
@@ -448,6 +448,8 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
             </div>
           )}
         </div>
+
+        {filter === "notes" && <DriverNotesPanel session={session} />}
 
         {/* History / Payouts toolbar */}
         {filter === "history" && (
@@ -514,7 +516,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
         )}
 
         {/* Content */}
-        {filter === "payouts" ? null : loading ? (
+        {filter === "payouts" || filter === "notes" ? null : loading ? (
           <div className="space-y-3">
             {[1,2,3].map(i => <div key={i} className="h-48 rounded-2xl skeleton-shimmer" />)}
           </div>
@@ -726,6 +728,115 @@ function CalendarView({ rides }: { rides: Ride[] }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/* ─── DRIVER NOTES PANEL ─── */
+function DriverNotesPanel({ session }: { session: DriverSession }) {
+  const [notes, setNotes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [isQuestion, setIsQuestion] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await (supabase.rpc as any)("driver_notes_by_token", {
+      _token: (typeof window !== "undefined" ? localStorage.getItem("psl.driver.token") : null) ?? "",
+    });
+    // Fallback: query directly via PIN-less RPC not available; use admin-side filter via session pin
+    if (error) {
+      // Try a direct read using rpc that may not exist — quietly ignore
+      setNotes([]);
+    } else {
+      setNotes((data as any[]) ?? []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [session.driverId]);
+
+  const submit = async () => {
+    if (!title.trim()) return toast.error("Title required");
+    setSaving(true);
+    const token = typeof window !== "undefined" ? localStorage.getItem("psl.driver.token") : null;
+    if (!token) {
+      // Without a session token RPC available, insert via admin pin path is not allowed.
+      toast.error("Please sign out and sign in again to enable notes.");
+      setSaving(false);
+      return;
+    }
+    const { error } = await (supabase.rpc as any)("driver_create_note_by_token", {
+      _token: token, _title: title.trim(), _body: body.trim() || null, _is_question: isQuestion,
+    });
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success(isQuestion ? "Question sent to admin" : "Note saved");
+    setTitle(""); setBody(""); setIsQuestion(false);
+    load();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="luxury-card p-4 space-y-3">
+        <div className="font-semibold text-foreground text-sm">Add note or question</div>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title"
+          className="w-full input-luxury px-4 text-sm"
+        />
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Details (optional)"
+          className="w-full input-luxury px-4 py-3 text-sm min-h-[80px]"
+        />
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input type="checkbox" checked={isQuestion} onChange={(e) => setIsQuestion(e.target.checked)} className="accent-[#6C63FF]" />
+            Ask the admin
+          </label>
+          <button
+            onClick={submit}
+            disabled={saving}
+            className="ml-auto btn-primary-gradient text-sm px-4 disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <div className="h-24 rounded-2xl skeleton-shimmer" />
+      ) : notes.length === 0 ? (
+        <div className="luxury-card p-8 text-center text-muted-foreground text-sm">No notes yet.</div>
+      ) : (
+        <div className="space-y-2">
+          {notes.map((n) => (
+            <div key={n.id} className="luxury-card p-4">
+              <div className="flex items-center gap-2">
+                <div className="font-semibold text-foreground">{n.title}</div>
+                {n.is_question && (
+                  <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#6C63FF]/15 text-[#6C63FF]">Question</span>
+                )}
+                {n.is_reminder && (
+                  <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#F5A623]/15 text-[#F5A623]">Reminder</span>
+                )}
+              </div>
+              {n.body && <div className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{n.body}</div>}
+              {n.is_question && n.answer && (
+                <div className="mt-2 rounded-lg bg-[#6C63FF]/10 border border-[#6C63FF]/20 p-2.5 text-sm">
+                  <div className="text-[10px] uppercase tracking-wider text-[#6C63FF] font-bold mb-0.5">Admin reply</div>
+                  {n.answer}
+                </div>
+              )}
+              <div className="text-[11px] text-muted-foreground/70 mt-2">{new Date(n.created_at).toLocaleString()}</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PayoutsRouteImport } from './routes/payouts'
+import { Route as NotesRouteImport } from './routes/notes'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FlightsRouteImport } from './routes/flights'
@@ -33,6 +34,11 @@ import { Route as ApiPublicHooksNotifyAssignmentRouteImport } from './routes/api
 const PayoutsRoute = PayoutsRouteImport.update({
   id: '/payouts',
   path: '/payouts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotesRoute = NotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LogsRoute = LogsRouteImport.update({
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/flights': typeof FlightsRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
+  '/notes': typeof NotesRoute
   '/payouts': typeof PayoutsRoute
   '/cars/$id': typeof CarsIdRoute
   '/invoices/$id': typeof InvoicesIdRoute
@@ -165,6 +172,7 @@ export interface FileRoutesByTo {
   '/flights': typeof FlightsRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
+  '/notes': typeof NotesRoute
   '/payouts': typeof PayoutsRoute
   '/cars/$id': typeof CarsIdRoute
   '/invoices/$id': typeof InvoicesIdRoute
@@ -188,6 +196,7 @@ export interface FileRoutesById {
   '/flights': typeof FlightsRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
+  '/notes': typeof NotesRoute
   '/payouts': typeof PayoutsRoute
   '/cars/$id': typeof CarsIdRoute
   '/invoices/$id': typeof InvoicesIdRoute
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
     | '/flights'
     | '/login'
     | '/logs'
+    | '/notes'
     | '/payouts'
     | '/cars/$id'
     | '/invoices/$id'
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/flights'
     | '/login'
     | '/logs'
+    | '/notes'
     | '/payouts'
     | '/cars/$id'
     | '/invoices/$id'
@@ -256,6 +267,7 @@ export interface FileRouteTypes {
     | '/flights'
     | '/login'
     | '/logs'
+    | '/notes'
     | '/payouts'
     | '/cars/$id'
     | '/invoices/$id'
@@ -279,6 +291,7 @@ export interface RootRouteChildren {
   FlightsRoute: typeof FlightsRoute
   LoginRoute: typeof LoginRoute
   LogsRoute: typeof LogsRoute
+  NotesRoute: typeof NotesRoute
   PayoutsRoute: typeof PayoutsRoute
   CarsIdRoute: typeof CarsIdRoute
   InvoicesIdRoute: typeof InvoicesIdRoute
@@ -299,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/payouts'
       fullPath: '/payouts'
       preLoaderRoute: typeof PayoutsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notes': {
+      id: '/notes'
+      path: '/notes'
+      fullPath: '/notes'
+      preLoaderRoute: typeof NotesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/logs': {
@@ -447,6 +467,7 @@ const rootRouteChildren: RootRouteChildren = {
   FlightsRoute: FlightsRoute,
   LoginRoute: LoginRoute,
   LogsRoute: LogsRoute,
+  NotesRoute: NotesRoute,
   PayoutsRoute: PayoutsRoute,
   CarsIdRoute: CarsIdRoute,
   InvoicesIdRoute: InvoicesIdRoute,
@@ -462,12 +483,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

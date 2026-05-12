@@ -19,8 +19,6 @@ import {
   Clock,
   XCircle,
   ArrowUpDown,
-  Download,
-  FileText,
 } from "lucide-react";
 
 export const Route = createFileRoute("/finance")({ component: FinancePage });
@@ -35,7 +33,7 @@ function FinancePage() {
   );
 }
 
-type Preset = "this_week" | "this_month" | "custom";
+type Preset = "yesterday" | "this_week" | "this_month" | "all" | "custom";
 type GroupBy = "month" | "route" | "driver" | "department";
 
 const COMMISSION_RATE = 0.1;
@@ -82,12 +80,20 @@ function FinanceInner() {
 
   // Apply preset to from/to when preset changes
   useEffect(() => {
-    if (preset === "this_week") {
+    if (preset === "yesterday") {
+      const y = new Date();
+      y.setDate(y.getDate() - 1);
+      setFrom(ymd(y));
+      setTo(ymd(y));
+    } else if (preset === "this_week") {
       setFrom(ymd(startOfWeek(new Date())));
       setTo(ymd(endOfWeek(new Date())));
     } else if (preset === "this_month") {
       setFrom(ymd(startOfMonth(new Date())));
       setTo(ymd(endOfMonth(new Date())));
+    } else if (preset === "all") {
+      setFrom("1900-01-01");
+      setTo("2999-12-31");
     }
   }, [preset]);
 
@@ -228,16 +234,7 @@ function FinanceInner() {
     });
   }, [filtered]);
 
-  const invoiceHistory = useMemo(
-    () => [
-      { id: "INV-2026-014", period: "Apr 2026", routes: "Hotel↔SEA, Hotel↔PAE", total: 8420, status: "paid" },
-      { id: "INV-2026-013", period: "Mar 2026", routes: "Hotel↔SEA, GT BASE↔SEA", total: 7890, status: "paid" },
-      { id: "INV-2026-012", period: "Feb 2026", routes: "Hotel↔PAE, GT BASE↔SEA", total: 6210, status: "sent" },
-      { id: "INV-2026-011", period: "Jan 2026", routes: "Hotel↔SEA", total: 5430, status: "unpaid" },
-      { id: "INV-2025-010", period: "Dec 2025", routes: "Hotel↔SEA, Hotel↔PAE", total: 9100, status: "paid" },
-    ],
-    []
-  );
+
 
   const setSort = (k: typeof sortKey) => {
     if (sortKey === k) setSortDir(sortDir === "asc" ? "desc" : "asc");
@@ -267,8 +264,10 @@ function FinanceInner() {
           <Select value={preset} onValueChange={(v) => setPreset(v as Preset)}>
             <SelectTrigger className="input-luxury w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
+              <SelectItem value="yesterday">Yesterday</SelectItem>
               <SelectItem value="this_week">This Week</SelectItem>
               <SelectItem value="this_month">This Month</SelectItem>
+              <SelectItem value="all">All Time</SelectItem>
               <SelectItem value="custom">Custom</SelectItem>
             </SelectContent>
           </Select>
@@ -393,57 +392,10 @@ function FinanceInner() {
         </Card>
       </div>
 
-      {/* Invoice history */}
-      <Card className="luxury-card overflow-hidden">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <div className="font-semibold text-foreground text-sm flex items-center gap-2">
-            <FileText className="w-4 h-4 text-[#6C63FF]" /> Invoice History
-          </div>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border">
-              <TableHead>Invoice ID</TableHead>
-              <TableHead>Period</TableHead>
-              <TableHead>Routes</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {invoiceHistory.map((inv) => (
-              <TableRow key={inv.id} className="border-border">
-                <TableCell className="font-mono text-xs">{inv.id}</TableCell>
-                <TableCell>{inv.period}</TableCell>
-                <TableCell className="text-muted-foreground text-xs">{inv.routes}</TableCell>
-                <TableCell className="font-semibold">{fmt$(inv.total)}</TableCell>
-                <TableCell>
-                  <Badge
-                    className={
-                      inv.status === "paid"
-                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                        : inv.status === "sent"
-                        ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                        : "bg-red-500/20 text-red-400 border-red-500/30"
-                    }
-                  >
-                    {inv.status === "paid" ? "Paid" : inv.status === "sent" ? "Sent" : "Unpaid"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button size="sm" variant="outline" className="gap-1">
-                    <Download className="w-3 h-3" /> Download
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
     </div>
   );
 }
+
 
 function SummaryCard({
   label,
