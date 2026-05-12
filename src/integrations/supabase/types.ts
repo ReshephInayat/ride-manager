@@ -614,6 +614,72 @@ export type Database = {
         }
         Relationships: []
       }
+      notes: {
+        Row: {
+          answer: string | null
+          answered: boolean
+          answered_at: string | null
+          body: string | null
+          category: string
+          created_at: string
+          created_by: string
+          done: boolean
+          driver_id: string | null
+          id: string
+          is_question: boolean
+          is_reminder: boolean
+          remind_at: string | null
+          sms_sent: boolean
+          sms_sent_at: string | null
+          system: Database["public"]["Enums"]["workspace_system"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answer?: string | null
+          answered?: boolean
+          answered_at?: string | null
+          body?: string | null
+          category: string
+          created_at?: string
+          created_by?: string
+          done?: boolean
+          driver_id?: string | null
+          id?: string
+          is_question?: boolean
+          is_reminder?: boolean
+          remind_at?: string | null
+          sms_sent?: boolean
+          sms_sent_at?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answer?: string | null
+          answered?: boolean
+          answered_at?: string | null
+          body?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string
+          done?: boolean
+          driver_id?: string | null
+          id?: string
+          is_question?: boolean
+          is_reminder?: boolean
+          remind_at?: string | null
+          sms_sent?: boolean
+          sms_sent_at?: string | null
+          system?: Database["public"]["Enums"]["workspace_system"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -872,6 +938,41 @@ export type Database = {
         Args: { _token: string }
         Returns: undefined
       }
+      driver_create_note_by_token: {
+        Args: {
+          _body: string
+          _is_question?: boolean
+          _title: string
+          _token: string
+        }
+        Returns: {
+          answer: string | null
+          answered: boolean
+          answered_at: string | null
+          body: string | null
+          category: string
+          created_at: string
+          created_by: string
+          done: boolean
+          driver_id: string | null
+          id: string
+          is_question: boolean
+          is_reminder: boolean
+          remind_at: string | null
+          sms_sent: boolean
+          sms_sent_at: string | null
+          system: Database["public"]["Enums"]["workspace_system"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "notes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       driver_delete_notifications: {
         Args: { _driver_id: string; _pin: string }
         Returns: undefined
@@ -913,6 +1014,36 @@ export type Database = {
       driver_mark_read_by_token: {
         Args: { _token: string }
         Returns: undefined
+      }
+      driver_notes_by_token: {
+        Args: { _token: string }
+        Returns: {
+          answer: string | null
+          answered: boolean
+          answered_at: string | null
+          body: string | null
+          category: string
+          created_at: string
+          created_by: string
+          done: boolean
+          driver_id: string | null
+          id: string
+          is_question: boolean
+          is_reminder: boolean
+          remind_at: string | null
+          sms_sent: boolean
+          sms_sent_at: string | null
+          system: Database["public"]["Enums"]["workspace_system"]
+          title: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notes"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       driver_notifications: {
         Args: { _driver_id: string; _pin: string }
