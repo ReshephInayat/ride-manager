@@ -396,8 +396,6 @@ function FinanceInner() {
   );
 }
 
-// (legacy reference removed)
-function _legacy() { return null; }
 
 function SummaryCard({
   label,
