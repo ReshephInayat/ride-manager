@@ -80,12 +80,20 @@ function FinanceInner() {
 
   // Apply preset to from/to when preset changes
   useEffect(() => {
-    if (preset === "this_week") {
+    if (preset === "yesterday") {
+      const y = new Date();
+      y.setDate(y.getDate() - 1);
+      setFrom(ymd(y));
+      setTo(ymd(y));
+    } else if (preset === "this_week") {
       setFrom(ymd(startOfWeek(new Date())));
       setTo(ymd(endOfWeek(new Date())));
     } else if (preset === "this_month") {
       setFrom(ymd(startOfMonth(new Date())));
       setTo(ymd(endOfMonth(new Date())));
+    } else if (preset === "all") {
+      setFrom("1900-01-01");
+      setTo("2999-12-31");
     }
   }, [preset]);
 
