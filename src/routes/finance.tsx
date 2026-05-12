@@ -234,16 +234,7 @@ function FinanceInner() {
     });
   }, [filtered]);
 
-  const invoiceHistory = useMemo(
-    () => [
-      { id: "INV-2026-014", period: "Apr 2026", routes: "Hotel↔SEA, Hotel↔PAE", total: 8420, status: "paid" },
-      { id: "INV-2026-013", period: "Mar 2026", routes: "Hotel↔SEA, GT BASE↔SEA", total: 7890, status: "paid" },
-      { id: "INV-2026-012", period: "Feb 2026", routes: "Hotel↔PAE, GT BASE↔SEA", total: 6210, status: "sent" },
-      { id: "INV-2026-011", period: "Jan 2026", routes: "Hotel↔SEA", total: 5430, status: "unpaid" },
-      { id: "INV-2025-010", period: "Dec 2025", routes: "Hotel↔SEA, Hotel↔PAE", total: 9100, status: "paid" },
-    ],
-    []
-  );
+
 
   const setSort = (k: typeof sortKey) => {
     if (sortKey === k) setSortDir(sortDir === "asc" ? "desc" : "asc");
