@@ -516,7 +516,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
         )}
 
         {/* Content */}
-        {filter === "payouts" ? null : loading ? (
+        {filter === "payouts" || filter === "notes" ? null : loading ? (
           <div className="space-y-3">
             {[1,2,3].map(i => <div key={i} className="h-48 rounded-2xl skeleton-shimmer" />)}
           </div>
