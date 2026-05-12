@@ -437,7 +437,7 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
               </button>
             ))}
           </div>
-          {filter !== "history" && filter !== "payouts" && (
+          {filter !== "history" && filter !== "payouts" && filter !== "notes" && (
             <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
               <button onClick={() => setView("list")} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${view === "list" ? "bg-[#6C63FF] text-foreground" : "text-muted-foreground"}`}>
                 <ListChecks className="h-4 w-4" /> List
@@ -448,6 +448,8 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
             </div>
           )}
         </div>
+
+        {filter === "notes" && <DriverNotesPanel session={session} />}
 
         {/* History / Payouts toolbar */}
         {filter === "history" && (
