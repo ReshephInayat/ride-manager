@@ -4,6 +4,7 @@ import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
 import { SystemProvider } from "@/lib/system";
 import { Toaster } from "react-hot-toast";
+import { GlobalLoader } from "@/components/GlobalLoader";
 
 import appCss from "../styles.css?url";
 
