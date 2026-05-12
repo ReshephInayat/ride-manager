@@ -392,57 +392,12 @@ function FinanceInner() {
         </Card>
       </div>
 
-      {/* Invoice history */}
-      <Card className="luxury-card overflow-hidden">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <div className="font-semibold text-foreground text-sm flex items-center gap-2">
-            <FileText className="w-4 h-4 text-[#6C63FF]" /> Invoice History
-          </div>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border">
-              <TableHead>Invoice ID</TableHead>
-              <TableHead>Period</TableHead>
-              <TableHead>Routes</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {invoiceHistory.map((inv) => (
-              <TableRow key={inv.id} className="border-border">
-                <TableCell className="font-mono text-xs">{inv.id}</TableCell>
-                <TableCell>{inv.period}</TableCell>
-                <TableCell className="text-muted-foreground text-xs">{inv.routes}</TableCell>
-                <TableCell className="font-semibold">{fmt$(inv.total)}</TableCell>
-                <TableCell>
-                  <Badge
-                    className={
-                      inv.status === "paid"
-                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                        : inv.status === "sent"
-                        ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                        : "bg-red-500/20 text-red-400 border-red-500/30"
-                    }
-                  >
-                    {inv.status === "paid" ? "Paid" : inv.status === "sent" ? "Sent" : "Unpaid"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button size="sm" variant="outline" className="gap-1">
-                    <Download className="w-3 h-3" /> Download
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
     </div>
   );
 }
+
+// (legacy reference removed)
+function _legacy() { return null; }
 
 function SummaryCard({
   label,
