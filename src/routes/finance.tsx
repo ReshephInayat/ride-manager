@@ -33,7 +33,7 @@ function FinancePage() {
   );
 }
 
-type Preset = "this_week" | "this_month" | "custom";
+type Preset = "yesterday" | "this_week" | "this_month" | "all" | "custom";
 type GroupBy = "month" | "route" | "driver" | "department";
 
 const COMMISSION_RATE = 0.1;
