@@ -27,6 +27,9 @@ import {
   Send,
   AlertCircle,
   HelpCircle,
+  Pencil,
+  Car,
+  X,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -49,6 +52,7 @@ type Note = {
   title: string;
   body: string | null;
   driver_id: string | null;
+  ride_id: string | null;
   is_reminder: boolean;
   remind_at: string | null;
   sms_sent: boolean;
@@ -60,30 +64,64 @@ type Note = {
   created_at: string;
 };
 
+type RideLite = {
+  id: string;
+  ride_date: string;
+  pickup_time: string | null;
+  pickup_location: string | null;
+  dropoff_location: string | null;
+  passenger_name: string | null;
+};
+
 function NotesInner() {
   const { system } = useSystem();
   const { user } = useAuth();
   const [tab, setTab] = useState<Category>("admin");
   const [notes, setNotes] = useState<Note[]>([]);
   const [drivers, setDrivers] = useState<{ id: string; name: string; phone: string | null }[]>([]);
+  const [rides, setRides] = useState<RideLite[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // composer state
+  // composer / editor state
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [isReminder, setIsReminder] = useState(false);
   const [remindAt, setRemindAt] = useState("");
   const [driverId, setDriverId] = useState<string>("");
+  const [rideId, setRideId] = useState<string>("");
+  const [rideQuery, setRideQuery] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const resetForm = () => {
+    setEditingId(null);
+    setTitle("");
+    setBody("");
+    setIsReminder(false);
+    setRemindAt("");
+    setDriverId("");
+    setRideId("");
+    setRideQuery("");
+  };
 
   const load = async () => {
     setLoading(true);
-    const [{ data: n }, { data: d }] = await Promise.all([
+    const todayStr = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+    const [{ data: n }, { data: d }, { data: r }] = await Promise.all([
       supabase.from("notes").select("*").eq("system", system).order("created_at", { ascending: false }),
       supabase.from("drivers").select("id, name, phone").eq("system", system).eq("active", true),
+      supabase
+        .from("rides")
+        .select("id, ride_date, pickup_time, pickup_location, dropoff_location, passenger_name")
+        .eq("system", system)
+        .gte("ride_date", todayStr)
+        .order("ride_date", { ascending: true })
+        .order("pickup_time", { ascending: true })
+        .limit(200),
     ]);
     setNotes((n as any) ?? []);
     setDrivers((d as any) ?? []);
+    setRides((r as any) ?? []);
     setLoading(false);
   };
 
@@ -101,30 +139,64 @@ function NotesInner() {
 
   const filtered = useMemo(() => notes.filter((n) => n.category === tab), [notes, tab]);
 
+  const filteredRides = useMemo(() => {
+    const q = rideQuery.trim().toLowerCase();
+    if (!q) return rides.slice(0, 25);
+    return rides
+      .filter((r) =>
+        [r.passenger_name, r.pickup_location, r.dropoff_location, r.ride_date, r.pickup_time]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(q),
+      )
+      .slice(0, 25);
+  }, [rides, rideQuery]);
+
+  const selectedRide = useMemo(() => rides.find((r) => r.id === rideId), [rides, rideId]);
+
+  const beginEdit = (n: Note) => {
+    setEditingId(n.id);
+    setTab(n.category);
+    setTitle(n.title);
+    setBody(n.body ?? "");
+    setIsReminder(n.is_reminder);
+    setRemindAt(n.remind_at ? new Date(n.remind_at).toISOString().slice(0, 16) : "");
+    setDriverId(n.driver_id ?? "");
+    setRideId(n.ride_id ?? "");
+    setRideQuery("");
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const submit = async () => {
     if (!title.trim()) return toast.error("Title required");
     if (tab === "driver" && !driverId) return toast.error("Pick a driver");
     if (isReminder && !remindAt) return toast.error("Pick a reminder time");
     setSaving(true);
-    const { error } = await supabase.from("notes").insert({
-      user_id: user!.id,
-      system,
-      category: tab,
+    const payload = {
       title: title.trim(),
       body: body.trim() || null,
       driver_id: tab === "driver" ? driverId : null,
+      ride_id: rideId || null,
       is_reminder: isReminder,
       remind_at: isReminder ? new Date(remindAt).toISOString() : null,
-      created_by: "admin",
-    });
+      category: tab,
+    };
+    let error;
+    if (editingId) {
+      ({ error } = await supabase
+        .from("notes")
+        .update({ ...payload, sms_sent: isReminder ? false : undefined })
+        .eq("id", editingId));
+    } else {
+      ({ error } = await supabase
+        .from("notes")
+        .insert({ ...payload, user_id: user!.id, system, created_by: "admin" }));
+    }
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success(isReminder ? "Reminder scheduled" : "Note saved");
-    setTitle("");
-    setBody("");
-    setIsReminder(false);
-    setRemindAt("");
-    if (tab === "driver") setDriverId("");
+    toast.success(editingId ? "Note updated" : isReminder ? "Reminder scheduled" : "Note saved");
+    resetForm();
     load();
   };
 
@@ -136,16 +208,23 @@ function NotesInner() {
   const remove = async (n: Note) => {
     if (!confirm("Delete this note?")) return;
     await supabase.from("notes").delete().eq("id", n.id);
+    if (editingId === n.id) resetForm();
     load();
   };
 
   const answerQuestion = async (n: Note) => {
     const ans = prompt("Your reply to the driver:", n.answer ?? "");
     if (ans === null) return;
-    await supabase.from("notes").update({ answered: true, answer: ans, answered_at: new Date().toISOString() }).eq("id", n.id);
+    await supabase
+      .from("notes")
+      .update({ answered: true, answer: ans, answered_at: new Date().toISOString() })
+      .eq("id", n.id);
     toast.success("Reply saved");
     load();
   };
+
+  const rideLabel = (r: RideLite) =>
+    `${r.ride_date} ${r.pickup_time ?? ""} • ${r.passenger_name ?? "—"} • ${r.pickup_location ?? "—"} → ${r.dropoff_location ?? "—"}`;
 
   return (
     <div className="space-y-6">
@@ -158,17 +237,29 @@ function NotesInner() {
         </p>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as Category)}>
+      <Tabs value={tab} onValueChange={(v) => { setTab(v as Category); resetForm(); }}>
         <TabsList>
           <TabsTrigger value="admin">Admin notes</TabsTrigger>
           <TabsTrigger value="driver">Driver notes</TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {/* Composer */}
+      {/* Composer / Editor */}
       <Card className="luxury-card p-4 space-y-3">
         <div className="font-semibold text-sm text-foreground flex items-center gap-2">
-          <Plus className="w-4 h-4" /> New {tab === "admin" ? "admin note" : "driver note"}
+          {editingId ? (
+            <><Pencil className="w-4 h-4" /> Edit note</>
+          ) : (
+            <><Plus className="w-4 h-4" /> New {tab === "admin" ? "admin note" : "driver note"}</>
+          )}
+          {editingId && (
+            <button
+              onClick={resetForm}
+              className="ml-auto text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+            >
+              <X className="w-3 h-3" /> Cancel edit
+            </button>
+          )}
         </div>
         <Input
           placeholder="Title"
@@ -182,6 +273,60 @@ function NotesInner() {
           onChange={(e) => setBody(e.target.value)}
           className="input-luxury min-h-[80px]"
         />
+
+        {/* Ride attach */}
+        <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+            <Car className="w-3.5 h-3.5 text-[#6C63FF]" /> Attach a ride (optional)
+          </div>
+          {selectedRide ? (
+            <div className="flex items-start gap-2 rounded-md bg-card border border-border p-2 text-xs">
+              <Car className="w-3.5 h-3.5 mt-0.5 text-[#6C63FF] shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-foreground truncate">
+                  {selectedRide.passenger_name ?? "Passenger"} — {selectedRide.ride_date} {selectedRide.pickup_time ?? ""}
+                </div>
+                <div className="text-muted-foreground truncate">
+                  {selectedRide.pickup_location ?? "—"} → {selectedRide.dropoff_location ?? "—"}
+                </div>
+              </div>
+              <button
+                onClick={() => { setRideId(""); setRideQuery(""); }}
+                className="text-muted-foreground hover:text-destructive p-1"
+                title="Remove ride"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <>
+              <Input
+                placeholder="Search rides by passenger / route / date…"
+                value={rideQuery}
+                onChange={(e) => setRideQuery(e.target.value)}
+                className="input-luxury text-xs"
+              />
+              {rideQuery && (
+                <div className="max-h-44 overflow-y-auto rounded-md border border-border bg-card divide-y divide-border">
+                  {filteredRides.length === 0 ? (
+                    <div className="p-2 text-xs text-muted-foreground text-center">No matching rides</div>
+                  ) : (
+                    filteredRides.map((r) => (
+                      <button
+                        key={r.id}
+                        onClick={() => { setRideId(r.id); setRideQuery(""); }}
+                        className="block w-full text-left p-2 text-xs hover:bg-muted/50 transition-colors"
+                      >
+                        {rideLabel(r)}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
         <div className="flex flex-wrap items-center gap-3">
           {tab === "driver" && (
             <Select value={driverId} onValueChange={setDriverId}>
@@ -215,7 +360,7 @@ function NotesInner() {
             />
           )}
           <Button onClick={submit} disabled={saving} className="ml-auto btn-primary-gradient">
-            {saving ? "Saving…" : "Save note"}
+            {saving ? "Saving…" : editingId ? "Update note" : "Save note"}
           </Button>
         </div>
         {isReminder && tab === "driver" && (
@@ -242,6 +387,7 @@ function NotesInner() {
         <div className="space-y-3">
           {filtered.map((n) => {
             const driver = drivers.find((d) => d.id === n.driver_id);
+            const ride = rides.find((r) => r.id === n.ride_id);
             return (
               <Card key={n.id} className="luxury-card p-4">
                 <div className="flex items-start gap-3">
@@ -294,6 +440,19 @@ function NotesInner() {
                         {n.body}
                       </div>
                     )}
+                    {ride && (
+                      <div className="mt-2 inline-flex items-start gap-2 rounded-md bg-[#6C63FF]/8 border border-[#6C63FF]/20 px-2.5 py-1.5 text-xs">
+                        <Car className="w-3.5 h-3.5 mt-0.5 text-[#6C63FF] shrink-0" />
+                        <div className="min-w-0">
+                          <div className="font-medium text-foreground">
+                            {ride.passenger_name ?? "Passenger"} — {ride.ride_date} {ride.pickup_time ?? ""}
+                          </div>
+                          <div className="text-muted-foreground">
+                            {ride.pickup_location ?? "—"} → {ride.dropoff_location ?? "—"}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     {n.is_question && n.answer && (
                       <div className="mt-2 rounded-lg bg-[#6C63FF]/10 border border-[#6C63FF]/20 p-2.5 text-sm">
                         <div className="text-[10px] uppercase tracking-wider text-[#6C63FF] font-bold mb-0.5">
@@ -317,6 +476,13 @@ function NotesInner() {
                         <Send className="w-3 h-3" /> Reply
                       </Button>
                     )}
+                    <button
+                      onClick={() => beginEdit(n)}
+                      className="p-2 rounded-lg text-muted-foreground hover:text-[#6C63FF] hover:bg-[#6C63FF]/10 transition-colors"
+                      title="Edit"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={() => remove(n)}
                       className="p-2 rounded-lg text-muted-foreground hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors"
