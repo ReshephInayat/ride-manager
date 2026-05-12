@@ -629,6 +629,7 @@ export type Database = {
           is_question: boolean
           is_reminder: boolean
           remind_at: string | null
+          ride_id: string | null
           sms_sent: boolean
           sms_sent_at: string | null
           system: Database["public"]["Enums"]["workspace_system"]
@@ -650,6 +651,7 @@ export type Database = {
           is_question?: boolean
           is_reminder?: boolean
           remind_at?: string | null
+          ride_id?: string | null
           sms_sent?: boolean
           sms_sent_at?: string | null
           system?: Database["public"]["Enums"]["workspace_system"]
@@ -671,6 +673,7 @@ export type Database = {
           is_question?: boolean
           is_reminder?: boolean
           remind_at?: string | null
+          ride_id?: string | null
           sms_sent?: boolean
           sms_sent_at?: string | null
           system?: Database["public"]["Enums"]["workspace_system"]
@@ -959,6 +962,7 @@ export type Database = {
           is_question: boolean
           is_reminder: boolean
           remind_at: string | null
+          ride_id: string | null
           sms_sent: boolean
           sms_sent_at: string | null
           system: Database["public"]["Enums"]["workspace_system"]
@@ -1031,6 +1035,7 @@ export type Database = {
           is_question: boolean
           is_reminder: boolean
           remind_at: string | null
+          ride_id: string | null
           sms_sent: boolean
           sms_sent_at: string | null
           system: Database["public"]["Enums"]["workspace_system"]
