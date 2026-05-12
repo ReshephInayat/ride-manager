@@ -79,6 +79,7 @@ function RootComponent() {
     <ThemeProvider>
       <SystemProvider>
         <AuthProvider>
+          <GlobalLoader />
           <Outlet />
           {mounted && <Toaster position="bottom-right" toastOptions={{ duration: 3500, style: { background: '#10101C', color: '#E2E2F0', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px' } }} />}
         </AuthProvider>
