@@ -12,7 +12,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import landingHero from "@/assets/landing-hero.jpg";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -37,7 +36,7 @@ function Landing() {
   }, [user, loading, navigate]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+    <div className="dark min-h-screen bg-background text-foreground relative overflow-hidden">
       {/* Background hero — hidden on mobile */}
       <div className="absolute inset-0 -z-0 hidden sm:block">
         <img
@@ -68,7 +67,6 @@ function Landing() {
                 <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
                 Live dispatch
               </span>
-              <ThemeToggle />
             </div>
           </div>
         </header>

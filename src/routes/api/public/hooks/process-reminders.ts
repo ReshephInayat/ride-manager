@@ -167,7 +167,37 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
           summary.manual += 1;
         }
 
-        return new Response(JSON.stringify({ ok: true, ...summary }), {
+        // -------------------------------
+        // NOTE REMINDERS (admin → driver SMS)
+        // -------------------------------
+        let noteSms = 0;
+        const { data: dueNotes } = await sb
+          .from("notes")
+          .select("id, title, body, driver_id, system, drivers:driver_id(name, phone)")
+          .eq("is_reminder", true)
+          .eq("sms_sent", false)
+          .lte("remind_at", now.toISOString());
+
+        for (const note of (dueNotes ?? []) as any[]) {
+          const drv = Array.isArray(note.drivers) ? note.drivers[0] : note.drivers;
+          if (drv?.phone) {
+            try {
+              const msg = `REMINDER: ${note.title}${note.body ? ` | ${String(note.body).slice(0, 200)}` : ""}`
+                .replace(/•/g, "|")
+                .replace(/—/g, "-");
+              await sendSms(drv.phone, msg);
+              noteSms += 1;
+            } catch (e) {
+              console.error("Note SMS failed", e);
+            }
+          }
+          await sb
+            .from("notes")
+            .update({ sms_sent: true, sms_sent_at: new Date().toISOString() })
+            .eq("id", note.id);
+        }
+
+        return new Response(JSON.stringify({ ok: true, ...summary, note_sms: noteSms }), {
           headers: { "Content-Type": "application/json" },
         });
       },

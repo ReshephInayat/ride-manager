@@ -116,8 +116,7 @@ function DriverLogin({ onSuccess }: { onSuccess: (s: DriverSession) => void }) {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-background relative">
-      <div className="absolute top-4 right-4 z-50"><ThemeToggle /></div>
+    <div className="dark min-h-screen grid lg:grid-cols-2 bg-background text-foreground relative">
       {/* Left visual panel — hidden on mobile */}
       <div className="relative hidden lg:block overflow-hidden">
         <img src={driverHero} alt="Professional chauffeur next to luxury SUV at night" className="absolute inset-0 h-full w-full object-cover" />
