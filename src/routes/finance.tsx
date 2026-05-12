@@ -273,8 +273,10 @@ function FinanceInner() {
           <Select value={preset} onValueChange={(v) => setPreset(v as Preset)}>
             <SelectTrigger className="input-luxury w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
+              <SelectItem value="yesterday">Yesterday</SelectItem>
               <SelectItem value="this_week">This Week</SelectItem>
               <SelectItem value="this_month">This Month</SelectItem>
+              <SelectItem value="all">All Time</SelectItem>
               <SelectItem value="custom">Custom</SelectItem>
             </SelectContent>
           </Select>
