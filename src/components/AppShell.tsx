@@ -25,6 +25,7 @@ import {
   DollarSign,
   Plane,
   Wallet,
+  StickyNote,
 } from "lucide-react";
 
 const mainNav = [
@@ -32,6 +33,7 @@ const mainNav = [
   { to: "/finance", label: "Finance", icon: Wallet, group: "Main" },
   { to: "/calendar", label: "Calendar", icon: CalendarDays, group: "Main" },
   { to: "/flights", label: "Flights", icon: Plane, group: "Main" },
+  { to: "/notes", label: "Notes", icon: StickyNote, group: "Main" },
 ];
 const mgmtNav = [
   { to: "/drivers", label: "Drivers", icon: Users, group: "Management" },
