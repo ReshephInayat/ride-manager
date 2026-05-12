@@ -19,8 +19,6 @@ import {
   Clock,
   XCircle,
   ArrowUpDown,
-  Download,
-  FileText,
 } from "lucide-react";
 
 export const Route = createFileRoute("/finance")({ component: FinancePage });
