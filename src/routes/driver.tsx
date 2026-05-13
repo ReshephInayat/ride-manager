@@ -560,9 +560,6 @@ function RideList({ rides, setStatus }: { rides: Ride[]; setStatus: (id: string,
   );
 }
 
-function _unused_close() {
-  return null;
-
 /* ─── STAT TILE ─── */
 function StatTile({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: number; highlight?: boolean }) {
   return (
