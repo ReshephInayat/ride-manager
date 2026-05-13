@@ -277,6 +277,11 @@ function FlightsInner() {
                         Delay {delay}m
                       </Badge>
                     )}
+                    {closeArrivals.has(r.id) && (
+                      <Badge className="bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/40 text-[10px] gap-1">
+                        <AlertTriangle className="w-3 h-3" /> Close arrival
+                      </Badge>
+                    )}
                     <Badge className="bg-muted/50 text-muted-foreground border-border text-[10px]">
                       <Users className="w-3 h-3 mr-1" /> {r.riders ?? 1}
                     </Badge>
