@@ -12,6 +12,7 @@ import { extractDropoffTime, stripTrailingTime, type Ride, type RideStatus } fro
 import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
 import driverHero from "@/assets/driver-hero.jpg";
 import { FlightTrackLink, FlightSearchButton } from "@/components/FlightTrackLink";
+import { LiveFlightStatus } from "@/components/LiveFlightStatus";
 import { DriverNotificationBell } from "@/components/DriverNotificationBell";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
 import { DateRangeFilter, presetToRange, type DateRange } from "@/components/DateRangeFilter";
