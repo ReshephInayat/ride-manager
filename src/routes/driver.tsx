@@ -636,6 +636,15 @@ function RideCard({ ride, onSetStatus, closeArrival, onArrivalTime }: { ride: Ri
           </div>
         </div>
 
+        {cleanFlight && (
+          <LiveFlightStatus
+            flightNumber={cleanFlight}
+            date={ride.ride_date}
+            closeArrival={closeArrival}
+            onArrival={onArrivalTime}
+          />
+        )}
+
         {/* Meta chips */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="glass-pill text-xs px-3 py-1 flex items-center gap-1.5 text-foreground">
