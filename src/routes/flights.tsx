@@ -332,25 +332,11 @@ function FlightsInner() {
                   </div>
                 ) : null}
 
-                {/* Ride details */}
-                <div className="px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                  <div>
-                    <div className="text-muted-foreground/70 uppercase tracking-wider text-[10px] mb-0.5">Pickup time</div>
-                    <div className="text-foreground/90 inline-flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-muted-foreground/50" /> {r.pickup_time || "—"}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground/70 uppercase tracking-wider text-[10px] mb-0.5">Pickup</div>
-                    <div className="text-foreground/90">{r.pickup_location || "—"}</div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground/70 uppercase tracking-wider text-[10px] mb-0.5">Dropoff</div>
-                    <div className="text-foreground/90">{r.dropoff_location || "—"}</div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground/70 uppercase tracking-wider text-[10px] mb-0.5">Driver</div>
-                    <div className="text-foreground/90">{driverName(r.driver_id) || <span className="text-muted-foreground/50">Unassigned</span>}</div>
+                {/* Pickup time only */}
+                <div className="px-4 py-3 text-xs">
+                  <div className="text-muted-foreground/70 uppercase tracking-wider text-[10px] mb-0.5">Pickup time</div>
+                  <div className="text-foreground/90 inline-flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-muted-foreground/50" /> {r.pickup_time || "—"}
                   </div>
                 </div>
 
