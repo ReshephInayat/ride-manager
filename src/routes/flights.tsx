@@ -162,7 +162,29 @@ function FlightsInner() {
     return () => { cancelled = true; };
   }, [flightRows.map((f) => `${f.ride.id}:${f.code}:${f.ride.ride_date}`).join("|"), refreshTick.current]);
 
-  const driverName = (id: string | null) => id ? (drivers.find((d) => d.id === id)?.name ?? null) : null;
+  void drivers;
+
+  // Detect flights with arrival times within 30 min of each other
+  const closeArrivals = useMemo(() => {
+    const set = new Set<string>();
+    const items: { id: string; t: number }[] = [];
+    for (const { ride } of flightRows) {
+      const live = liveData[ride.id]?.info;
+      const a = live?.arrival?.estimated ?? live?.arrival?.actual ?? live?.arrival?.scheduled;
+      if (!a) continue;
+      const t = new Date(a).getTime();
+      if (!isFinite(t)) continue;
+      items.push({ id: ride.id, t });
+    }
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        if (Math.abs(items[i].t - items[j].t) <= 30 * 60 * 1000) {
+          set.add(items[i].id); set.add(items[j].id);
+        }
+      }
+    }
+    return set;
+  }, [flightRows, liveData]);
 
   const refreshAll = () => {
     flightCache.clear();
