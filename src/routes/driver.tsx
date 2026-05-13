@@ -571,7 +571,7 @@ function StatTile({ icon, label, value, highlight }: { icon: React.ReactNode; la
 }
 
 /* ─── RIDE CARD ─── */
-function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStatus) => void }) {
+function RideCard({ ride, onSetStatus, closeArrival, onArrivalTime }: { ride: Ride; onSetStatus: (s: RideStatus) => void; closeArrival?: boolean; onArrivalTime?: (t: number | null) => void }) {
   const dropoffTime = extractDropoffTime(ride);
   const cleanDropoffTo = stripTrailingTime(ride.dropoff_to ?? "") || ride.dropoff_to;
   const cleanFlight = stripTrailingTime(ride.flight_number ?? "") || ride.flight_number;
