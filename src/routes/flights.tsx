@@ -162,7 +162,29 @@ function FlightsInner() {
     return () => { cancelled = true; };
   }, [flightRows.map((f) => `${f.ride.id}:${f.code}:${f.ride.ride_date}`).join("|"), refreshTick.current]);
 
-  const driverName = (id: string | null) => id ? (drivers.find((d) => d.id === id)?.name ?? null) : null;
+  void drivers;
+
+  // Detect flights with arrival times within 30 min of each other
+  const closeArrivals = useMemo(() => {
+    const set = new Set<string>();
+    const items: { id: string; t: number }[] = [];
+    for (const { ride } of flightRows) {
+      const live = liveData[ride.id]?.info;
+      const a = live?.arrival?.estimated ?? live?.arrival?.actual ?? live?.arrival?.scheduled;
+      if (!a) continue;
+      const t = new Date(a).getTime();
+      if (!isFinite(t)) continue;
+      items.push({ id: ride.id, t });
+    }
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        if (Math.abs(items[i].t - items[j].t) <= 30 * 60 * 1000) {
+          set.add(items[i].id); set.add(items[j].id);
+        }
+      }
+    }
+    return set;
+  }, [flightRows, liveData]);
 
   const refreshAll = () => {
     flightCache.clear();
@@ -255,6 +277,11 @@ function FlightsInner() {
                         Delay {delay}m
                       </Badge>
                     )}
+                    {closeArrivals.has(r.id) && (
+                      <Badge className="bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/40 text-[10px] gap-1">
+                        <AlertTriangle className="w-3 h-3" /> Close arrival
+                      </Badge>
+                    )}
                     <Badge className="bg-muted/50 text-muted-foreground border-border text-[10px]">
                       <Users className="w-3 h-3 mr-1" /> {r.riders ?? 1}
                     </Badge>
@@ -305,25 +332,11 @@ function FlightsInner() {
                   </div>
                 ) : null}
 
-                {/* Ride details */}
-                <div className="px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                  <div>
-                    <div className="text-muted-foreground/70 uppercase tracking-wider text-[10px] mb-0.5">Pickup time</div>
-                    <div className="text-foreground/90 inline-flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-muted-foreground/50" /> {r.pickup_time || "—"}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground/70 uppercase tracking-wider text-[10px] mb-0.5">Pickup</div>
-                    <div className="text-foreground/90">{r.pickup_location || "—"}</div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground/70 uppercase tracking-wider text-[10px] mb-0.5">Dropoff</div>
-                    <div className="text-foreground/90">{r.dropoff_location || "—"}</div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground/70 uppercase tracking-wider text-[10px] mb-0.5">Driver</div>
-                    <div className="text-foreground/90">{driverName(r.driver_id) || <span className="text-muted-foreground/50">Unassigned</span>}</div>
+                {/* Pickup time only */}
+                <div className="px-4 py-3 text-xs">
+                  <div className="text-muted-foreground/70 uppercase tracking-wider text-[10px] mb-0.5">Pickup time</div>
+                  <div className="text-foreground/90 inline-flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-muted-foreground/50" /> {r.pickup_time || "—"}
                   </div>
                 </div>
 

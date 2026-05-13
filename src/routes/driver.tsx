@@ -12,6 +12,7 @@ import { extractDropoffTime, stripTrailingTime, type Ride, type RideStatus } fro
 import { SYSTEM_LABELS, type WorkspaceSystem } from "@/lib/system";
 import driverHero from "@/assets/driver-hero.jpg";
 import { FlightTrackLink, FlightSearchButton } from "@/components/FlightTrackLink";
+import { LiveFlightStatus } from "@/components/LiveFlightStatus";
 import { DriverNotificationBell } from "@/components/DriverNotificationBell";
 import { useLiveLocation } from "@/hooks/useLiveLocation";
 import { DateRangeFilter, presetToRange, type DateRange } from "@/components/DateRangeFilter";
@@ -526,15 +527,36 @@ function DriverHome({ session, onLogout }: { session: DriverSession; onLogout: (
             <p className="text-muted-foreground/60 text-sm mt-1">Try switching to a different filter</p>
           </div>
         ) : view === "list" || filter === "history" ? (
-          <div className="space-y-4">
-            {filtered.map((r) => (
-              <RideCard key={r.id} ride={r} onSetStatus={(s) => setStatus(r.id, s)} />
-            ))}
-          </div>
+          <RideList rides={filtered} setStatus={setStatus} />
         ) : (
           <CalendarView rides={filtered} />
         )}
       </main>
+    </div>
+  );
+}
+
+function RideList({ rides, setStatus }: { rides: Ride[]; setStatus: (id: string, s: RideStatus) => void }) {
+  const [arrivals, setArrivals] = useState<Record<string, number | null>>({});
+  const closeIds = useMemo(() => {
+    const set = new Set<string>();
+    const items = Object.entries(arrivals).filter(([, t]) => typeof t === "number") as [string, number][];
+    for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
+      if (Math.abs(items[i][1] - items[j][1]) <= 30 * 60 * 1000) { set.add(items[i][0]); set.add(items[j][0]); }
+    }
+    return set;
+  }, [arrivals]);
+  return (
+    <div className="space-y-4">
+      {rides.map((r) => (
+        <RideCard
+          key={r.id}
+          ride={r}
+          onSetStatus={(s) => setStatus(r.id, s)}
+          closeArrival={closeIds.has(r.id)}
+          onArrivalTime={(t) => setArrivals((p) => (p[r.id] === t ? p : { ...p, [r.id]: t }))}
+        />
+      ))}
     </div>
   );
 }
@@ -550,7 +572,7 @@ function StatTile({ icon, label, value, highlight }: { icon: React.ReactNode; la
 }
 
 /* ─── RIDE CARD ─── */
-function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStatus) => void }) {
+function RideCard({ ride, onSetStatus, closeArrival, onArrivalTime }: { ride: Ride; onSetStatus: (s: RideStatus) => void; closeArrival?: boolean; onArrivalTime?: (t: number | null) => void }) {
   const dropoffTime = extractDropoffTime(ride);
   const cleanDropoffTo = stripTrailingTime(ride.dropoff_to ?? "") || ride.dropoff_to;
   const cleanFlight = stripTrailingTime(ride.flight_number ?? "") || ride.flight_number;
@@ -613,6 +635,15 @@ function RideCard({ ride, onSetStatus }: { ride: Ride; onSetStatus: (s: RideStat
             {cleanDropoffTo && <div className="text-xs text-muted-foreground truncate">{cleanDropoffTo}</div>}
           </div>
         </div>
+
+        {cleanFlight && (
+          <LiveFlightStatus
+            flightNumber={cleanFlight}
+            date={ride.ride_date}
+            closeArrival={closeArrival}
+            onArrival={onArrivalTime}
+          />
+        )}
 
         {/* Meta chips */}
         <div className="flex items-center gap-2 flex-wrap">
