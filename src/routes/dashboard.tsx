@@ -562,7 +562,10 @@ function DashboardInner() {
       // Fire-and-forget SMS + admin notification for the assignment.
       fetch("/api/public/hooks/notify-assignment", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
         body: JSON.stringify({ ride_id: ride.id }),
       })
         .then((r) => r.json())

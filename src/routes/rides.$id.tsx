@@ -114,7 +114,10 @@ function Inner() {
     if (newDriver && newDriver !== previousDriver) {
       fetch("/api/public/hooks/notify-assignment", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
         body: JSON.stringify({ ride_id: ride.id }),
       }).then((r) => r.json()).then((j) => {
         if (j?.sms?.sent) toast.success("Driver notified by SMS");
