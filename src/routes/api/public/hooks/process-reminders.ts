@@ -5,10 +5,17 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        // Verify cron secret to prevent unauthenticated access
+        const anonKey =
+          process.env.SUPABASE_ANON_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY;
         const cronSecret = process.env.CRON_SECRET;
-        const providedSecret = request.headers.get("x-cron-secret");
-        if (!cronSecret || providedSecret !== cronSecret) {
+        const providedApiKey =
+          request.headers.get("apikey") ??
+          request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+        const providedCron = request.headers.get("x-cron-secret");
+        const ok =
+          (anonKey && providedApiKey === anonKey) ||
+          (cronSecret && providedCron === cronSecret);
+        if (!ok) {
           return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
             status: 401,
             headers: { "Content-Type": "application/json" },
