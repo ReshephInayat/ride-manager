@@ -189,4 +189,38 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
   },
 });
 
-// Keep all helper functions the same (normalizeTime, sendSms)
+function normalizeTime(t: string): string {
+  const s = String(t).trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?$/i);
+  if (!m) return s;
+  let h = parseInt(m[1], 10);
+  const min = m[2];
+  const ap = m[4]?.toLowerCase();
+  if (ap === "pm" && h < 12) h += 12;
+  if (ap === "am" && h === 12) h = 0;
+  return `${String(h).padStart(2, "0")}:${min}`;
+}
+
+async function sendSms(to: string, body: string): Promise<void> {
+  const lovableKey = process.env.LOVABLE_API_KEY;
+  const twilioKey = process.env.TWILIO_API_KEY;
+  const from = process.env.TWILIO_FROM_NUMBER;
+  if (!lovableKey) throw new Error("LOVABLE_API_KEY not configured");
+  if (!twilioKey) throw new Error("TWILIO_API_KEY not configured");
+  if (!from) throw new Error("TWILIO_FROM_NUMBER not configured");
+
+  const res = await fetch("https://connector-gateway.lovable.dev/twilio/Messages.json", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${lovableKey}`,
+      "X-Connection-Api-Key": twilioKey,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ To: to, From: from, Body: body }),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Twilio ${res.status}: ${txt}`);
+  }
+}
